@@ -5,6 +5,8 @@
         public Guid Id { get; private set; }
         public Guid ProntuarioId { get; private set; }
 
+        public Prontuario Prontuario { get; private set; }
+
         public string Observacoes { get; private set; }
         public string PressaoArterial { get; private set; }
         public decimal Temperatura { get; private set; }
