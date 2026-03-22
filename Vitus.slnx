@@ -1,1 +1,10 @@
-<Solution />
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Vitus.API/Vitus.API.csproj" />
+    <Project Path="src/Vitus.Application/Vitus.Application.csproj" />
+    <Project Path="src/Vitus.Communication/Vitus.Communication.csproj" />
+    <Project Path="src/Vitus.Domain/Vitus.Domain.csproj" />
+    <Project Path="src/Vitus.Infrastructure/Vitus.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/tests/" />
+</Solution>
