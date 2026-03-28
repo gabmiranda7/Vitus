@@ -1,6 +1,9 @@
 using Microsoft.EntityFrameworkCore;
-using Vitus.Infrastructure.Data;
 using Scalar.AspNetCore;
+using Vitus.Application.UseCases.Pacientes.CreatePaciente;
+using Vitus.Domain.Interfaces;
+using Vitus.Infrastructure.Data;
+using Vitus.Infrastructure.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -13,6 +16,10 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(connectionString));
+
+builder.Services.AddScoped<CreatePacienteUseCase>();
+
+builder.Services.AddScoped<IPacienteRepository, PacienteRepository>();
 
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
