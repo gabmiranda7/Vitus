@@ -1,4 +1,5 @@
-﻿using Vitus.Domain.Entities;
+﻿using Microsoft.EntityFrameworkCore;
+using Vitus.Domain.Entities;
 using Vitus.Domain.Interfaces;
 using Vitus.Infrastructure.Data;
 
@@ -17,6 +18,13 @@ namespace Vitus.Infrastructure.Repositories
         {
             await _context.Pacientes.AddAsync(paciente);
             await _context.SaveChangesAsync();
+        }
+
+        public async Task<Paciente?> GetById(Guid id)
+        {
+            return await _context.Pacientes
+                .Include(p => p.Prontuario)
+                .FirstOrDefaultAsync(p => p.Id == id);
         }
     }
 }
