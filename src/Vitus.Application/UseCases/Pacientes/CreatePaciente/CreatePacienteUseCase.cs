@@ -18,6 +18,8 @@ namespace Vitus.Application.UseCases.Pacientes.CreatePaciente
         {
             var paciente = new Paciente(request.Nome);
 
+            paciente.CriarProntuario();
+
             await _pacienteRepository.Add(paciente);
 
             return new PacienteResponseJson
