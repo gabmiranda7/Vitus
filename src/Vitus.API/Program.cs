@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Scalar.AspNetCore;
+using Vitus.Application.UseCases.Consultas.CreateConsulta;
 using Vitus.Application.UseCases.Pacientes.CreatePaciente;
 using Vitus.Application.UseCases.Pacientes.GetPacienteById;
 using Vitus.Application.UseCases.Pacientes.GetAllPacientes;
@@ -19,10 +20,12 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(connectionString));
 
+builder.Services.AddScoped<CreateConsultaUseCase>();
 builder.Services.AddScoped<CreatePacienteUseCase>();
 builder.Services.AddScoped<GetPacienteByIdUseCase>();
 builder.Services.AddScoped<GetAllPacientesUseCase>();
 
+builder.Services.AddScoped<IConsultaRepository, ConsultaRepository>();
 builder.Services.AddScoped<IPacienteRepository, PacienteRepository>();
 
 builder.Services.AddControllers();
