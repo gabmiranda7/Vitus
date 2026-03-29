@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Vitus.Application.UseCases.Pacientes.CreatePaciente;
+using Vitus.Application.UseCases.Pacientes.GetAllPacientes;
 using Vitus.Application.UseCases.Pacientes.GetPacienteById;
 using Vitus.Communication.Paciente.Requests;
 using Vitus.Communication.Paciente.Responses;
@@ -32,5 +33,14 @@ namespace Vitus.API.Controllers
 
             return Ok(response);
         }
+
+        [HttpGet]
+        public async Task<IActionResult> GetAll(
+            [FromServices] GetAllPacientesUseCase useCase)
+        {
+            var response = await useCase.Execute();
+
+            return Ok(response);
+        } 
     }
 }

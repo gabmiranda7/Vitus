@@ -6,5 +6,6 @@ namespace Vitus.Domain.Interfaces
     {
         Task Add(Paciente paciente);
         Task<Paciente?> GetById(Guid id);
+        Task <List<Paciente>> GetAll();
     }
 }

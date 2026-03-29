@@ -26,5 +26,12 @@ namespace Vitus.Infrastructure.Repositories
                 .Include(p => p.Prontuario)
                 .FirstOrDefaultAsync(p => p.Id == id);
         }
+
+        public async Task<List<Paciente>> GetAll()
+        {
+            return await _context.Pacientes
+                .AsNoTracking()
+                .ToListAsync();
+        }
     }
 }

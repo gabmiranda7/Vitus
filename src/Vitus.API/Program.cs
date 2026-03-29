@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Scalar.AspNetCore;
 using Vitus.Application.UseCases.Pacientes.CreatePaciente;
 using Vitus.Application.UseCases.Pacientes.GetPacienteById;
+using Vitus.Application.UseCases.Pacientes.GetAllPacientes;
 using Vitus.Domain.Interfaces;
 using Vitus.Infrastructure.Data;
 using Vitus.Infrastructure.Repositories;
@@ -20,6 +21,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 
 builder.Services.AddScoped<CreatePacienteUseCase>();
 builder.Services.AddScoped<GetPacienteByIdUseCase>();
+builder.Services.AddScoped<GetAllPacientesUseCase>();
 
 builder.Services.AddScoped<IPacienteRepository, PacienteRepository>();
 
