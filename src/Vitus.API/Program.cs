@@ -2,6 +2,8 @@ using Microsoft.EntityFrameworkCore;
 using Scalar.AspNetCore;
 using Vitus.Application.UseCases.Consultas.CreateConsulta;
 using Vitus.Application.UseCases.Pacientes.CreatePaciente;
+using Vitus.Application.UseCases.Pacientes.UpdatePaciente;
+using Vitus.Application.UseCases.Pacientes.DeletePaciente;
 using Vitus.Application.UseCases.Pacientes.GetPacienteById;
 using Vitus.Application.UseCases.Pacientes.GetAllPacientes;
 using Vitus.Domain.Interfaces;
@@ -22,6 +24,8 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 
 builder.Services.AddScoped<CreateConsultaUseCase>();
 builder.Services.AddScoped<CreatePacienteUseCase>();
+builder.Services.AddScoped<UpdatePacienteUseCase>();
+builder.Services.AddScoped<DeletePacienteUseCase>();
 builder.Services.AddScoped<GetPacienteByIdUseCase>();
 builder.Services.AddScoped<GetAllPacientesUseCase>();
 

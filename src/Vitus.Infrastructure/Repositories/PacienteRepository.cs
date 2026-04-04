@@ -20,6 +20,18 @@ namespace Vitus.Infrastructure.Repositories
             await _context.SaveChangesAsync();
         }
 
+        public async Task Update(Paciente paciente)
+        {
+            _context.Pacientes.Update(paciente);
+            await _context.SaveChangesAsync();
+        }
+
+        public async Task Delete(Paciente paciente)
+        {
+            _context.Pacientes.Remove(paciente);
+            await _context.SaveChangesAsync();
+        }
+
         public async Task<Paciente?> GetById(Guid id)
         {
             return await _context.Pacientes
