@@ -31,8 +31,8 @@ A aplicação segue os princípios de **Clean Architecture** e **Domain-Driven D
 O projeto é organizado em camadas, separando responsabilidades:
 
 ### 🔹 API
-
 * Controllers
+* Extensions (registro de serviços)
 * Configuração (`Program.cs`)
 * Middlewares
 * Autenticação (futuramente)
@@ -40,15 +40,13 @@ O projeto é organizado em camadas, separando responsabilidades:
 ---
 
 ### 🔹 Application
-
-* Use Cases (ex: `CreatePatientUseCase`)
-* Interfaces (ex: `IPatientRepository`)
+* Use Cases (ex: `CreatePacienteUseCase`)
+* Interfaces (ex: `IPacienteRepository`)
 * Regras de fluxo
 
 ---
 
 ### 🔹 Communication
-
 * DTOs (Request/Response)
 * ViewModels
 * Contratos da API
@@ -56,15 +54,13 @@ O projeto é organizado em camadas, separando responsabilidades:
 ---
 
 ### 🔹 Domain
-
-* Entidades (ex: `Patient`, `Appointment`)
+* Entidades (ex: `Paciente`, `Consulta`)
 * Value Objects
 * Regras de negócio puras
 
 ---
 
 ### 🔹 Infrastructure
-
 * Entity Framework Core
 * DbContext
 * Implementações de repositórios
@@ -102,7 +98,6 @@ src/
  ├── Vitus.Communication
  ├── Vitus.Domain
  └── Vitus.Infrastructure
-
 tests/
 ```
 
@@ -124,8 +119,12 @@ O projeto contará com testes automatizados utilizando **xUnit**, garantindo a q
 
 * [x] Estrutura inicial do projeto
 * [x] Configuração da arquitetura (Clean Architecture + DDD)
-* [ ] Cadastro de pacientes
-* [ ] Registro de atendimentos
+* [x] Cadastro de pacientes (CRUD completo)
+* [x] Cadastro de médicos (CRUD completo)
+* [x] Agendamento de consultas
+* [x] Fluxo de status da consulta (Triagem → Atendimento → Finalização)
+* [ ] Registro de triagem
+* [ ] Registro de receitas e medicamentos
 * [ ] Prontuário único por paciente
 * [ ] Autenticação e autorização
 * [ ] Integração com front-end
