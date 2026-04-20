@@ -1,4 +1,5 @@
-﻿using Vitus.Domain.Entities;
+﻿using Microsoft.EntityFrameworkCore;
+using Vitus.Domain.Entities;
 using Vitus.Domain.Interfaces;
 using Vitus.Infrastructure.Data;
 
@@ -17,6 +18,20 @@ namespace Vitus.Infrastructure.Repositories
         {
             await _context.Consultas.AddAsync(consulta);
             await _context.SaveChangesAsync();
+        }
+
+        public async Task<List<Consulta>> GetAll()
+        {
+            return await _context.Consultas
+                .AsNoTracking()
+                .ToListAsync();
+        }
+
+        public async Task<Consulta?> GetById(Guid id)
+        {
+            return await _context.Consultas
+                .AsNoTracking()
+                .FirstOrDefaultAsync(c => c.Id == id);
         }
     }
 }

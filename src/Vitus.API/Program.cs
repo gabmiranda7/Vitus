@@ -1,11 +1,14 @@
 using Microsoft.EntityFrameworkCore;
 using Scalar.AspNetCore;
 using Vitus.Application.UseCases.Consultas.CreateConsulta;
+using Vitus.Application.UseCases.Medicos.CreateMedico;
+using Vitus.Application.UseCases.Medicos.GetAllMedicos;
+using Vitus.Application.UseCases.Medicos.GetMedicoById;
 using Vitus.Application.UseCases.Pacientes.CreatePaciente;
-using Vitus.Application.UseCases.Pacientes.UpdatePaciente;
 using Vitus.Application.UseCases.Pacientes.DeletePaciente;
-using Vitus.Application.UseCases.Pacientes.GetPacienteById;
 using Vitus.Application.UseCases.Pacientes.GetAllPacientes;
+using Vitus.Application.UseCases.Pacientes.GetPacienteById;
+using Vitus.Application.UseCases.Pacientes.UpdatePaciente;
 using Vitus.Domain.Interfaces;
 using Vitus.Infrastructure.Data;
 using Vitus.Infrastructure.Repositories;
@@ -24,12 +27,18 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 
 builder.Services.AddScoped<CreateConsultaUseCase>();
 builder.Services.AddScoped<CreatePacienteUseCase>();
+
+builder.Services.AddScoped<CreateMedicoUseCase>();
+builder.Services.AddScoped<GetMedicoByIdUseCase>();
+builder.Services.AddScoped<GetAllMedicosUseCase>();
+
 builder.Services.AddScoped<UpdatePacienteUseCase>();
 builder.Services.AddScoped<DeletePacienteUseCase>();
 builder.Services.AddScoped<GetPacienteByIdUseCase>();
 builder.Services.AddScoped<GetAllPacientesUseCase>();
 
 builder.Services.AddScoped<IConsultaRepository, ConsultaRepository>();
+builder.Services.AddScoped<IMedicoRepository, MedicoRepository>();
 builder.Services.AddScoped<IPacienteRepository, PacienteRepository>();
 
 builder.Services.AddControllers();
