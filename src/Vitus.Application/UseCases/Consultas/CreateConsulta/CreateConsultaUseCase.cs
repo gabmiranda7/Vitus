@@ -7,15 +7,18 @@ namespace Vitus.Application.UseCases.Consultas.CreateConsulta
 {
     public class CreateConsultaUseCase
     {
-        private readonly IPacienteRepository _pacienteRepository;
         private readonly IConsultaRepository _consultaRepository;
+        private readonly IMedicoRepository _medicoRepository;
+        private readonly IPacienteRepository _pacienteRepository;
 
         public CreateConsultaUseCase(
-            IPacienteRepository pacienteRepository,
-            IConsultaRepository consultaRepository)
+            IConsultaRepository consultaRepository,
+            IMedicoRepository medicoRepository,
+            IPacienteRepository pacienteRepository)
         {
-            _pacienteRepository = pacienteRepository;
             _consultaRepository = consultaRepository;
+            _medicoRepository = medicoRepository;
+            _pacienteRepository = pacienteRepository;
         }
 
         public async Task<ConsultaResponseJson> Execute(CreateConsultaRequestJson request)
@@ -24,6 +27,11 @@ namespace Vitus.Application.UseCases.Consultas.CreateConsulta
 
             if (paciente == null)
                 throw new Exception("Paciente não encontrado");
+
+            var medico = await _medicoRepository.GetById(request.MedicoId);
+
+            if (medico == null)
+                throw new Exception("Médico não encontrado");
 
             var consulta = new Consulta(
                 request.PacienteId,
@@ -38,7 +46,9 @@ namespace Vitus.Application.UseCases.Consultas.CreateConsulta
             {
                 Id = consulta.Id,
                 DataConsulta = consulta.DataConsulta,
-                Status = consulta.Status.ToString()
+                Status = consulta.Status.ToString(),
+                NomePaciente = paciente.Nome,
+                NomeMedico = medico.Nome
             };
         }
     }

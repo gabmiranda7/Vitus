@@ -5,7 +5,9 @@ namespace Vitus.Domain.Interfaces
     public interface IConsultaRepository
     {
         Task Add(Consulta consulta);
+        Task Update(Consulta consulta);
         Task<Consulta?> GetById(Guid id);
         Task<List<Consulta>> GetAll();
+
     }
 }

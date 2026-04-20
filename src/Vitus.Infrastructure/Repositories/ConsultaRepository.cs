@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Update.Internal;
 using Vitus.Domain.Entities;
 using Vitus.Domain.Interfaces;
 using Vitus.Infrastructure.Data;
@@ -17,6 +18,12 @@ namespace Vitus.Infrastructure.Repositories
         public async Task Add(Consulta consulta)
         {
             await _context.Consultas.AddAsync(consulta);
+            await _context.SaveChangesAsync();
+        }
+
+        public async Task Update(Consulta consulta)
+        {
+            _context.Consultas.Update(consulta);
             await _context.SaveChangesAsync();
         }
 
