@@ -33,9 +33,9 @@ O projeto é organizado em camadas, separando responsabilidades:
 ### 🔹 API
 * Controllers
 * Extensions (registro de serviços)
-* Configuração (`Program.cs`)
 * Middlewares
-* Autenticação (futuramente)
+* Configuração (`Program.cs`)
+* Autenticação (JWT)
 
 ---
 
@@ -123,10 +123,11 @@ O projeto contará com testes automatizados utilizando **xUnit**, garantindo a q
 * [x] Cadastro de médicos (CRUD completo)
 * [x] Agendamento de consultas
 * [x] Fluxo de status da consulta (Triagem → Atendimento → Finalização)
-* [ ] Registro de triagem
-* [ ] Registro de receitas e medicamentos
+* [x] Registro de triagem
+* [x] Registro de receitas e medicamentos
+* [x] Middleware de tratamento de erros
+* [ ] Autenticação e autorização (JWT)
 * [ ] Prontuário único por paciente
-* [ ] Autenticação e autorização
 * [ ] Integração com front-end
 * [ ] Containerização com Docker
 * [ ] Testes automatizados
