@@ -14,6 +14,7 @@ using Vitus.Application.UseCases.Pacientes.DeletePaciente;
 using Vitus.Application.UseCases.Pacientes.GetAllPacientes;
 using Vitus.Application.UseCases.Pacientes.GetPacienteById;
 using Vitus.Application.UseCases.Pacientes.UpdatePaciente;
+using Vitus.Application.UseCases.Receitas.CriarReceita;
 using Vitus.Application.UseCases.Triagens.RegistrarTriagem;
 
 namespace Vitus.API.Extensions
@@ -41,6 +42,8 @@ namespace Vitus.API.Extensions
             services.AddScoped<DeletePacienteUseCase>();
             services.AddScoped<GetPacienteByIdUseCase>();
             services.AddScoped<GetAllPacientesUseCase>();
+
+            services.AddScoped<CriarReceitaUseCase>();
 
             services.AddScoped<RegistrarTriagemUseCase>();
 
