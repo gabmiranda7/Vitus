@@ -11,6 +11,7 @@ namespace Vitus.Infrastructure.Data
         public DbSet<Consulta> Consultas { get; set; }
         public DbSet<Triagem> Triagens { get; set; }
         public DbSet<Receita> Receitas { get; set; }
+        public DbSet<Usuario> Usuarios { get; set; }
 
         public AppDbContext(DbContextOptions<AppDbContext> options)
             : base(options)

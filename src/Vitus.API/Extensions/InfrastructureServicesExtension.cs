@@ -2,6 +2,7 @@
 using Vitus.Domain.Interfaces;
 using Vitus.Infrastructure.Data;
 using Vitus.Infrastructure.Repositories;
+using Vitus.Infrastructure.Services;
 
 namespace Vitus.API.Extensions
 {
@@ -9,6 +10,7 @@ namespace Vitus.API.Extensions
     {
         public static IServiceCollection AddInfrastructureServices(this IServiceCollection services, IConfiguration configuration)
         {
+            var jwtKey = Environment.GetEnvironmentVariable("JWT_KEY") ?? configuration["JWT_KEY"];
             var dbUser = Environment.GetEnvironmentVariable("DB_USER") ?? configuration["DB_USER"];
             var dbPass = Environment.GetEnvironmentVariable("DB_PASS") ?? configuration["DB_PASS"];
 
@@ -23,7 +25,9 @@ namespace Vitus.API.Extensions
             services.AddScoped<IMedicoRepository, MedicoRepository>();
             services.AddScoped<IPacienteRepository, PacienteRepository>();
             services.AddScoped<IReceitaRepository, ReceitaRepository>();
+            services.AddScoped<ITokenService, TokenService>();
             services.AddScoped<ITriagemRepository, TriagemRepository>();
+            services.AddScoped<IUsuarioRepository, UsuarioRepository>();
 
             return services;
         }

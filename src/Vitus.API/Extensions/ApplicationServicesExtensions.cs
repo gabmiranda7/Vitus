@@ -1,4 +1,6 @@
-﻿using Vitus.Application.UseCases.Consultas.AguardarAtendimento;
+﻿using Vitus.Application.UseCases.Auth.Login;
+using Vitus.Application.UseCases.Auth.Registrar;
+using Vitus.Application.UseCases.Consultas.AguardarAtendimento;
 using Vitus.Application.UseCases.Consultas.CancelarConsulta;
 using Vitus.Application.UseCases.Consultas.CreateConsulta;
 using Vitus.Application.UseCases.Consultas.FinalizarConsulta;
@@ -23,6 +25,9 @@ namespace Vitus.API.Extensions
     {
         public static IServiceCollection AddApplicationServices(this IServiceCollection services)
         {
+            services.AddScoped<LoginUsuarioUseCase>();
+            services.AddScoped<RegistrarUsuarioUseCase>();
+
             services.AddScoped<CreateConsultaUseCase>();
             services.AddScoped<GetConsultaByIdUseCase>();
             services.AddScoped<GetAllConsultasUseCase>();
