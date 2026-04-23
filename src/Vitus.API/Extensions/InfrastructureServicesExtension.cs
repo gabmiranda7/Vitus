@@ -24,6 +24,7 @@ namespace Vitus.API.Extensions
             services.AddScoped<IConsultaRepository, ConsultaRepository>();
             services.AddScoped<IMedicoRepository, MedicoRepository>();
             services.AddScoped<IPacienteRepository, PacienteRepository>();
+            services.AddScoped<IProntuarioRepository, ProntuarioRepository>();
             services.AddScoped<IReceitaRepository, ReceitaRepository>();
             services.AddScoped<ITokenService, TokenService>();
             services.AddScoped<ITriagemRepository, TriagemRepository>();
