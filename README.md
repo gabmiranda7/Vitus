@@ -126,8 +126,8 @@ O projeto contará com testes automatizados utilizando **xUnit**, garantindo a q
 * [x] Registro de triagem
 * [x] Registro de receitas e medicamentos
 * [x] Middleware de tratamento de erros
-* [ ] Autenticação e autorização (JWT)
-* [ ] Prontuário único por paciente
+* [x] Autenticação e autorização (JWT)
+* [x] Prontuário único por paciente
 * [ ] Integração com front-end
 * [ ] Containerização com Docker
 * [ ] Testes automatizados
