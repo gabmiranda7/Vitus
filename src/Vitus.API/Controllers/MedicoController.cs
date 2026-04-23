@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Vitus.Application.UseCases.Medicos.CreateMedico;
 using Vitus.Application.UseCases.Medicos.GetAllMedicos;
 using Vitus.Application.UseCases.Medicos.GetMedicoById;
@@ -8,6 +9,7 @@ namespace Vitus.API.Controllers
 {
     [ApiController]
     [Route("api/medicos")]
+    [Authorize(Roles = "Recepcionista")]
     public class MedicoController : ControllerBase
     {
         [HttpPost]
@@ -16,7 +18,6 @@ namespace Vitus.API.Controllers
             [FromBody] CreateMedicoRequestJson request)
         {
             await useCase.Execute(request);
-
             return Created(string.Empty, null);
         }
 
@@ -25,7 +26,6 @@ namespace Vitus.API.Controllers
             [FromServices] GetAllMedicosUseCase useCase)
         {
             var result = await useCase.Execute();
-
             return Ok(result);
         }
 
@@ -35,10 +35,8 @@ namespace Vitus.API.Controllers
             Guid id)
         {
             var result = await useCase.Execute(id);
-
             if (result == null)
                 return NotFound();
-
             return Ok(result);
         }
     }

@@ -1,16 +1,17 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Vitus.Application.UseCases.Pacientes.CreatePaciente;
 using Vitus.Application.UseCases.Pacientes.DeletePaciente;
 using Vitus.Application.UseCases.Pacientes.GetAllPacientes;
 using Vitus.Application.UseCases.Pacientes.GetPacienteById;
 using Vitus.Application.UseCases.Pacientes.UpdatePaciente;
 using Vitus.Communication.Paciente.Requests;
-using Vitus.Communication.Paciente.Responses;
 
 namespace Vitus.API.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize(Roles = "Recepcionista")]
     public class PacienteController : ControllerBase
     {
         [HttpPost]
@@ -19,7 +20,6 @@ namespace Vitus.API.Controllers
             [FromBody] CreatePacienteRequestJson request)
         {
             var response = await useCase.Execute(request);
-
             return Created(string.Empty, response);
         }
 
@@ -30,7 +30,6 @@ namespace Vitus.API.Controllers
             [FromBody] UpdatePacienteRequestJson request)
         {
             await useCase.Execute(id, request);
-
             return NoContent();
         }
 
@@ -40,7 +39,6 @@ namespace Vitus.API.Controllers
             Guid id)
         {
             await useCase.Execute(id);
-
             return NoContent();
         }
 
@@ -50,10 +48,8 @@ namespace Vitus.API.Controllers
             Guid id)
         {
             var response = await useCase.Execute(id);
-
             if (response == null)
                 return NotFound();
-
             return Ok(response);
         }
 
@@ -62,8 +58,7 @@ namespace Vitus.API.Controllers
             [FromServices] GetAllPacientesUseCase useCase)
         {
             var response = await useCase.Execute();
-
             return Ok(response);
-        } 
+        }
     }
 }

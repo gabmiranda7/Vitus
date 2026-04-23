@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Vitus.Application.UseCases.Triagens.RegistrarTriagem;
 using Vitus.Communication.Triagem.Requests;
 
@@ -6,6 +7,7 @@ namespace Vitus.API.Controllers
 {
     [ApiController]
     [Route("api/triagens")]
+    [Authorize(Roles = "Enfermeiro")]
     public class TriagemController : ControllerBase
     {
         [HttpPost]
@@ -14,7 +16,6 @@ namespace Vitus.API.Controllers
             [FromBody] CreateTriagemRequestJson request)
         {
             var response = await useCase.Execute(request);
-
             return Created(string.Empty, response);
         }
     }

@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Vitus.Application.UseCases.Consultas.AguardarAtendimento;
 using Vitus.Application.UseCases.Consultas.CancelarConsulta;
 using Vitus.Application.UseCases.Consultas.CreateConsulta;
@@ -13,9 +14,11 @@ namespace Vitus.API.Controllers
 {
     [ApiController]
     [Route("api/consultas")]
+    [Authorize]
     public class ConsultaController : ControllerBase
     {
         [HttpPost]
+        [Authorize(Roles = "Recepcionista")]
         public async Task<IActionResult> Create(
             [FromServices] CreateConsultaUseCase useCase,
             [FromBody] CreateConsultaRequestJson request)
@@ -25,6 +28,7 @@ namespace Vitus.API.Controllers
         }
 
         [HttpGet]
+        [Authorize(Roles = "Recepcionista,Enfermeiro,Medico")]
         public async Task<IActionResult> GetAll(
             [FromServices] GetAllConsultasUseCase useCase)
         {
@@ -33,19 +37,19 @@ namespace Vitus.API.Controllers
         }
 
         [HttpGet("{id}")]
+        [Authorize(Roles = "Recepcionista,Enfermeiro,Medico")]
         public async Task<IActionResult> GetById(
             [FromServices] GetConsultaByIdUseCase useCase,
             Guid id)
         {
             var result = await useCase.Execute(id);
-
             if (result == null)
                 return NotFound();
-
             return Ok(result);
         }
 
         [HttpPatch("{id}/iniciar-triagem")]
+        [Authorize(Roles = "Enfermeiro")]
         public async Task<IActionResult> IniciarTriagem(
             [FromServices] IniciarTriagemUseCase useCase,
             Guid id)
@@ -55,6 +59,7 @@ namespace Vitus.API.Controllers
         }
 
         [HttpPatch("{id}/aguardar-atendimento")]
+        [Authorize(Roles = "Enfermeiro")]
         public async Task<IActionResult> AguardarAtendimento(
             [FromServices] AguardarAtendimentoUseCase useCase,
             Guid id)
@@ -64,6 +69,7 @@ namespace Vitus.API.Controllers
         }
 
         [HttpPatch("{id}/iniciar-atendimento")]
+        [Authorize(Roles = "Medico")]
         public async Task<IActionResult> IniciarAtendimento(
             [FromServices] IniciarAtendimentoUseCase useCase,
             Guid id)
@@ -73,6 +79,7 @@ namespace Vitus.API.Controllers
         }
 
         [HttpPatch("{id}/finalizar")]
+        [Authorize(Roles = "Medico")]
         public async Task<IActionResult> Finalizar(
             [FromServices] FinalizarConsultaUseCase useCase,
             Guid id)
@@ -82,6 +89,7 @@ namespace Vitus.API.Controllers
         }
 
         [HttpPatch("{id}/cancelar")]
+        [Authorize(Roles = "Recepcionista,Medico")]
         public async Task<IActionResult> Cancelar(
             [FromServices] CancelarConsultaUseCase useCase,
             Guid id)
