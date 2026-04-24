@@ -17,6 +17,7 @@ using Vitus.Application.UseCases.Pacientes.GetAllPacientes;
 using Vitus.Application.UseCases.Pacientes.GetPacienteById;
 using Vitus.Application.UseCases.Pacientes.UpdatePaciente;
 using Vitus.Application.UseCases.Prontuarios.GetProntuarioById;
+using Vitus.Application.UseCases.Prontuarios.GetProntuarioByPacienteId;
 using Vitus.Application.UseCases.Receitas.CriarReceita;
 using Vitus.Application.UseCases.Triagens.RegistrarTriagem;
 
@@ -50,6 +51,7 @@ namespace Vitus.API.Extensions
             services.AddScoped<GetAllPacientesUseCase>();
 
             services.AddScoped<GetProntuarioByIdUseCase>();
+            services.AddScoped<GetProntuarioByPacienteIdUseCase>();
 
             services.AddScoped<CriarReceitaUseCase>();
 

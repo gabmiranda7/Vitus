@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Vitus.Application.UseCases.Prontuarios.GetProntuarioById;
+using Vitus.Application.UseCases.Prontuarios.GetProntuarioByPacienteId;
 
 namespace Vitus.API.Controllers
 {
@@ -15,6 +16,15 @@ namespace Vitus.API.Controllers
             Guid id)
         {
             var response = await useCase.Execute(id);
+            return Ok(response);
+        }
+
+        [HttpGet("paciente/{pacienteId}")]
+        public async Task<IActionResult> GetByPacienteId(
+            [FromServices] GetProntuarioByPacienteIdUseCase useCase,
+            Guid pacienteId)
+        {
+            var response = await useCase.Execute(pacienteId);
             return Ok(response);
         }
     }
