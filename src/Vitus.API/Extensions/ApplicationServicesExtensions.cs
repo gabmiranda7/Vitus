@@ -1,4 +1,6 @@
-﻿using Vitus.Application.UseCases.Auth.Login;
+﻿using FluentValidation;
+using FluentValidation.AspNetCore;
+using Vitus.Application.UseCases.Auth.Login;
 using Vitus.Application.UseCases.Auth.Registrar;
 using Vitus.Application.UseCases.Consultas.AguardarAtendimento;
 using Vitus.Application.UseCases.Consultas.CancelarConsulta;
@@ -20,6 +22,7 @@ using Vitus.Application.UseCases.Prontuarios.GetProntuarioById;
 using Vitus.Application.UseCases.Prontuarios.GetProntuarioByPacienteId;
 using Vitus.Application.UseCases.Receitas.CriarReceita;
 using Vitus.Application.UseCases.Triagens.RegistrarTriagem;
+using Vitus.Application.Validators.Pacientes;
 
 namespace Vitus.API.Extensions
 {
@@ -30,25 +33,24 @@ namespace Vitus.API.Extensions
             services.AddScoped<LoginUsuarioUseCase>();
             services.AddScoped<RegistrarUsuarioUseCase>();
 
-            services.AddScoped<CreateConsultaUseCase>();
-            services.AddScoped<GetConsultaByIdUseCase>();
-            services.AddScoped<GetAllConsultasUseCase>();
-            services.AddScoped<IniciarTriagemUseCase>();
             services.AddScoped<AguardarAtendimentoUseCase>();
-            services.AddScoped<IniciarAtendimentoUseCase>();
-            services.AddScoped<FinalizarConsultaUseCase>();
             services.AddScoped<CancelarConsultaUseCase>();
-
+            services.AddScoped<CreateConsultaUseCase>();
+            services.AddScoped<FinalizarConsultaUseCase>();
+            services.AddScoped<GetAllConsultasUseCase>();
+            services.AddScoped<GetConsultaByIdUseCase>();
+            services.AddScoped<IniciarAtendimentoUseCase>();
+            services.AddScoped<IniciarTriagemUseCase>();
 
             services.AddScoped<CreateMedicoUseCase>();
-            services.AddScoped<GetMedicoByIdUseCase>();
             services.AddScoped<GetAllMedicosUseCase>();
+            services.AddScoped<GetMedicoByIdUseCase>();
 
             services.AddScoped<CreatePacienteUseCase>();
-            services.AddScoped<UpdatePacienteUseCase>();
             services.AddScoped<DeletePacienteUseCase>();
-            services.AddScoped<GetPacienteByIdUseCase>();
             services.AddScoped<GetAllPacientesUseCase>();
+            services.AddScoped<GetPacienteByIdUseCase>();
+            services.AddScoped<UpdatePacienteUseCase>();
 
             services.AddScoped<GetProntuarioByIdUseCase>();
             services.AddScoped<GetProntuarioByPacienteIdUseCase>();

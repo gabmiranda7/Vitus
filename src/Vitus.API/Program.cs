@@ -1,9 +1,13 @@
+using FluentValidation.AspNetCore;
+using FluentValidation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
 using Scalar.AspNetCore;
 using System.Text;
 using Vitus.API.Extensions;
 using Vitus.API.Middlewares;
+using Vitus.Application.Validators.Pacientes;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -29,8 +33,23 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddFluentValidation(fv => fv.RegisterValidatorsFromAssemblyContaining<CreatePacienteRequestValidator>());
+
 builder.Services.AddOpenApi();
+
+builder.Services.Configure<ApiBehaviorOptions>(options =>
+{
+    options.InvalidModelStateResponseFactory = context =>
+    {
+        var errors = context.ModelState.Values
+            .SelectMany(v => v.Errors)
+            .Select(e => e.ErrorMessage)
+            .ToList();
+
+        return new BadRequestObjectResult(new Vitus.Communication.Errors.ErrorResponseJson(errors));
+    };
+});
 
 var app = builder.Build();
 

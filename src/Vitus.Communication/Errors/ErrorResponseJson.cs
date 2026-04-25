@@ -2,11 +2,16 @@
 {
     public class ErrorResponseJson
     {
-        public string Message { get; set; }
+        public List<string> Messages { get; set; }
+
+        public ErrorResponseJson(List<string> messages)
+        {
+            Messages = messages;
+        }
 
         public ErrorResponseJson(string message)
         {
-            Message = message;
+            Messages = new List<string> { message };
         }
     }
 }
