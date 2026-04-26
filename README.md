@@ -86,6 +86,7 @@ O projeto é organizado em camadas, separando responsabilidades:
 * Domain-Driven Design (DDD)
 * Separation of Concerns
 * SOLID
+* FluentValidation
 
 ---
 
@@ -128,6 +129,8 @@ O projeto contará com testes automatizados utilizando **xUnit**, garantindo a q
 * [x] Middleware de tratamento de erros
 * [x] Autenticação e autorização (JWT)
 * [x] Prontuário único por paciente
+* [x] Busca de prontuário por paciente
+* [x] Validação de inputs (FluentValidation)
 * [ ] Integração com front-end
 * [ ] Containerização com Docker
 * [ ] Testes automatizados
