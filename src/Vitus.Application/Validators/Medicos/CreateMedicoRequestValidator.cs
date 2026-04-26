@@ -14,6 +14,10 @@ namespace Vitus.Application.Validators.Medicos
             RuleFor(x => x.Especialidade)
                 .NotEmpty().WithMessage("Especialidade é obrigatória")
                 .MaximumLength(100).WithMessage("Especialidade deve ter no máximo 100 caracteres");
+
+            RuleFor(x => x.CRM)
+                .NotEmpty().WithMessage("CRM é obrigatório")
+                .MaximumLength(20).WithMessage("CRM deve ter no máximo 20 caracteres");
         }
     }
 }

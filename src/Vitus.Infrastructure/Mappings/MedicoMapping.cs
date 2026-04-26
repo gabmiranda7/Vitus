@@ -19,6 +19,13 @@ namespace Vitus.Infrastructure.Mappings
             builder.Property(m => m.Especialidade)
                    .IsRequired()
                    .HasMaxLength(100);
+
+            builder.Property(m => m.CRM)
+                   .IsRequired()
+                   .HasMaxLength(20);
+
+            builder.HasIndex(m => m.CRM)
+                   .IsUnique();
         }
     }
 }

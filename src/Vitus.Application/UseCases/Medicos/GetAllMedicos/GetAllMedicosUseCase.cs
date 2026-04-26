@@ -20,7 +20,8 @@ namespace Vitus.Application.UseCases.Medicos.GetAllMedicos
             {
                 Id = m.Id,
                 Nome = m.Nome,
-                Especialidade = m.Especialidade
+                Especialidade = m.Especialidade,
+                CRM = m.CRM
             }).ToList();
         }
     }

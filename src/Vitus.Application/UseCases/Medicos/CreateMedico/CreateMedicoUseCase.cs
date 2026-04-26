@@ -15,7 +15,7 @@ namespace Vitus.Application.UseCases.Medicos.CreateMedico
 
         public async Task Execute(CreateMedicoRequestJson request)
         {
-            var medico = new Medico(request.Nome, request.Especialidade);
+            var medico = new Medico(request.Nome, request.Especialidade, request.CRM);
 
             await _repository.Add(medico);
         }

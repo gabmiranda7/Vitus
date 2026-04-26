@@ -7,21 +7,22 @@ namespace Vitus.Domain.Entities
         public Guid Id { get; private set; }
         public string Nome { get; private set; }
         public string Especialidade { get; private set; }
+        public string CRM { get; private set; }
 
         protected Medico() { }
 
-        public Medico(string nome, string especialidade)
+        public Medico(string nome, string especialidade, string crm)
         {
             Id = Guid.NewGuid();
             DefinirNome(nome);
             DefinirEspecialidade(especialidade);
+            DefinirCRM(crm);
         }
 
         public void DefinirNome(string nome)
         {
             if (string.IsNullOrWhiteSpace(nome))
                 throw new DomainException("Nome é obrigatório");
-
             Nome = nome;
         }
 
@@ -29,8 +30,14 @@ namespace Vitus.Domain.Entities
         {
             if (string.IsNullOrWhiteSpace(especialidade))
                 throw new DomainException("Especialidade é obrigatória");
-
             Especialidade = especialidade;
+        }
+
+        public void DefinirCRM(string crm)
+        {
+            if (string.IsNullOrWhiteSpace(crm))
+                throw new DomainException("CRM é obrigatório");
+            CRM = crm;
         }
     }
 }

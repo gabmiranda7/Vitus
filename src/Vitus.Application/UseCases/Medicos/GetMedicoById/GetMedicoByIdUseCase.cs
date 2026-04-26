@@ -23,7 +23,8 @@ namespace Vitus.Application.UseCases.Medicos.GetMedicoById
             {
                 Id = medico.Id,
                 Nome = medico.Nome,
-                Especialidade = medico.Especialidade
+                Especialidade = medico.Especialidade,
+                CRM = medico.CRM
             };
         }
     }
