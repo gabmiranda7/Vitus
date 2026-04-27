@@ -28,7 +28,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="UseCases\Médicos\" />
     <Folder Include="UseCases\Consultas\" />
     <Folder Include="UseCases\Auth\" />
   </ItemGroup>
