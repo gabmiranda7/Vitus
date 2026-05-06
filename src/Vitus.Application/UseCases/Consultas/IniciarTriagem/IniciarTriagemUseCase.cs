@@ -36,6 +36,7 @@ namespace Vitus.Application.UseCases.Consultas.IniciarTriagem
             return new ConsultaResponseJson
             {
                 Id = consulta.Id,
+                PacienteId = consulta.PacienteId,
                 DataConsulta = consulta.DataConsulta,
                 Status = consulta.Status.ToString(),
                 NomePaciente = paciente!.Nome,

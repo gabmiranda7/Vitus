@@ -19,6 +19,9 @@ namespace Vitus.Infrastructure.Mappings
                    .HasConversion<string>()
                    .IsRequired();
 
+            builder.Property(c => c.Anotacoes)
+                .HasMaxLength(2000);
+
             builder.HasOne<Prontuario>()
                    .WithMany()
                    .HasForeignKey(c => c.ProntuarioId);

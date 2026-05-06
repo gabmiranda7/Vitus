@@ -45,10 +45,12 @@ namespace Vitus.Application.UseCases.Consultas.CreateConsulta
             return new ConsultaResponseJson
             {
                 Id = consulta.Id,
+                PacienteId = consulta.PacienteId,
                 DataConsulta = consulta.DataConsulta,
                 Status = consulta.Status.ToString(),
-                NomePaciente = paciente.Nome,
-                NomeMedico = medico.Nome
+                NomePaciente = paciente!.Nome,
+                NomeMedico = medico!.Nome,
+                Anotacoes = consulta.Anotacoes
             };
         }
     }

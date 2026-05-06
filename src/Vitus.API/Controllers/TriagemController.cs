@@ -11,12 +11,17 @@ namespace Vitus.API.Controllers
     public class TriagemController : ControllerBase
     {
         [HttpPost]
+        [Authorize(Roles = "Enfermeiro")]
         public async Task<IActionResult> Registrar(
             [FromServices] RegistrarTriagemUseCase useCase,
             [FromBody] CreateTriagemRequestJson request)
         {
-            var response = await useCase.Execute(request);
-            return Created(string.Empty, response);
+            var nomeEnfermeiro = User.FindFirst("name")?.Value
+                ?? User.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value
+                ?? "Enfermeiro";
+
+            var result = await useCase.Execute(request, nomeEnfermeiro);
+            return Ok(result);
         }
     }
 }

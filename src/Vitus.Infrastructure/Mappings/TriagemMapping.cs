@@ -20,6 +20,10 @@ namespace Vitus.Infrastructure.Mappings
 
             builder.Property(t => t.Temperatura)
                    .IsRequired();
+
+            builder.Property(t => t.NomeEnfermeiro)
+                    .IsRequired()
+                    .HasMaxLength(200);
         }
     }
 }

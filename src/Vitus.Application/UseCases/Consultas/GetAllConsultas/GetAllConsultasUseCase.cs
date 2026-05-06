@@ -33,10 +33,12 @@ namespace Vitus.Application.UseCases.Consultas.GetAllConsultas
                 return new ConsultaResponseJson
                 {
                     Id = c.Id,
+                    PacienteId = c.PacienteId,
                     DataConsulta = c.DataConsulta,
                     Status = c.Status.ToString(),
                     NomePaciente = paciente.Nome,
-                    NomeMedico = medico.Nome
+                    NomeMedico = medico.Nome,
+                    Anotacoes = c.Anotacoes
                 };
             }).ToList();
         }

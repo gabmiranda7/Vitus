@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Vitus.Application.UseCases.Consultas.AguardarAtendimento;
+using Vitus.Application.UseCases.Consultas.AnotarConsulta;
 using Vitus.Application.UseCases.Consultas.CancelarConsulta;
 using Vitus.Application.UseCases.Consultas.CreateConsulta;
 using Vitus.Application.UseCases.Consultas.FinalizarConsulta;
@@ -75,6 +76,16 @@ namespace Vitus.API.Controllers
             Guid id)
         {
             var result = await useCase.Execute(id);
+            return Ok(result);
+        }
+
+        [HttpPatch("{id}/anotar")]
+        [Authorize(Roles = "Medico")]
+        public async Task<IActionResult> Anotar(
+        [FromServices] AnotarConsultaUseCase useCase,Guid id,
+        [FromBody] AnotarConsultaRequestJson request)
+        {
+            var result = await useCase.Execute(id, request);
             return Ok(result);
         }
 

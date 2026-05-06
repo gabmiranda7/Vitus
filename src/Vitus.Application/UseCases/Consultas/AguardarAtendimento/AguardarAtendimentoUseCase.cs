@@ -36,10 +36,12 @@ namespace Vitus.Application.UseCases.Consultas.AguardarAtendimento
             return new ConsultaResponseJson
             {
                 Id = consulta.Id,
+                PacienteId = consulta.PacienteId,
                 DataConsulta = consulta.DataConsulta,
                 Status = consulta.Status.ToString(),
                 NomePaciente = paciente!.Nome,
-                NomeMedico = medico!.Nome
+                NomeMedico = medico!.Nome,
+                Anotacoes = consulta.Anotacoes
             };
         }
     }

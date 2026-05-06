@@ -10,10 +10,17 @@ namespace Vitus.Application.UseCases.Prontuarios.GetProntuarioByPacienteId
     public class GetProntuarioByPacienteIdUseCase
     {
         private readonly IProntuarioRepository _prontuarioRepository;
+        private readonly IPacienteRepository _pacienteRepository;
+        private readonly IMedicoRepository _medicoRepository;
 
-        public GetProntuarioByPacienteIdUseCase(IProntuarioRepository prontuarioRepository)
+        public GetProntuarioByPacienteIdUseCase(
+            IProntuarioRepository prontuarioRepository,
+            IPacienteRepository pacienteRepository,
+            IMedicoRepository medicoRepository)
         {
             _prontuarioRepository = prontuarioRepository;
+            _pacienteRepository = pacienteRepository;
+            _medicoRepository = medicoRepository;
         }
 
         public async Task<ProntuarioResponseJson> Execute(Guid pacienteId)
@@ -22,6 +29,9 @@ namespace Vitus.Application.UseCases.Prontuarios.GetProntuarioByPacienteId
 
             if (prontuario == null)
                 throw new DomainException("Prontuário não encontrado");
+
+            var pacientes = await _pacienteRepository.GetAll();
+            var medicos = await _medicoRepository.GetAll();
 
             return new ProntuarioResponseJson
             {
@@ -35,11 +45,19 @@ namespace Vitus.Application.UseCases.Prontuarios.GetProntuarioByPacienteId
                     PressaoArterial = t.PressaoArterial,
                     Temperatura = t.Temperatura
                 }).ToList(),
-                Consultas = prontuario.Consultas.Select(c => new ConsultaResponseJson
+                Consultas = prontuario.Consultas.Select(c =>
                 {
-                    Id = c.Id,
-                    DataConsulta = c.DataConsulta,
-                    Status = c.Status.ToString()
+                    var paciente = pacientes.FirstOrDefault(p => p.Id == c.PacienteId);
+                    var medico = medicos.FirstOrDefault(m => m.Id == c.MedicoId);
+                    return new ConsultaResponseJson
+                    {
+                        Id = c.Id,
+                        DataConsulta = c.DataConsulta,
+                        Status = c.Status.ToString(),
+                        NomePaciente = paciente?.Nome ?? "",
+                        NomeMedico = medico?.Nome ?? "",
+                        Anotacoes = c.Anotacoes
+                    };
                 }).ToList(),
                 Receitas = prontuario.Receitas.Select(r => new ReceitaResponseJson
                 {

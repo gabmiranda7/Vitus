@@ -11,5 +11,6 @@ namespace Vitus.Communication.Prontuario.Responses
         public List<TriagemResponseJson> Triagens { get; set; }
         public List<ConsultaResponseJson> Consultas { get; set; }
         public List<ReceitaResponseJson> Receitas { get; set; }
+        public List<ConsultaResponseJson> Anotacoes { get; set; }
     }
 }

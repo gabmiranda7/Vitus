@@ -22,30 +22,30 @@ namespace Vitus.Application.UseCases.Triagens.RegistrarTriagem
             _pacienteRepository = pacienteRepository;
         }
 
-        public async Task<TriagemResponseJson> Execute(CreateTriagemRequestJson request)
+        public async Task<TriagemResponseJson> Execute(CreateTriagemRequestJson request, string nomeEnfermeiro)
         {
             var consulta = await _consultaRepository.GetById(request.ConsultaId);
 
             if (consulta == null)
                 throw new DomainException("Consulta não encontrada");
 
+            if (consulta.Status != Vitus.Domain.Enums.StatusConsulta.EmTriagem)
+                throw new DomainException("Consulta não está em triagem");
+
             var paciente = await _pacienteRepository.GetById(consulta.PacienteId);
 
             if (paciente == null)
                 throw new DomainException("Paciente não encontrado");
 
-            consulta.IniciarTriagem();
-            await _consultaRepository.Update(consulta);
-
             var triagem = new Triagem(
                 paciente.Prontuario.Id,
                 request.Observacoes,
                 request.PressaoArterial,
-                request.Temperatura
+                request.Temperatura,
+                nomeEnfermeiro
             );
 
             paciente.Prontuario.AdicionarTriagem(triagem);
-
             await _triagemRepository.Add(triagem);
 
             return new TriagemResponseJson
@@ -54,7 +54,8 @@ namespace Vitus.Application.UseCases.Triagens.RegistrarTriagem
                 ProntuarioId = triagem.ProntuarioId,
                 Observacoes = triagem.Observacoes,
                 PressaoArterial = triagem.PressaoArterial,
-                Temperatura = triagem.Temperatura
+                Temperatura = triagem.Temperatura,
+                NomeEnfermeiro = triagem.NomeEnfermeiro
             };
         }
     }

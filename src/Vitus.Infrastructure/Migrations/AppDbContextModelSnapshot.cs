@@ -28,6 +28,10 @@ namespace Vitus.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<string>("Anotacoes")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
                     b.Property<DateTime>("DataConsulta")
                         .HasColumnType("timestamp with time zone");
 
@@ -143,6 +147,11 @@ namespace Vitus.Infrastructure.Migrations
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
+
+                    b.Property<string>("NomeEnfermeiro")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
 
                     b.Property<string>("Observacoes")
                         .IsRequired()
