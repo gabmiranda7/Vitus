@@ -1,6 +1,8 @@
 # 🩺 Vitus – Sistema de Prontuário Eletrônico
 
 ![.NET](https://img.shields.io/badge/.NET-512BD4?style=for-the-badge&logo=dotnet&logoColor=white)
+![Vite](https://img.shields.io/badge/Vite-646CFF?style=for-the-badge&logo=Vite&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
 ![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?style=for-the-badge&logo=postgresql&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)
@@ -18,7 +20,7 @@ A aplicação segue os princípios de **Clean Architecture** e **Domain-Driven D
 ## 🚀 Stack Tecnológica
 
 * **Back-end:** ASP.NET Core (C#)
-* **Front-end:** React
+* **Front-end:** Vite (React + TypeScript)
 * **ORM:** Entity Framework Core
 * **Banco de Dados:** PostgreSQL
 * **Versionamento:** Git + GitHub
@@ -90,29 +92,64 @@ O projeto é organizado em camadas, separando responsabilidades:
 
 ---
 
-## 📂 Estrutura do Projeto
+## 📂 Estrutura - Back-end (ASP .NET)
 
 ```
 src/
- ├── Vitus.API
- ├── Vitus.Application
- ├── Vitus.Communication
- ├── Vitus.Domain
- └── Vitus.Infrastructure
+├── Vitus.API
+├── Vitus.Application
+├── Vitus.Communication
+├── Vitus.Domain
+└── Vitus.Infrastructure
+
 tests/
+```
+
+## 📂 Estrutura - Front-end (Vite)
+
+```
+web/
+├── public/
+├── src/
+│   ├── assets/
+│   ├── components/
+│   ├── contexts/
+│   ├── pages/
+│   ├── routes/
+│   ├── services/
+│   ├── types/
+│   ├── App.tsx
+│   └── main.tsx
+├── index.html
+├── package.json
+├── tsconfig.json
+└── vite.config.ts
 ```
 
 ---
 
-## 🐳 Docker (em breve)
+## ▶️ Como Executar
 
-A aplicação será containerizada utilizando Docker para facilitar o ambiente de desenvolvimento e deploy.
+### Back-end
+
+```bash
+cd src
+dotnet run --project Vitus.API
+```
+
+### Front-end
+
+```bash
+cd web
+npm install
+npm run dev
+```
 
 ---
 
 ## 🧪 Testes
 
-O projeto contará com testes automatizados utilizando **xUnit**, garantindo a qualidade e confiabilidade das regras de negócio.
+A aplicação conta com testes automatizados utilizando xUnit, assegurando a integridade das regras de negócio e contribuindo para a qualidade e evolução contínua do sistema.
 
 ---
 
@@ -131,9 +168,9 @@ O projeto contará com testes automatizados utilizando **xUnit**, garantindo a q
 * [x] Prontuário único por paciente
 * [x] Busca de prontuário por paciente
 * [x] Validação de inputs (FluentValidation)
-* [ ] Integração com front-end
+* [x] Integração com front-end
+* [x] Testes automatizados
 * [ ] Containerização com Docker
-* [ ] Testes automatizados
 * [ ] Deploy da aplicação
 
 ---
