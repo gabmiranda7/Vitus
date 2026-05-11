@@ -130,11 +130,26 @@ web/
 
 ## ▶️ Como Executar
 
-### Back-end
+### 🐳 Via Docker (Recomendado)
+A maneira mais fácil de rodar a API e o Banco de Dados (PostgreSQL) simultaneamente é através do Docker.
+
+1. Clone o repositório.
+2. Crie um arquivo `.env` na raiz do projeto e preencha as credenciais.
+3. Execute o comando abaixo na raiz do projeto:
 
 ```bash
-cd src
-dotnet run --project Vitus.API
+docker-compose up --build
+```
+
+> A API estará disponível em `http://localhost:5000`. Você pode testar os endpoints acessando a documentação interativa do Scalar em `http://localhost:5000/scalar/v1`.
+
+### 💻 Execução Manual (Local)
+
+**Back-end:**
+Certifique-se de ter o PostgreSQL rodando localmente e a string de conexão configurada.
+```bash
+cd src/Vitus.API
+dotnet run
 ```
 
 ### Front-end
@@ -170,7 +185,7 @@ A aplicação conta com testes automatizados utilizando xUnit, assegurando a int
 * [x] Validação de inputs (FluentValidation)
 * [x] Integração com front-end
 * [x] Testes automatizados
-* [ ] Containerização com Docker
+* [x] Containerização com Docker
 * [ ] Deploy da aplicação
 
 ---
