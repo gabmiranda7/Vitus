@@ -1,9 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import {
-  Box, Card, CardContent, Chip, Paper, Table, TableBody,
-  TableCell, TableContainer, TableHead, TableRow, Typography,
-  Alert, useTheme, Avatar, Divider, Grid
+  Box, Card, CardContent, Chip, Paper, Typography,
+  Alert, useTheme, Avatar, Grid
 } from '@mui/material';
 import FolderSharedIcon from '@mui/icons-material/FolderShared';
 import EditNoteIcon from '@mui/icons-material/EditNote';
@@ -13,9 +12,10 @@ import FavoriteIcon from '@mui/icons-material/Favorite';
 import ThermostatIcon from '@mui/icons-material/Thermostat';
 import MonitorHeartIcon from '@mui/icons-material/MonitorHeart';
 import EventNoteIcon from '@mui/icons-material/EventNote';
+import MedicalServicesIcon from '@mui/icons-material/MedicalServices';
 import Layout from '../../components/layout/Layout';
 import api from '../../services/api';
-import { Prontuario, Receita } from '../../types';
+import { Prontuario, Receita, Triagem, Consulta } from '../../types';
 
 const statusCores: Record<string, string> = {
   Agendada: '#1976d2', EmTriagem: '#ed6c02', AguardandoAtendimento: '#0288d1',
@@ -32,6 +32,24 @@ function iniciais(nome: string) {
   return nome.split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase();
 }
 
+function dataChave(data: string) {
+  return new Date(data).toLocaleDateString('pt-BR');
+}
+
+function horaFormatada(data: string) {
+  return new Date(data).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+}
+
+type EventoDia = {
+  tipo: 'triagem';
+  data: string;
+  item: Triagem;
+} | {
+  tipo: 'consulta';
+  data: string;
+  item: Consulta;
+};
+
 export default function ProntuarioPage() {
   const { consultaId } = useParams();
   const [prontuario, setProntuario] = useState<Prontuario | null>(null);
@@ -40,10 +58,10 @@ export default function ProntuarioPage() {
   const theme = useTheme();
 
   const isDark = theme.palette.mode === 'dark';
-  const headerBg = isDark ? theme.palette.grey[800] : theme.palette.grey[100];
   const paperBg = isDark ? theme.palette.grey[900] : theme.palette.background.paper;
   const timelineBg = isDark ? theme.palette.grey[800] : '#f8faff';
   const timelineBorder = isDark ? theme.palette.grey[700] : '#e3eaf5';
+  const diaBg = isDark ? theme.palette.grey[900] : '#f0f4ff';
 
   useEffect(() => { if (consultaId) carregar(); }, [consultaId]);
 
@@ -62,9 +80,30 @@ export default function ProntuarioPage() {
     return prontuario!.receitas.filter(r => r.consultaId === id);
   }
 
-  const consultasOrdenadas = [...prontuario.consultas].sort(
-    (a, b) => new Date(b.dataConsulta).getTime() - new Date(a.dataConsulta).getTime()
-  );
+  // Agrupa eventos por dia
+  const eventosPorDia: Record<string, EventoDia[]> = {};
+
+  prontuario.triagens.forEach(t => {
+    // Triagem não tem data própria, usa a data da consulta vinculada
+    const consulta = prontuario.consultas.find(c => c.id === t.prontuarioId) ??
+      prontuario.consultas[0];
+    const chave = consulta ? dataChave(consulta.dataConsulta) : 'Sem data';
+    if (!eventosPorDia[chave]) eventosPorDia[chave] = [];
+    eventosPorDia[chave].push({ tipo: 'triagem', data: consulta?.dataConsulta ?? '', item: t });
+  });
+
+  prontuario.consultas.forEach(c => {
+    const chave = dataChave(c.dataConsulta);
+    if (!eventosPorDia[chave]) eventosPorDia[chave] = [];
+    eventosPorDia[chave].push({ tipo: 'consulta', data: c.dataConsulta, item: c });
+  });
+
+  // Ordena dias do mais recente ao mais antigo
+  const diasOrdenados = Object.keys(eventosPorDia).sort((a, b) => {
+    const [da, ma, ya] = a.split('/').map(Number);
+    const [db, mb, yb] = b.split('/').map(Number);
+    return new Date(yb, mb - 1, db).getTime() - new Date(ya, ma - 1, da).getTime();
+  });
 
   return (
     <Layout>
@@ -84,7 +123,7 @@ export default function ProntuarioPage() {
               <Typography variant="h5" sx={{ color: 'white', fontWeight: 'bold' }}>
                 {nomePaciente || 'Paciente'}
               </Typography>
-              <Box sx={{ display: 'flex', gap: 2, mt: 0.5 }}>
+              <Box sx={{ display: 'flex', gap: 2, mt: 0.5, flexWrap: 'wrap' }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                   <EventNoteIcon sx={{ color: 'rgba(255,255,255,0.7)', fontSize: 16 }} />
                   <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.7)' }}>
@@ -103,171 +142,197 @@ export default function ProntuarioPage() {
                     {prontuario.receitas.length} receita(s)
                   </Typography>
                 </Box>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                  <FolderSharedIcon sx={{ color: 'rgba(255,255,255,0.7)', fontSize: 16 }} />
+                  <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.7)' }}>
+                    {diasOrdenados.length} dia(s) de atendimento
+                  </Typography>
+                </Box>
               </Box>
             </Box>
           </Box>
         </CardContent>
       </Card>
 
-      {/* Triagens — cards compactos */}
-      {prontuario.triagens.length > 0 && (
-        <Card sx={{ mb: 3, borderRadius: 2 }}>
-          <CardContent sx={{ p: 2.5 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-              <MonitorHeartIcon color="error" fontSize="small" />
-              <Typography variant="h6" sx={{ fontWeight: 'bold' }}>Triagens</Typography>
-              <Chip label={prontuario.triagens.length} size="small" color="error" />
-            </Box>
-            <Grid container spacing={2}>
-              {prontuario.triagens.map((t) => (
-                <Grid item xs={12} sm={6} md={4} key={t.id}>
-                  <Paper variant="outlined" sx={{ p: 2, borderRadius: 2, bgcolor: timelineBg, borderColor: timelineBorder }}>
-                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
-                      Por: <strong>{t.nomeEnfermeiro || '—'}</strong>
-                    </Typography>
-                    <Box sx={{ display: 'flex', gap: 2 }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                        <FavoriteIcon sx={{ fontSize: 14, color: 'error.main' }} />
-                        <Typography variant="body2" sx={{ fontWeight: 500 }}>{t.pressaoArterial}</Typography>
-                      </Box>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                        <ThermostatIcon sx={{ fontSize: 14, color: 'warning.main' }} />
-                        <Typography variant="body2" sx={{ fontWeight: 500 }}>{t.temperatura}°C</Typography>
-                      </Box>
-                    </Box>
-                    {t.observacoes && (
-                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1, fontStyle: 'italic' }}>
-                        "{t.observacoes}"
-                      </Typography>
-                    )}
-                  </Paper>
-                </Grid>
-              ))}
-            </Grid>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Timeline de consultas */}
+      {/* Timeline agrupada por dia */}
       <Card sx={{ borderRadius: 2 }}>
         <CardContent sx={{ p: 2.5 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 3 }}>
             <EventNoteIcon color="primary" fontSize="small" />
-            <Typography variant="h6" sx={{ fontWeight: 'bold' }}>Histórico de Consultas</Typography>
-            <Chip label={prontuario.consultas.length} size="small" color="primary" />
+            <Typography variant="h6" sx={{ fontWeight: 'bold' }}>Histórico de Atendimentos</Typography>
+            <Chip label={diasOrdenados.length + ' dia(s)'} size="small" color="primary" />
           </Box>
 
-          {consultasOrdenadas.length === 0 ? (
-            <Typography color="text.secondary">Nenhuma consulta registrada</Typography>
+          {diasOrdenados.length === 0 ? (
+            <Typography color="text.secondary">Nenhum atendimento registrado</Typography>
           ) : (
             <Box sx={{ position: 'relative' }}>
-              {/* Linha vertical da timeline */}
+              {/* Linha vertical */}
               <Box sx={{
-                position: 'absolute', left: 19, top: 0, bottom: 0,
+                position: 'absolute', left: 19, top: 24, bottom: 0,
                 width: 2, bgcolor: isDark ? 'grey.700' : 'grey.200', zIndex: 0
               }} />
 
-              {consultasOrdenadas.map((c, idx) => {
-                const receitas = receitasDaConsulta(c.id);
-                const cor = statusCores[c.status] ?? '#1976d2';
-                const dataFormatada = new Date(c.dataConsulta).toLocaleDateString('pt-BR');
-                const horaFormatada = new Date(c.dataConsulta).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-
+              {diasOrdenados.map((dia, diaIdx) => {
+                const eventos = eventosPorDia[dia];
                 return (
-                  <Box key={c.id} sx={{ display: 'flex', gap: 2, mb: idx < consultasOrdenadas.length - 1 ? 3 : 0, position: 'relative', zIndex: 1 }}>
-                    {/* Bolinha da timeline */}
-                    <Box sx={{ flexShrink: 0, mt: 1.5 }}>
+                  <Box key={dia} sx={{ mb: diaIdx < diasOrdenados.length - 1 ? 4 : 0, position: 'relative', zIndex: 1 }}>
+                    {/* Bolinha do dia */}
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
                       <Box sx={{
-                        width: 40, height: 40,
-                        borderRadius: '50%',
-                        bgcolor: cor,
+                        width: 40, height: 40, borderRadius: '50%',
+                        bgcolor: 'primary.main', flexShrink: 0,
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                         border: `3px solid ${isDark ? '#1e1e1e' : 'white'}`,
-                        boxShadow: `0 0 0 2px ${cor}40`,
+                        boxShadow: '0 0 0 2px #1976d240',
+                        zIndex: 2,
                       }}>
                         <EventNoteIcon sx={{ color: 'white', fontSize: 18 }} />
                       </Box>
+                      <Box sx={{ flex: 1, px: 2, py: 0.75, bgcolor: diaBg, borderRadius: 2, border: `1px solid ${timelineBorder}` }}>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 700, color: 'primary.main' }}>
+                          {dia}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {eventos.length} evento(s) — {eventos.filter(e => e.tipo === 'triagem').length} triagem(ns) · {eventos.filter(e => e.tipo === 'consulta').length} consulta(s)
+                        </Typography>
+                      </Box>
                     </Box>
 
-                    {/* Conteúdo */}
-                    <Box sx={{ flex: 1, minWidth: 0 }}>
-                      <Paper variant="outlined" sx={{
-                        borderRadius: 2,
-                        overflow: 'hidden',
-                        borderColor: timelineBorder,
-                        borderLeft: `4px solid ${cor}`,
-                      }}>
-                        {/* Header da consulta */}
-                        <Box sx={{ p: 2, bgcolor: timelineBg, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1 }}>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                            <Avatar sx={{ width: 32, height: 32, bgcolor: '#1565c0', fontSize: 12, fontWeight: 'bold' }}>
-                              {iniciais(c.nomeMedico)}
-                            </Avatar>
-                            <Box>
-                              <Typography variant="body2" sx={{ fontWeight: 600 }}>{c.nomeMedico}</Typography>
-                              <Typography variant="caption" color="text.secondary">{dataFormatada} às {horaFormatada}</Typography>
-                            </Box>
-                          </Box>
-                          <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
-                            <Chip
-                              label={statusLabels[c.status] ?? c.status}
-                              size="small"
-                              sx={{ bgcolor: cor, color: 'white', fontWeight: 600, fontSize: 11 }}
-                            />
-                            {c.anotacoes && <Chip icon={<EditNoteIcon />} label="Anotações" size="small" color="info" variant="outlined" />}
-                            {receitas.length > 0 && <Chip icon={<MedicationIcon />} label={`${receitas.length} receita(s)`} size="small" color="success" variant="outlined" />}
-                          </Box>
-                        </Box>
+                    {/* Eventos do dia */}
+                    <Box sx={{ pl: 7, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                      {eventos
+                        .sort((a, b) => {
+                          const ordem = { triagem: 0, consulta: 1 };
+                          return ordem[a.tipo] - ordem[b.tipo];
+                        })
+                        .map((evento, evtIdx) => {
+                          if (evento.tipo === 'triagem') {
+                            const t = evento.item as Triagem;
+                            return (
+                              <Paper key={`t-${evtIdx}`} variant="outlined" sx={{
+                                borderRadius: 2, overflow: 'hidden',
+                                borderColor: '#e65100',
+                                borderLeft: '4px solid #e65100',
+                              }}>
+                                <Box sx={{ p: 1.5, bgcolor: isDark ? '#2d1a00' : '#fff3e0', display: 'flex', alignItems: 'center', gap: 1 }}>
+                                  <MedicalServicesIcon sx={{ fontSize: 16, color: '#e65100' }} />
+                                  <Typography variant="caption" sx={{ fontWeight: 700, color: '#e65100', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                                    Triagem
+                                  </Typography>
+                                  <Typography variant="caption" color="text.secondary" sx={{ ml: 'auto' }}>
+                                    Por: <strong>{t.nomeEnfermeiro || '—'}</strong>
+                                  </Typography>
+                                </Box>
+                                <Box sx={{ p: 2 }}>
+                                  <Box sx={{ display: 'flex', gap: 3, mb: t.observacoes ? 1.5 : 0 }}>
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                                      <FavoriteIcon sx={{ fontSize: 16, color: 'error.main' }} />
+                                      <Box>
+                                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', lineHeight: 1 }}>Pressão</Typography>
+                                        <Typography variant="body2" sx={{ fontWeight: 600 }}>{t.pressaoArterial}</Typography>
+                                      </Box>
+                                    </Box>
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                                      <ThermostatIcon sx={{ fontSize: 16, color: 'warning.main' }} />
+                                      <Box>
+                                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', lineHeight: 1 }}>Temperatura</Typography>
+                                        <Typography variant="body2" sx={{ fontWeight: 600 }}>{t.temperatura}°C</Typography>
+                                      </Box>
+                                    </Box>
+                                  </Box>
+                                  {t.observacoes && (
+                                    <Box sx={{ mt: 1.5, p: 1.5, bgcolor: paperBg, borderRadius: 1, borderLeft: '3px solid #e65100' }}>
+                                      <Typography variant="caption" color="text.secondary" sx={{ fontStyle: 'italic' }}>
+                                        "{t.observacoes}"
+                                      </Typography>
+                                    </Box>
+                                  )}
+                                </Box>
+                              </Paper>
+                            );
+                          }
 
-                        {/* Anotações */}
-                        {c.anotacoes && (
-                          <Box sx={{ p: 2, borderTop: `1px solid ${timelineBorder}` }}>
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 1 }}>
-                              <EditNoteIcon fontSize="small" color="info" />
-                              <Typography variant="caption" sx={{ fontWeight: 600, color: 'info.main', textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                                Anotações Clínicas
-                              </Typography>
-                            </Box>
-                            <Paper variant="outlined" sx={{ p: 1.5, bgcolor: paperBg, borderRadius: 1 }}>
-                              <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>{c.anotacoes}</Typography>
-                            </Paper>
-                          </Box>
-                        )}
+                          const c = evento.item as Consulta;
+                          const receitas = receitasDaConsulta(c.id);
+                          const cor = statusCores[c.status] ?? '#1976d2';
 
-                        {/* Receitas */}
-                        {receitas.length > 0 && (
-                          <Box sx={{ p: 2, borderTop: `1px solid ${timelineBorder}` }}>
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 1.5 }}>
-                              <MedicationIcon fontSize="small" color="success" />
-                              <Typography variant="caption" sx={{ fontWeight: 600, color: 'success.main', textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                                Receitas Prescritas
-                              </Typography>
-                            </Box>
-                            {receitas.map((receita) => (
-                              <Box key={receita.id} sx={{ mb: 1 }}>
-                                <Grid container spacing={1}>
-                                  {receita.medicamentos.map((m, i) => (
-                                    <Grid item xs={12} sm={6} md={4} key={i}>
-                                      <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 1, bgcolor: paperBg }}>
-                                        <Typography variant="body2" sx={{ fontWeight: 600 }}>{m.nome}</Typography>
-                                        <Typography variant="caption" color="text.secondary">{m.dosagem} · {m.posologia}</Typography>
-                                      </Paper>
+                          return (
+                            <Paper key={`c-${evtIdx}`} variant="outlined" sx={{
+                              borderRadius: 2, overflow: 'hidden',
+                              borderColor: timelineBorder,
+                              borderLeft: `4px solid ${cor}`,
+                            }}>
+                              {/* Header da consulta */}
+                              <Box sx={{ p: 2, bgcolor: timelineBg, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1 }}>
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                                  <Avatar sx={{ width: 32, height: 32, bgcolor: '#1565c0', fontSize: 12, fontWeight: 'bold' }}>
+                                    {iniciais(c.nomeMedico)}
+                                  </Avatar>
+                                  <Box>
+                                    <Typography variant="body2" sx={{ fontWeight: 600 }}>{c.nomeMedico}</Typography>
+                                    <Typography variant="caption" color="text.secondary">
+                                      Consulta às {horaFormatada(c.dataConsulta)}
+                                    </Typography>
+                                  </Box>
+                                </Box>
+                                <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', flexWrap: 'wrap' }}>
+                                  <Chip label={statusLabels[c.status] ?? c.status} size="small"
+                                    sx={{ bgcolor: cor, color: 'white', fontWeight: 600, fontSize: 11 }} />
+                                  {c.anotacoes && <Chip icon={<EditNoteIcon />} label="Anotações" size="small" color="info" variant="outlined" />}
+                                  {receitas.length > 0 && <Chip icon={<MedicationIcon />} label={`${receitas.length} receita(s)`} size="small" color="success" variant="outlined" />}
+                                </Box>
+                              </Box>
+
+                              {/* Anotações */}
+                              {c.anotacoes && (
+                                <Box sx={{ p: 2, borderTop: `1px solid ${timelineBorder}` }}>
+                                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 1 }}>
+                                    <EditNoteIcon fontSize="small" color="info" />
+                                    <Typography variant="caption" sx={{ fontWeight: 600, color: 'info.main', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                                      Anotações Clínicas
+                                    </Typography>
+                                  </Box>
+                                  <Paper variant="outlined" sx={{ p: 1.5, bgcolor: paperBg, borderRadius: 1 }}>
+                                    <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>{c.anotacoes}</Typography>
+                                  </Paper>
+                                </Box>
+                              )}
+
+                              {/* Receitas */}
+                              {receitas.length > 0 && (
+                                <Box sx={{ p: 2, borderTop: `1px solid ${timelineBorder}` }}>
+                                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 1.5 }}>
+                                    <MedicationIcon fontSize="small" color="success" />
+                                    <Typography variant="caption" sx={{ fontWeight: 600, color: 'success.main', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                                      Receitas Prescritas
+                                    </Typography>
+                                  </Box>
+                                  {receitas.map((receita) => (
+                                    <Grid container spacing={1} key={receita.id} sx={{ mb: 1 }}>
+                                      {receita.medicamentos.map((m, i) => (
+                                        <Grid item xs={12} sm={6} md={4} key={i}>
+                                          <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 1, bgcolor: paperBg }}>
+                                            <Typography variant="body2" sx={{ fontWeight: 600 }}>{m.nome}</Typography>
+                                            <Typography variant="caption" color="text.secondary">{m.dosagem} · {m.posologia}</Typography>
+                                          </Paper>
+                                        </Grid>
+                                      ))}
                                     </Grid>
                                   ))}
-                                </Grid>
-                              </Box>
-                            ))}
-                          </Box>
-                        )}
+                                </Box>
+                              )}
 
-                        {!c.anotacoes && receitas.length === 0 && (
-                          <Box sx={{ p: 2, borderTop: `1px solid ${timelineBorder}` }}>
-                            <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic' }}>
-                              Nenhuma anotação ou receita registrada nesta consulta.
-                            </Typography>
-                          </Box>
-                        )}
-                      </Paper>
+                              {!c.anotacoes && receitas.length === 0 && (
+                                <Box sx={{ p: 2, borderTop: `1px solid ${timelineBorder}` }}>
+                                  <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic' }}>
+                                    Nenhuma anotação ou receita registrada.
+                                  </Typography>
+                                </Box>
+                              )}
+                            </Paper>
+                          );
+                        })}
                     </Box>
                   </Box>
                 );

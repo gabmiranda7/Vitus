@@ -26,35 +26,46 @@ namespace Vitus.Infrastructure.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
 
                     b.Property<string>("Anotacoes")
                         .HasMaxLength(2000)
-                        .HasColumnType("character varying(2000)");
+                        .HasColumnType("character varying(2000)")
+                        .HasColumnName("anotacoes");
 
                     b.Property<DateTime>("DataConsulta")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("data_consulta");
 
                     b.Property<Guid>("MedicoId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("medico_id");
 
                     b.Property<Guid>("PacienteId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("paciente_id");
 
                     b.Property<Guid>("ProntuarioId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("prontuario_id");
 
                     b.Property<string>("Status")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasColumnType("text")
+                        .HasColumnName("status");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_consultas");
 
-                    b.HasIndex("MedicoId");
+                    b.HasIndex("MedicoId")
+                        .HasDatabaseName("ix_consultas_medico_id");
 
-                    b.HasIndex("PacienteId");
+                    b.HasIndex("PacienteId")
+                        .HasDatabaseName("ix_consultas_paciente_id");
 
-                    b.HasIndex("ProntuarioId");
+                    b.HasIndex("ProntuarioId")
+                        .HasDatabaseName("ix_consultas_prontuario_id");
 
                     b.ToTable("consultas", (string)null);
                 });
@@ -63,27 +74,33 @@ namespace Vitus.Infrastructure.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
 
                     b.Property<string>("CRM")
                         .IsRequired()
                         .HasMaxLength(20)
-                        .HasColumnType("character varying(20)");
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("crm");
 
                     b.Property<string>("Especialidade")
                         .IsRequired()
                         .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("especialidade");
 
                     b.Property<string>("Nome")
                         .IsRequired()
                         .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("nome");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_medicos");
 
                     b.HasIndex("CRM")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasDatabaseName("ix_medicos_crm");
 
                     b.ToTable("medicos", (string)null);
                 });
@@ -92,14 +109,17 @@ namespace Vitus.Infrastructure.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
 
                     b.Property<string>("Nome")
                         .IsRequired()
                         .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("nome");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_pacientes");
 
                     b.ToTable("pacientes", (string)null);
                 });
@@ -108,15 +128,19 @@ namespace Vitus.Infrastructure.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
 
                     b.Property<Guid>("PacienteId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("paciente_id");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_prontuarios");
 
                     b.HasIndex("PacienteId")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasDatabaseName("ix_prontuarios_paciente_id");
 
                     b.ToTable("prontuarios", (string)null);
                 });
@@ -125,19 +149,25 @@ namespace Vitus.Infrastructure.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
 
                     b.Property<Guid>("ConsultaId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("consulta_id");
 
                     b.Property<Guid?>("ProntuarioId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("prontuario_id");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_receitas");
 
-                    b.HasIndex("ConsultaId");
+                    b.HasIndex("ConsultaId")
+                        .HasDatabaseName("ix_receitas_consulta_id");
 
-                    b.HasIndex("ProntuarioId");
+                    b.HasIndex("ProntuarioId")
+                        .HasDatabaseName("ix_receitas_prontuario_id");
 
                     b.ToTable("receitas", (string)null);
                 });
@@ -146,32 +176,40 @@ namespace Vitus.Infrastructure.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
 
                     b.Property<string>("NomeEnfermeiro")
                         .IsRequired()
                         .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("nome_enfermeiro");
 
                     b.Property<string>("Observacoes")
                         .IsRequired()
                         .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("observacoes");
 
                     b.Property<string>("PressaoArterial")
                         .IsRequired()
                         .HasMaxLength(20)
-                        .HasColumnType("character varying(20)");
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("pressao_arterial");
 
                     b.Property<Guid>("ProntuarioId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("prontuario_id");
 
                     b.Property<decimal>("Temperatura")
-                        .HasColumnType("numeric");
+                        .HasColumnType("numeric")
+                        .HasColumnName("temperatura");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_triagens");
 
-                    b.HasIndex("ProntuarioId");
+                    b.HasIndex("ProntuarioId")
+                        .HasDatabaseName("ix_triagens_prontuario_id");
 
                     b.ToTable("triagens", (string)null);
                 });
@@ -180,30 +218,37 @@ namespace Vitus.Infrastructure.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
 
                     b.Property<string>("Email")
                         .IsRequired()
                         .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("email");
 
                     b.Property<string>("Nome")
                         .IsRequired()
                         .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("nome");
 
                     b.Property<string>("Perfil")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasColumnType("text")
+                        .HasColumnName("perfil");
 
                     b.Property<string>("SenhaHash")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasColumnType("text")
+                        .HasColumnName("senha_hash");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_usuarios");
 
                     b.HasIndex("Email")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasDatabaseName("ix_usuarios_email");
 
                     b.ToTable("usuarios", (string)null);
                 });
@@ -214,19 +259,22 @@ namespace Vitus.Infrastructure.Migrations
                         .WithMany()
                         .HasForeignKey("MedicoId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_consultas_medicos_medico_id");
 
                     b.HasOne("Vitus.Domain.Entities.Paciente", null)
                         .WithMany()
                         .HasForeignKey("PacienteId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_consultas_pacientes_paciente_id");
 
                     b.HasOne("Vitus.Domain.Entities.Prontuario", null)
                         .WithMany("Consultas")
                         .HasForeignKey("ProntuarioId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_consultas_prontuarios_prontuario_id");
                 });
 
             modelBuilder.Entity("Vitus.Domain.Entities.Prontuario", b =>
@@ -235,7 +283,8 @@ namespace Vitus.Infrastructure.Migrations
                         .WithOne("Prontuario")
                         .HasForeignKey("Vitus.Domain.Entities.Prontuario", "PacienteId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_prontuarios_pacientes_paciente_id");
                 });
 
             modelBuilder.Entity("Vitus.Domain.Entities.Receita", b =>
@@ -244,44 +293,54 @@ namespace Vitus.Infrastructure.Migrations
                         .WithMany()
                         .HasForeignKey("ConsultaId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_receitas_consultas_consulta_id");
 
                     b.HasOne("Vitus.Domain.Entities.Prontuario", null)
                         .WithMany("Receitas")
-                        .HasForeignKey("ProntuarioId");
+                        .HasForeignKey("ProntuarioId")
+                        .HasConstraintName("fk_receitas_prontuarios_prontuario_id");
 
                     b.OwnsMany("Vitus.Domain.ValueObjects.Medicamento", "Medicamentos", b1 =>
                         {
                             b1.Property<Guid>("Id")
                                 .ValueGeneratedOnAdd()
-                                .HasColumnType("uuid");
+                                .HasColumnType("uuid")
+                                .HasColumnName("id");
 
                             b1.Property<string>("Dosagem")
                                 .IsRequired()
                                 .HasMaxLength(50)
-                                .HasColumnType("character varying(50)");
+                                .HasColumnType("character varying(50)")
+                                .HasColumnName("dosagem");
 
                             b1.Property<string>("Nome")
                                 .IsRequired()
                                 .HasMaxLength(200)
-                                .HasColumnType("character varying(200)");
+                                .HasColumnType("character varying(200)")
+                                .HasColumnName("nome");
 
                             b1.Property<string>("Posologia")
                                 .IsRequired()
                                 .HasMaxLength(300)
-                                .HasColumnType("character varying(300)");
+                                .HasColumnType("character varying(300)")
+                                .HasColumnName("posologia");
 
                             b1.Property<Guid>("ReceitaId")
-                                .HasColumnType("uuid");
+                                .HasColumnType("uuid")
+                                .HasColumnName("receita_id");
 
-                            b1.HasKey("Id");
+                            b1.HasKey("Id")
+                                .HasName("pk_medicamentos");
 
-                            b1.HasIndex("ReceitaId");
+                            b1.HasIndex("ReceitaId")
+                                .HasDatabaseName("ix_medicamentos_receita_id");
 
                             b1.ToTable("medicamentos", (string)null);
 
                             b1.WithOwner()
-                                .HasForeignKey("ReceitaId");
+                                .HasForeignKey("ReceitaId")
+                                .HasConstraintName("fk_medicamentos_receitas_receita_id");
                         });
 
                     b.Navigation("Medicamentos");
@@ -293,7 +352,8 @@ namespace Vitus.Infrastructure.Migrations
                         .WithMany("Triagens")
                         .HasForeignKey("ProntuarioId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_triagens_prontuarios_prontuario_id");
 
                     b.Navigation("Prontuario");
                 });

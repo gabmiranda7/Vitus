@@ -4,7 +4,7 @@ import {
   Box, Button, Chip, Dialog, DialogActions, DialogContent, DialogTitle,
   FormControl, InputLabel, MenuItem, Paper, Select, Table, TableBody,
   TableCell, TableContainer, TableHead, TableRow, TextField, Typography,
-  Alert, Tooltip, Tabs, Tab, Avatar
+  Alert, Tooltip, Tabs, Tab, Avatar, Divider, InputAdornment, Grid
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import EditNoteIcon from '@mui/icons-material/EditNote';
@@ -12,6 +12,9 @@ import FolderSharedIcon from '@mui/icons-material/FolderShared';
 import EventNoteIcon from '@mui/icons-material/EventNote';
 import MedicalServicesIcon from '@mui/icons-material/MedicalServices';
 import PersonIcon from '@mui/icons-material/Person';
+import FavoriteIcon from '@mui/icons-material/Favorite';
+import ThermostatIcon from '@mui/icons-material/Thermostat';
+import MonitorHeartIcon from '@mui/icons-material/MonitorHeart';
 import Layout from '../../components/layout/Layout';
 import api from '../../services/api';
 import { Consulta, Medico, Paciente } from '../../types';
@@ -276,7 +279,12 @@ export default function ConsultasPage() {
 
       {/* Modal Nova Consulta */}
       <Dialog open={modalNova} onClose={fecharNova} fullWidth maxWidth="sm">
-        <DialogTitle sx={{ bgcolor: 'primary.main', color: 'white' }}>Nova Consulta</DialogTitle>
+        <DialogTitle sx={{ bgcolor: 'primary.main', color: 'white', pb: 2 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <EventNoteIcon />
+            Nova Consulta
+          </Box>
+        </DialogTitle>
         <DialogContent sx={{ pt: 3 }}>
           {erro && <Alert severity="error" sx={{ mb: 2 }}>{erro}</Alert>}
           <FormControl fullWidth sx={{ mt: 1, mb: 2 }}>
@@ -297,55 +305,165 @@ export default function ConsultasPage() {
         </DialogContent>
         <DialogActions sx={{ p: 2 }}>
           <Button onClick={fecharNova} variant="outlined">Cancelar</Button>
-          <Button onClick={handleSalvarConsulta} variant="contained">Salvar</Button>
+          <Button onClick={handleSalvarConsulta} variant="contained">Agendar</Button>
         </DialogActions>
       </Dialog>
 
       {/* Modal Triagem */}
       <Dialog open={modalTriagem} onClose={fecharTriagem} fullWidth maxWidth="sm">
-        <DialogTitle sx={{ bgcolor: 'warning.main', color: 'white' }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <MedicalServicesIcon />
-            Triagem — {consultaSelecionada?.nomePaciente}
+        <Box sx={{ background: 'linear-gradient(135deg, #e65100 0%, #f57c00 100%)', p: 3 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Avatar sx={{ bgcolor: 'rgba(255,255,255,0.2)', width: 52, height: 52, border: '2px solid rgba(255,255,255,0.4)' }}>
+              <MedicalServicesIcon sx={{ color: 'white', fontSize: 28 }} />
+            </Avatar>
+            <Box>
+              <Typography variant="h6" sx={{ color: 'white', fontWeight: 'bold', lineHeight: 1.2 }}>
+                Triagem
+              </Typography>
+              <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.8)' }}>
+                {consultaSelecionada?.nomePaciente}
+              </Typography>
+            </Box>
           </Box>
-        </DialogTitle>
+        </Box>
+
         <DialogContent sx={{ pt: 3 }}>
           {erro && <Alert severity="error" sx={{ mb: 2 }}>{erro}</Alert>}
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            Preencha os dados da triagem. O status será atualizado automaticamente.
+
+          <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 2, textTransform: 'uppercase', letterSpacing: 0.5, fontSize: 11 }}>
+            Sinais Vitais
           </Typography>
-          <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
-            <TextField label="Pressão Arterial" fullWidth value={pressaoArterial}
-              onChange={(e) => setPressaoArterial(e.target.value)} placeholder="ex: 120/80" />
-            <TextField label="Temperatura (°C)" type="number" fullWidth value={temperatura}
-              onChange={(e) => setTemperatura(e.target.value)} placeholder="ex: 36.5" />
-          </Box>
-          <TextField label="Observações" fullWidth multiline rows={3} value={observacoes}
-            onChange={(e) => setObservacoes(e.target.value)} />
+
+          <Grid container spacing={2} sx={{ mb: 2 }}>
+            <Grid item xs={6}>
+              <TextField
+                label="Pressão Arterial"
+                fullWidth
+                value={pressaoArterial}
+                onChange={(e) => setPressaoArterial(e.target.value)}
+                placeholder="ex: 120/80"
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <FavoriteIcon sx={{ fontSize: 18, color: 'error.main' }} />
+                    </InputAdornment>
+                  ),
+                }}
+              />
+            </Grid>
+            <Grid item xs={6}>
+              <TextField
+                label="Temperatura (°C)"
+                type="number"
+                fullWidth
+                value={temperatura}
+                onChange={(e) => setTemperatura(e.target.value)}
+                placeholder="ex: 36.5"
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <ThermostatIcon sx={{ fontSize: 18, color: 'warning.main' }} />
+                    </InputAdornment>
+                  ),
+                }}
+              />
+            </Grid>
+          </Grid>
+
+          <Divider sx={{ mb: 2 }} />
+
+          <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1.5, textTransform: 'uppercase', letterSpacing: 0.5, fontSize: 11 }}>
+            Observações
+          </Typography>
+
+          <TextField
+            label="Queixa principal / observações"
+            fullWidth
+            multiline
+            rows={4}
+            value={observacoes}
+            onChange={(e) => setObservacoes(e.target.value)}
+            placeholder="Descreva a queixa principal do paciente, sintomas relatados, etc."
+          />
         </DialogContent>
-        <DialogActions sx={{ p: 2 }}>
-          <Button onClick={fecharTriagem} variant="outlined">Cancelar</Button>
-          <Button onClick={handleSalvarTriagem} variant="contained" color="warning">Registrar Triagem</Button>
+
+        <DialogActions sx={{ p: 2, gap: 1 }}>
+          <Button onClick={fecharTriagem} variant="outlined" fullWidth>Cancelar</Button>
+          <Button onClick={handleSalvarTriagem} variant="contained" color="warning" fullWidth
+            startIcon={<MedicalServicesIcon />}>
+            Registrar Triagem
+          </Button>
         </DialogActions>
       </Dialog>
 
       {/* Modal Anotações */}
-      <Dialog open={modalAnotacao} onClose={fecharAnotacao} fullWidth maxWidth="sm">
-        <DialogTitle sx={{ bgcolor: 'info.main', color: 'white' }}>
-          Anotações — {consultaSelecionada?.nomePaciente}
-        </DialogTitle>
+      <Dialog open={modalAnotacao} onClose={fecharAnotacao} fullWidth maxWidth="md">
+        <Box sx={{ background: 'linear-gradient(135deg, #0277bd 0%, #0288d1 100%)', p: 3 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Avatar sx={{ bgcolor: 'rgba(255,255,255,0.2)', width: 52, height: 52, border: '2px solid rgba(255,255,255,0.4)' }}>
+              <EditNoteIcon sx={{ color: 'white', fontSize: 28 }} />
+            </Avatar>
+            <Box>
+              <Typography variant="h6" sx={{ color: 'white', fontWeight: 'bold', lineHeight: 1.2 }}>
+                Anotações Clínicas
+              </Typography>
+              <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.8)' }}>
+                {consultaSelecionada?.nomePaciente} · {consultaSelecionada && new Date(consultaSelecionada.dataConsulta).toLocaleDateString('pt-BR')}
+              </Typography>
+            </Box>
+            <Box sx={{ ml: 'auto', textAlign: 'right' }}>
+              <Chip
+                label={`👨‍⚕️ ${consultaSelecionada?.nomeMedico}`}
+                sx={{ bgcolor: 'rgba(255,255,255,0.15)', color: 'white', fontWeight: 500 }}
+                size="small"
+              />
+            </Box>
+          </Box>
+        </Box>
+
         <DialogContent sx={{ pt: 3 }}>
           {erro && <Alert severity="error" sx={{ mb: 2 }}>{erro}</Alert>}
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            Registre as observações clínicas. Ficará disponível no prontuário do paciente.
+
+          <Alert severity="info" sx={{ mb: 2 }} icon={<MonitorHeartIcon />}>
+            As anotações ficam vinculadas ao prontuário do paciente e ficam visíveis para médicos e enfermeiros.
+          </Alert>
+
+          <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1.5, textTransform: 'uppercase', letterSpacing: 0.5, fontSize: 11 }}>
+            Registro Clínico
           </Typography>
-          <TextField label="Anotações clínicas" fullWidth multiline rows={6}
-            value={anotacoes} onChange={(e) => setAnotacoes(e.target.value)}
-            placeholder="Ex: Paciente relata dor lombar há 3 dias..." />
+
+          <TextField
+            label="Anotações da consulta"
+            fullWidth
+            multiline
+            rows={10}
+            value={anotacoes}
+            onChange={(e) => setAnotacoes(e.target.value)}
+            placeholder={`Ex:\n• Queixa principal: dor lombar há 3 dias\n• Exame físico: PA 130/85, FC 78bpm\n• Hipótese diagnóstica: lombalgia mecânica\n• Conduta: analgésico + repouso relativo\n• Retorno em 7 dias se não houver melhora`}
+            sx={{ '& .MuiInputBase-root': { fontFamily: 'monospace', fontSize: 14, lineHeight: 1.7 } }}
+          />
+
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 1 }}>
+            <Typography variant="caption" color="text.secondary">
+              {anotacoes.length} caracteres
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              Ctrl+Enter para salvar
+            </Typography>
+          </Box>
         </DialogContent>
-        <DialogActions sx={{ p: 2 }}>
+
+        <DialogActions sx={{ p: 2, gap: 1 }}>
           <Button onClick={fecharAnotacao} variant="outlined">Cancelar</Button>
-          <Button onClick={handleSalvarAnotacao} variant="contained" color="info">Salvar Anotação</Button>
+          <Button
+            onClick={handleSalvarAnotacao}
+            variant="contained"
+            color="info"
+            startIcon={<EditNoteIcon />}
+            onKeyDown={(e) => e.ctrlKey && e.key === 'Enter' && handleSalvarAnotacao()}
+          >
+            Salvar Anotação
+          </Button>
         </DialogActions>
       </Dialog>
     </Layout>
