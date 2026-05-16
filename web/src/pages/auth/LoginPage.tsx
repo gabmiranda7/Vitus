@@ -28,9 +28,9 @@ export default function LoginPage() {
       const response = await api.post('/api/auth/login', { email, senha });
       login(response.data);
       const perfil = response.data.perfil;
-      if (perfil === 'Recepcionista') navigate('/pacientes');
-      else if (perfil === 'Enfermeiro') navigate('/consultas');
-      else if (perfil === 'Medico') navigate('/consultas');
+      if (perfil === 'Recepcionista') navigate('/dashboard');
+      else if (perfil === 'Enfermeiro') navigate('/dashboard');
+      else if (perfil === 'Medico') navigate('/dashboard');
       else navigate('/login');
     } catch (err: unknown) {
       const e = err as { response?: { data?: { messages?: string[] } } };

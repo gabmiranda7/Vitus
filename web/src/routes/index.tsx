@@ -3,13 +3,14 @@ import { useAuth } from '../contexts/AuthContext';
 import LoginPage from '../pages/auth/LoginPage';
 import CadastroPage from '../pages/auth/CadastroPage';
 import ConsultasPage from '../pages/consultas/ConsultasPage';
+import DashboardPage from '../pages/dashboard/DashboardPage';
 import MedicosPage from '../pages/medicos/MedicosPage';
 import PacientesPage from '../pages/pacientes/PacientesPage';
 import ProntuarioPage from '../pages/prontuario/ProntuarioPage';
 import ReceitasPage from '../pages/receitas/ReceitasPage';
 import TriagemPage from '../pages/triagem/TriagemPage';
 
-function PrivateRoute({ children, perfis }: { children: JSX.Element; perfis: string[] }) {
+function PrivateRoute({ children, perfis }: { children: React.ReactElement; perfis: string[] }) {
   const { isAuthenticated, usuario } = useAuth();
   if (!isAuthenticated) return <Navigate to="/login" />;
   if (!perfis.includes(usuario!.perfil)) return <Navigate to="/login" />;
@@ -26,6 +27,12 @@ export default function AppRoutes() {
         <Route path="/consultas" element={
           <PrivateRoute perfis={['Recepcionista', 'Enfermeiro', 'Medico']}>
             <ConsultasPage />
+          </PrivateRoute>
+        } />
+
+        <Route path="/dashboard" element={
+          <PrivateRoute perfis={['Recepcionista', 'Enfermeiro', 'Medico']}>
+            <DashboardPage />
           </PrivateRoute>
         } />
 

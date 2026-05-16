@@ -22,7 +22,18 @@ namespace Vitus.Application.UseCases.Pacientes.GetPacienteById
             return new PacienteResponseJson
             {
                 Id = paciente.Id,
-                Nome = paciente.Nome
+                Nome = paciente.Nome,
+                Cpf = paciente.Cpf,
+                CartaoSus = paciente.CartaoSus,
+                DataNascimento = paciente.DataNascimento,
+                Sexo = paciente.Sexo,
+                NomePai = paciente.NomePai,
+                NomeMae = paciente.NomeMae,
+                Endereco = paciente.Endereco,
+                Profissao = paciente.Profissao,
+                EstadoCivil = paciente.EstadoCivil,
+                InformacoesAdicionais = paciente.InformacoesAdicionais,
+                AceitaTermos = paciente.AceitaTermos
             };
         }
     }

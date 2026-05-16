@@ -19,7 +19,18 @@ namespace Vitus.Application.UseCases.Pacientes.GetAllPacientes
             return pacientes.Select(p => new PacienteResponseJson
             {
                 Id = p.Id,
-                Nome = p.Nome
+                Nome = p.Nome,
+                Cpf = p.Cpf,
+                CartaoSus = p.CartaoSus,
+                DataNascimento = p.DataNascimento,
+                Sexo = p.Sexo,
+                NomePai = p.NomePai,
+                NomeMae = p.NomeMae,
+                Endereco = p.Endereco,
+                Profissao = p.Profissao,
+                EstadoCivil = p.EstadoCivil,
+                InformacoesAdicionais = p.InformacoesAdicionais,
+                AceitaTermos = p.AceitaTermos
             }).ToList();
         }
     }

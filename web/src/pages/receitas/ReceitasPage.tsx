@@ -1,13 +1,14 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import {
-  Box, Button, Chip, Dialog, DialogActions, DialogContent, DialogTitle,
-  Divider, FormControl, IconButton, InputLabel, MenuItem, Paper, Select,
-  TextField, Typography, Alert, Tabs, Tab, Grid, Card, CardContent, Avatar
+  Box, Button, Chip, Dialog, DialogActions, DialogContent,
+  Divider, FormControl, IconButton, InputLabel, MenuItem, Select,
+  TextField, Typography, Alert, Tabs, Tab, Card, CardContent,
+  Avatar, InputAdornment, Paper
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import MedicationIcon from '@mui/icons-material/Medication';
-import PersonIcon from '@mui/icons-material/Person';
+import SearchIcon from '@mui/icons-material/Search';
 import Layout from '../../components/layout/Layout';
 import api from '../../services/api';
 import { Consulta, Medicamento } from '../../types';
@@ -25,6 +26,7 @@ export default function ReceitasPage() {
   const [consultasAtivas, setConsultasAtivas] = useState<Consulta[]>([]);
   const [historico, setHistorico] = useState<Consulta[]>([]);
   const [aba, setAba] = useState(0);
+  const [busca, setBusca] = useState('');
   const [modalAberto, setModalAberto] = useState(false);
   const [consultaId, setConsultaId] = useState('');
   const [medicamentos, setMedicamentos] = useState<Medicamento[]>([{ nome: '', dosagem: '', posologia: '' }]);
@@ -53,11 +55,27 @@ export default function ReceitasPage() {
   }
 
   function fechar() {
-    setModalAberto(false);
-    setConsultaId('');
-    setMedicamentos([{ nome: '', dosagem: '', posologia: '' }]);
-    setErro('');
+    setModalAberto(false); setConsultaId('');
+    setMedicamentos([{ nome: '', dosagem: '', posologia: '' }]); setErro('');
   }
+
+  const ativasFiltradas = useMemo(() => {
+    if (!busca.trim()) return consultasAtivas;
+    const q = busca.toLowerCase();
+    return consultasAtivas.filter(c =>
+      c.nomePaciente.toLowerCase().includes(q) || c.nomeMedico.toLowerCase().includes(q)
+    );
+  }, [consultasAtivas, busca]);
+
+  const historicoFiltrado = useMemo(() => {
+    if (!busca.trim()) return historico;
+    const q = busca.toLowerCase();
+    return historico.filter(c =>
+      c.nomePaciente.toLowerCase().includes(q) ||
+      c.nomeMedico.toLowerCase().includes(q) ||
+      new Date(c.dataConsulta).toLocaleDateString('pt-BR').includes(q)
+    );
+  }, [historico, busca]);
 
   return (
     <Layout>
@@ -74,24 +92,31 @@ export default function ReceitasPage() {
         )}
       </Box>
 
-      <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
-        <Tabs value={aba} onChange={(_, v) => setAba(v)}>
+      <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
+        <Tabs value={aba} onChange={(_, v) => { setAba(v); setBusca(''); }}>
           <Tab label={`Em Atendimento (${consultasAtivas.length})`} />
           <Tab label={`Histórico (${historico.length})`} />
         </Tabs>
       </Box>
 
-      {/* Aba Em Atendimento — cards */}
+      <TextField fullWidth
+        placeholder={aba === 0 ? 'Buscar por paciente ou médico...' : 'Buscar por paciente, médico ou data...'}
+        value={busca} onChange={(e) => setBusca(e.target.value)} sx={{ mb: 3 }}
+        slotProps={{ input: { startAdornment: <InputAdornment position="start"><SearchIcon color="action" /></InputAdornment> } }}
+      />
+
       {aba === 0 && (
-        consultasAtivas.length === 0 ? (
+        ativasFiltradas.length === 0 ? (
           <Box sx={{ textAlign: 'center', py: 8, color: 'text.secondary' }}>
             <MedicationIcon sx={{ fontSize: 64, opacity: 0.2, mb: 2 }} />
-            <Typography variant="h6" sx={{ opacity: 0.5 }}>Nenhuma consulta em atendimento</Typography>
+            <Typography variant="h6" sx={{ opacity: 0.5 }}>
+              {busca ? 'Nenhum resultado' : 'Nenhuma consulta em atendimento'}
+            </Typography>
           </Box>
         ) : (
-          <Grid container spacing={2}>
-            {consultasAtivas.map((c) => (
-              <Grid item xs={12} sm={6} md={4} key={c.id}>
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
+            {ativasFiltradas.map((c) => (
+              <Box key={c.id} sx={{ flex: '1 1 280px', maxWidth: { xs: '100%', sm: 'calc(50% - 8px)', md: 'calc(33.33% - 11px)' } }}>
                 <Card sx={{ borderRadius: 2, borderLeft: 4, borderColor: 'warning.main', '&:hover': { boxShadow: 4 }, transition: '0.2s' }}>
                   <CardContent sx={{ p: 2.5 }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1.5 }}>
@@ -105,26 +130,32 @@ export default function ReceitasPage() {
                         <Typography variant="caption" color="text.secondary">{c.nomeMedico}</Typography>
                       </Box>
                     </Box>
-                    <Chip label="Em Atendimento" color="warning" size="small" sx={{ fontWeight: 500 }} />
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <Chip label="Em Atendimento" color="warning" size="small" sx={{ fontWeight: 500 }} />
+                      <Typography variant="caption" color="text.secondary">
+                        {new Date(c.dataConsulta).toLocaleDateString('pt-BR')}
+                      </Typography>
+                    </Box>
                   </CardContent>
                 </Card>
-              </Grid>
+              </Box>
             ))}
-          </Grid>
+          </Box>
         )
       )}
 
-      {/* Aba Histórico — cards com medicamentos */}
       {aba === 1 && (
-        historico.length === 0 ? (
+        historicoFiltrado.length === 0 ? (
           <Box sx={{ textAlign: 'center', py: 8, color: 'text.secondary' }}>
             <MedicationIcon sx={{ fontSize: 64, opacity: 0.2, mb: 2 }} />
-            <Typography variant="h6" sx={{ opacity: 0.5 }}>Nenhuma consulta finalizada</Typography>
+            <Typography variant="h6" sx={{ opacity: 0.5 }}>
+              {busca ? 'Nenhum resultado' : 'Nenhuma consulta finalizada'}
+            </Typography>
           </Box>
         ) : (
-          <Grid container spacing={2}>
-            {historico.map((c) => (
-              <Grid item xs={12} md={6} key={c.id}>
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
+            {historicoFiltrado.map((c) => (
+              <Box key={c.id} sx={{ flex: '1 1 400px', maxWidth: { xs: '100%', md: 'calc(50% - 8px)' } }}>
                 <Card sx={{ borderRadius: 2, '&:hover': { boxShadow: 4 }, transition: '0.2s' }}>
                   <CardContent sx={{ p: 2.5 }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
@@ -139,36 +170,34 @@ export default function ReceitasPage() {
                       </Box>
                       <Chip label="Finalizada" color="success" size="small" />
                     </Box>
-
                     {c.anotacoes && (
-                      <Box sx={{ mb: 2, p: 1.5, bgcolor: 'action.hover', borderRadius: 1, borderLeft: 3, borderColor: 'info.main' }}>
+                      <Box sx={{ p: 1.5, bgcolor: 'action.hover', borderRadius: 1, borderLeft: 3, borderColor: 'info.main' }}>
                         <Typography variant="caption" color="info.main" sx={{ fontWeight: 600, display: 'block', mb: 0.5 }}>
                           Anotações
                         </Typography>
                         <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>{c.anotacoes}</Typography>
                       </Box>
                     )}
-
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 1 }}>
-                      <MedicationIcon fontSize="small" color="success" />
-                      <Typography variant="caption" sx={{ fontWeight: 600, color: 'success.main' }}>
-                        Medicamentos prescritos
-                      </Typography>
-                    </Box>
-                    <Typography variant="caption" color="text.secondary" sx={{ fontStyle: 'italic' }}>
-                      Ver prontuário para detalhes das receitas
-                    </Typography>
                   </CardContent>
                 </Card>
-              </Grid>
+              </Box>
             ))}
-          </Grid>
+          </Box>
         )
       )}
 
-      {/* Modal Nova Receita */}
       <Dialog open={modalAberto} onClose={fechar} fullWidth maxWidth="md">
-        <DialogTitle sx={{ bgcolor: 'primary.main', color: 'white' }}>Nova Receita</DialogTitle>
+        <Box sx={{ background: 'linear-gradient(135deg, #1565c0 0%, #1976d2 100%)', p: 3 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Avatar sx={{ bgcolor: 'rgba(255,255,255,0.2)', width: 52, height: 52, border: '2px solid rgba(255,255,255,0.4)' }}>
+              <MedicationIcon sx={{ color: 'white', fontSize: 28 }} />
+            </Avatar>
+            <Box>
+              <Typography variant="h6" sx={{ color: 'white', fontWeight: 'bold' }}>Nova Receita</Typography>
+              <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.8)' }}>Prescreva medicamentos para a consulta</Typography>
+            </Box>
+          </Box>
+        </Box>
         <DialogContent sx={{ pt: 3 }}>
           {erro && <Alert severity="error" sx={{ mb: 2 }}>{erro}</Alert>}
           <FormControl fullWidth sx={{ mt: 1, mb: 3 }}>
@@ -178,24 +207,34 @@ export default function ReceitasPage() {
             </Select>
           </FormControl>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-            <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>Medicamentos</Typography>
-            <Button size="small" startIcon={<AddIcon />} onClick={addMed}>Adicionar</Button>
+            <Box>
+              <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>Medicamentos</Typography>
+              <Typography variant="caption" color="text.secondary">{medicamentos.length} item(s)</Typography>
+            </Box>
+            <Button size="small" startIcon={<AddIcon />} variant="outlined" onClick={addMed}>Adicionar</Button>
           </Box>
           <Divider sx={{ mb: 2 }} />
           {medicamentos.map((med, i) => (
-            <Box key={i} sx={{ display: 'flex', gap: 1, mb: 2, alignItems: 'center' }}>
-              <TextField label="Nome" value={med.nome} onChange={(e) => changeMed(i, 'nome', e.target.value)} sx={{ flex: 2 }} />
-              <TextField label="Dosagem" value={med.dosagem} onChange={(e) => changeMed(i, 'dosagem', e.target.value)} sx={{ flex: 1 }} />
-              <TextField label="Posologia" value={med.posologia} onChange={(e) => changeMed(i, 'posologia', e.target.value)} sx={{ flex: 2 }} />
-              {medicamentos.length > 1 && (
-                <IconButton color="error" onClick={() => removeMed(i)}><DeleteIcon /></IconButton>
-              )}
-            </Box>
+            <Paper key={i} variant="outlined" sx={{ p: 2, mb: 2, borderRadius: 2 }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
+                <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                  Medicamento {i + 1}
+                </Typography>
+                {medicamentos.length > 1 && (
+                  <IconButton size="small" color="error" onClick={() => removeMed(i)}><DeleteIcon fontSize="small" /></IconButton>
+                )}
+              </Box>
+              <Box sx={{ display: 'flex', gap: 1.5 }}>
+                <TextField label="Nome" value={med.nome} onChange={(e) => changeMed(i, 'nome', e.target.value)} sx={{ flex: 2 }} size="small" />
+                <TextField label="Dosagem" value={med.dosagem} onChange={(e) => changeMed(i, 'dosagem', e.target.value)} sx={{ flex: 1 }} size="small" placeholder="ex: 500mg" />
+                <TextField label="Posologia" value={med.posologia} onChange={(e) => changeMed(i, 'posologia', e.target.value)} sx={{ flex: 2 }} size="small" placeholder="ex: 1 cp 8/8h" />
+              </Box>
+            </Paper>
           ))}
         </DialogContent>
-        <DialogActions sx={{ p: 2 }}>
+        <DialogActions sx={{ p: 2, gap: 1 }}>
           <Button onClick={fechar} variant="outlined">Cancelar</Button>
-          <Button onClick={handleSalvar} variant="contained">Salvar</Button>
+          <Button onClick={handleSalvar} variant="contained" startIcon={<MedicationIcon />}>Emitir Receita</Button>
         </DialogActions>
       </Dialog>
     </Layout>

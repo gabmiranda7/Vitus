@@ -4,7 +4,7 @@ import {
   Box, Button, Chip, Dialog, DialogActions, DialogContent, DialogTitle,
   FormControl, InputLabel, MenuItem, Paper, Select, Table, TableBody,
   TableCell, TableContainer, TableHead, TableRow, TextField, Typography,
-  Alert, Tooltip, Tabs, Tab, Avatar, Divider, InputAdornment, Grid
+  Alert, Tooltip, Tabs, Tab, Avatar, Divider, InputAdornment
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import EditNoteIcon from '@mui/icons-material/EditNote';
@@ -15,6 +15,7 @@ import PersonIcon from '@mui/icons-material/Person';
 import FavoriteIcon from '@mui/icons-material/Favorite';
 import ThermostatIcon from '@mui/icons-material/Thermostat';
 import MonitorHeartIcon from '@mui/icons-material/MonitorHeart';
+import SearchIcon from '@mui/icons-material/Search';
 import Layout from '../../components/layout/Layout';
 import api from '../../services/api';
 import { Consulta, Medico, Paciente } from '../../types';
@@ -59,6 +60,7 @@ export default function ConsultasPage() {
   const [pacientes, setPacientes] = useState<Paciente[]>([]);
   const [medicos, setMedicos] = useState<Medico[]>([]);
   const [aba, setAba] = useState(0);
+  const [busca, setBusca] = useState('');
   const [modalNova, setModalNova] = useState(false);
   const [modalAnotacao, setModalAnotacao] = useState(false);
   const [modalTriagem, setModalTriagem] = useState(false);
@@ -111,6 +113,8 @@ export default function ConsultasPage() {
         consultaId: consultaSelecionada.id,
         pressaoArterial, temperatura: parseFloat(temperatura), observacoes,
       });
+      // Já envia direto para aguardar atendimento
+      await api.patch(`/api/consultas/${consultaSelecionada.id}/aguardar-atendimento`);
       fecharTriagem(); carregar();
     } catch { setErro('Erro ao registrar triagem'); }
   }
@@ -135,7 +139,17 @@ export default function ConsultasPage() {
     [consultas]
   );
 
-  const consultasExibidas = aba === 0 ? consultasAtivas : consultasHistorico;
+  const consultasFiltradas = useMemo(() => {
+    const lista = aba === 0 ? consultasAtivas : consultasHistorico;
+    if (!busca.trim()) return lista;
+    const q = busca.toLowerCase();
+    return lista.filter(c =>
+      c.nomePaciente.toLowerCase().includes(q) ||
+      c.nomeMedico.toLowerCase().includes(q) ||
+      new Date(c.dataConsulta).toLocaleDateString('pt-BR').includes(q) ||
+      statusLabels[c.status]?.toLowerCase().includes(q)
+    );
+  }, [aba, consultasAtivas, consultasHistorico, busca]);
 
   function renderTabela(lista: Consulta[]) {
     return (
@@ -187,14 +201,13 @@ export default function ConsultasPage() {
                     <Chip
                       label={`${statusIcons[c.status] ?? ''} ${statusLabels[c.status] ?? c.status}`}
                       color={statusCores[c.status] ?? 'default'}
-                      size="small"
-                      sx={{ fontWeight: 500 }}
+                      size="small" sx={{ fontWeight: 500 }}
                     />
                   </TableCell>
                   <TableCell>
                     <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', alignItems: 'center' }}>
                       {podeVerProntuario && (
-                        <Tooltip title="Ver prontuário do paciente">
+                        <Tooltip title="Ver prontuário">
                           <Button size="small" variant="outlined" color="secondary"
                             startIcon={<FolderSharedIcon />}
                             onClick={() => navigate(`/prontuario/${c.id}`)}>
@@ -204,8 +217,7 @@ export default function ConsultasPage() {
                       )}
                       {usuario?.perfil === 'Enfermeiro' && c.status === 'Agendada' && (
                         <Button size="small" variant="outlined" color="warning"
-                          startIcon={<MedicalServicesIcon />}
-                          onClick={() => abrirTriagem(c)}>
+                          startIcon={<MedicalServicesIcon />} onClick={() => abrirTriagem(c)}>
                           Iniciar Triagem
                         </Button>
                       )}
@@ -216,19 +228,16 @@ export default function ConsultasPage() {
                       )}
                       {usuario?.perfil === 'Medico' && c.status === 'AguardandoAtendimento' && (
                         <Button size="small" variant="contained" color="primary"
-                          startIcon={<PersonIcon />}
-                          onClick={() => mudarStatus(c.id, 'iniciar-atendimento')}>
+                          startIcon={<PersonIcon />} onClick={() => mudarStatus(c.id, 'iniciar-atendimento')}>
                           Iniciar
                         </Button>
                       )}
                       {usuario?.perfil === 'Medico' && c.status === 'EmAtendimento' && (
                         <>
-                          <Tooltip title="Fazer anotações no prontuário">
-                            <Button size="small" variant="outlined" color="info"
-                              startIcon={<EditNoteIcon />} onClick={() => abrirAnotacao(c)}>
-                              Anotar
-                            </Button>
-                          </Tooltip>
+                          <Button size="small" variant="outlined" color="info"
+                            startIcon={<EditNoteIcon />} onClick={() => abrirAnotacao(c)}>
+                            Anotar
+                          </Button>
                           <Button size="small" variant="contained" color="success"
                             onClick={() => mudarStatus(c.id, 'finalizar')}>
                             Finalizar
@@ -269,20 +278,25 @@ export default function ConsultasPage() {
       </Box>
 
       <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
-        <Tabs value={aba} onChange={(_, v) => setAba(v)}>
+        <Tabs value={aba} onChange={(_, v) => { setAba(v); setBusca(''); }}>
           <Tab label={`Ativas (${consultasAtivas.length})`} />
           <Tab label={`Histórico (${consultasHistorico.length})`} />
         </Tabs>
       </Box>
 
-      {renderTabela(consultasExibidas)}
+      <TextField fullWidth
+        placeholder="Buscar por paciente, médico, data ou status..."
+        value={busca} onChange={(e) => setBusca(e.target.value)} sx={{ mb: 2 }}
+        slotProps={{ input: { startAdornment: <InputAdornment position="start"><SearchIcon color="action" /></InputAdornment> } }}
+      />
+
+      {renderTabela(consultasFiltradas)}
 
       {/* Modal Nova Consulta */}
       <Dialog open={modalNova} onClose={fecharNova} fullWidth maxWidth="sm">
-        <DialogTitle sx={{ bgcolor: 'primary.main', color: 'white', pb: 2 }}>
+        <DialogTitle sx={{ bgcolor: 'primary.main', color: 'white' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <EventNoteIcon />
-            Nova Consulta
+            <EventNoteIcon /> Nova Consulta
           </Box>
         </DialogTitle>
         <DialogContent sx={{ pt: 3 }}>
@@ -301,7 +315,7 @@ export default function ConsultasPage() {
           </FormControl>
           <TextField label="Data da Consulta" type="datetime-local" fullWidth
             value={dataConsulta} onChange={(e) => setDataConsulta(e.target.value)}
-            InputLabelProps={{ shrink: true }} />
+            slotProps={{ inputLabel: { shrink: true } }} />
         </DialogContent>
         <DialogActions sx={{ p: 2 }}>
           <Button onClick={fecharNova} variant="outlined">Cancelar</Button>
@@ -317,80 +331,39 @@ export default function ConsultasPage() {
               <MedicalServicesIcon sx={{ color: 'white', fontSize: 28 }} />
             </Avatar>
             <Box>
-              <Typography variant="h6" sx={{ color: 'white', fontWeight: 'bold', lineHeight: 1.2 }}>
-                Triagem
-              </Typography>
-              <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.8)' }}>
-                {consultaSelecionada?.nomePaciente}
-              </Typography>
+              <Typography variant="h6" sx={{ color: 'white', fontWeight: 'bold' }}>Triagem</Typography>
+              <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.8)' }}>{consultaSelecionada?.nomePaciente}</Typography>
             </Box>
           </Box>
         </Box>
-
         <DialogContent sx={{ pt: 3 }}>
           {erro && <Alert severity="error" sx={{ mb: 2 }}>{erro}</Alert>}
-
           <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 2, textTransform: 'uppercase', letterSpacing: 0.5, fontSize: 11 }}>
             Sinais Vitais
           </Typography>
-
-          <Grid container spacing={2} sx={{ mb: 2 }}>
-            <Grid item xs={6}>
-              <TextField
-                label="Pressão Arterial"
-                fullWidth
-                value={pressaoArterial}
-                onChange={(e) => setPressaoArterial(e.target.value)}
-                placeholder="ex: 120/80"
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <FavoriteIcon sx={{ fontSize: 18, color: 'error.main' }} />
-                    </InputAdornment>
-                  ),
-                }}
-              />
-            </Grid>
-            <Grid item xs={6}>
-              <TextField
-                label="Temperatura (°C)"
-                type="number"
-                fullWidth
-                value={temperatura}
-                onChange={(e) => setTemperatura(e.target.value)}
-                placeholder="ex: 36.5"
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <ThermostatIcon sx={{ fontSize: 18, color: 'warning.main' }} />
-                    </InputAdornment>
-                  ),
-                }}
-              />
-            </Grid>
-          </Grid>
-
+          <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
+            <Box sx={{ flex: 1 }}>
+              <TextField label="Pressão Arterial" fullWidth value={pressaoArterial}
+                onChange={(e) => setPressaoArterial(e.target.value)} placeholder="ex: 120/80"
+                slotProps={{ input: { startAdornment: <InputAdornment position="start"><FavoriteIcon sx={{ fontSize: 18, color: 'error.main' }} /></InputAdornment> } }} />
+            </Box>
+            <Box sx={{ flex: 1 }}>
+              <TextField label="Temperatura (°C)" type="number" fullWidth value={temperatura}
+                onChange={(e) => setTemperatura(e.target.value)} placeholder="ex: 36.5"
+                slotProps={{ input: { startAdornment: <InputAdornment position="start"><ThermostatIcon sx={{ fontSize: 18, color: 'warning.main' }} /></InputAdornment> } }} />
+            </Box>
+          </Box>
           <Divider sx={{ mb: 2 }} />
-
           <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1.5, textTransform: 'uppercase', letterSpacing: 0.5, fontSize: 11 }}>
             Observações
           </Typography>
-
-          <TextField
-            label="Queixa principal / observações"
-            fullWidth
-            multiline
-            rows={4}
-            value={observacoes}
-            onChange={(e) => setObservacoes(e.target.value)}
-            placeholder="Descreva a queixa principal do paciente, sintomas relatados, etc."
-          />
+          <TextField label="Queixa principal / observações" fullWidth multiline rows={4}
+            value={observacoes} onChange={(e) => setObservacoes(e.target.value)}
+            placeholder="Descreva a queixa principal do paciente, sintomas relatados, etc." />
         </DialogContent>
-
         <DialogActions sx={{ p: 2, gap: 1 }}>
           <Button onClick={fecharTriagem} variant="outlined" fullWidth>Cancelar</Button>
-          <Button onClick={handleSalvarTriagem} variant="contained" color="warning" fullWidth
-            startIcon={<MedicalServicesIcon />}>
+          <Button onClick={handleSalvarTriagem} variant="contained" color="warning" fullWidth startIcon={<MedicalServicesIcon />}>
             Registrar Triagem
           </Button>
         </DialogActions>
@@ -404,64 +377,37 @@ export default function ConsultasPage() {
               <EditNoteIcon sx={{ color: 'white', fontSize: 28 }} />
             </Avatar>
             <Box>
-              <Typography variant="h6" sx={{ color: 'white', fontWeight: 'bold', lineHeight: 1.2 }}>
-                Anotações Clínicas
-              </Typography>
+              <Typography variant="h6" sx={{ color: 'white', fontWeight: 'bold' }}>Anotações Clínicas</Typography>
               <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.8)' }}>
                 {consultaSelecionada?.nomePaciente} · {consultaSelecionada && new Date(consultaSelecionada.dataConsulta).toLocaleDateString('pt-BR')}
               </Typography>
             </Box>
-            <Box sx={{ ml: 'auto', textAlign: 'right' }}>
-              <Chip
-                label={`👨‍⚕️ ${consultaSelecionada?.nomeMedico}`}
-                sx={{ bgcolor: 'rgba(255,255,255,0.15)', color: 'white', fontWeight: 500 }}
-                size="small"
-              />
+            <Box sx={{ ml: 'auto' }}>
+              <Chip label={`👨‍⚕️ ${consultaSelecionada?.nomeMedico}`}
+                sx={{ bgcolor: 'rgba(255,255,255,0.15)', color: 'white', fontWeight: 500 }} size="small" />
             </Box>
           </Box>
         </Box>
-
         <DialogContent sx={{ pt: 3 }}>
           {erro && <Alert severity="error" sx={{ mb: 2 }}>{erro}</Alert>}
-
           <Alert severity="info" sx={{ mb: 2 }} icon={<MonitorHeartIcon />}>
-            As anotações ficam vinculadas ao prontuário do paciente e ficam visíveis para médicos e enfermeiros.
+            As anotações ficam vinculadas ao prontuário e visíveis para médicos e enfermeiros.
           </Alert>
-
           <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1.5, textTransform: 'uppercase', letterSpacing: 0.5, fontSize: 11 }}>
             Registro Clínico
           </Typography>
-
-          <TextField
-            label="Anotações da consulta"
-            fullWidth
-            multiline
-            rows={10}
-            value={anotacoes}
-            onChange={(e) => setAnotacoes(e.target.value)}
-            placeholder={`Ex:\n• Queixa principal: dor lombar há 3 dias\n• Exame físico: PA 130/85, FC 78bpm\n• Hipótese diagnóstica: lombalgia mecânica\n• Conduta: analgésico + repouso relativo\n• Retorno em 7 dias se não houver melhora`}
-            sx={{ '& .MuiInputBase-root': { fontFamily: 'monospace', fontSize: 14, lineHeight: 1.7 } }}
-          />
-
+          <TextField label="Anotações da consulta" fullWidth multiline rows={10}
+            value={anotacoes} onChange={(e) => setAnotacoes(e.target.value)}
+            placeholder={`Ex:\n• Queixa principal: dor lombar há 3 dias\n• Exame físico: PA 130/85, FC 78bpm\n• Hipótese diagnóstica: lombalgia mecânica\n• Conduta: analgésico + repouso relativo`}
+            sx={{ '& .MuiInputBase-root': { fontFamily: 'monospace', fontSize: 14, lineHeight: 1.7 } }} />
           <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 1 }}>
-            <Typography variant="caption" color="text.secondary">
-              {anotacoes.length} caracteres
-            </Typography>
-            <Typography variant="caption" color="text.secondary">
-              Ctrl+Enter para salvar
-            </Typography>
+            <Typography variant="caption" color="text.secondary">{anotacoes.length} caracteres</Typography>
+            <Typography variant="caption" color="text.secondary">Ctrl+Enter para salvar</Typography>
           </Box>
         </DialogContent>
-
         <DialogActions sx={{ p: 2, gap: 1 }}>
           <Button onClick={fecharAnotacao} variant="outlined">Cancelar</Button>
-          <Button
-            onClick={handleSalvarAnotacao}
-            variant="contained"
-            color="info"
-            startIcon={<EditNoteIcon />}
-            onKeyDown={(e) => e.ctrlKey && e.key === 'Enter' && handleSalvarAnotacao()}
-          >
+          <Button onClick={handleSalvarAnotacao} variant="contained" color="info" startIcon={<EditNoteIcon />}>
             Salvar Anotação
           </Button>
         </DialogActions>

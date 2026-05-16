@@ -20,7 +20,11 @@ namespace Vitus.Application.UseCases.Pacientes.UpdatePaciente
             if (paciente == null)
                 throw new DomainException("Paciente não encontrado.");
 
-            paciente.DefinirNome(request.Nome);
+            paciente.Atualizar(
+                request.Nome, request.Cpf, request.CartaoSus, request.DataNascimento,
+                request.Sexo, request.NomePai, request.NomeMae, request.Endereco,
+                request.Profissao, request.EstadoCivil, request.InformacoesAdicionais
+            );
 
             await _repository.Update(paciente);
         }

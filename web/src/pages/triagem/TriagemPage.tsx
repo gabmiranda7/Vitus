@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import {
-  Box, Card, CardContent, Chip, Typography, Avatar, Grid,
-  Button, LinearProgress, Alert
+  Box, Card, CardContent, Chip, Typography, Avatar, Button,
+  LinearProgress, Alert
 } from '@mui/material';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import MedicalServicesIcon from '@mui/icons-material/MedicalServices';
@@ -32,6 +32,11 @@ function iniciais(nome: string) {
   return nome.split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase();
 }
 
+function corAvatar(nome: string) {
+  const cores = ['#1976d2', '#388e3c', '#7b1fa2', '#c62828', '#f57c00', '#0097a7'];
+  return cores[nome.charCodeAt(0) % cores.length];
+}
+
 export default function TriagemPage() {
   const [consultas, setConsultas] = useState<Consulta[]>([]);
   const [, setTick] = useState(0);
@@ -54,9 +59,7 @@ export default function TriagemPage() {
     try {
       await api.patch(`/api/consultas/${id}/aguardar-atendimento`);
       carregar();
-    } finally {
-      setLoadingId(null);
-    }
+    } finally { setLoadingId(null); }
   }
 
   return (
@@ -81,23 +84,21 @@ export default function TriagemPage() {
           <Typography variant="body2" sx={{ opacity: 0.3, mt: 1 }}>A lista atualiza automaticamente</Typography>
         </Box>
       ) : (
-        <Grid container spacing={2}>
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
           {consultas.map((c) => {
             const min = minutosEspera(c.dataConsulta);
             const cor = corEspera(min);
             const progresso = Math.min((min / 30) * 100, 100);
             return (
-              <Grid item xs={12} sm={6} md={4} key={c.id}>
+              <Box key={c.id} sx={{ flex: '1 1 280px', maxWidth: { xs: '100%', sm: 'calc(50% - 8px)', md: 'calc(33.33% - 11px)' } }}>
                 <Card sx={{
-                  borderRadius: 2,
-                  borderLeft: 5,
+                  borderRadius: 2, borderLeft: 5,
                   borderColor: cor === 'success' ? 'success.main' : cor === 'warning' ? 'warning.main' : 'error.main',
-                  transition: '0.2s',
-                  '&:hover': { boxShadow: 6 }
+                  transition: '0.2s', '&:hover': { boxShadow: 6 }
                 }}>
                   <CardContent sx={{ p: 2.5 }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
-                      <Avatar sx={{ bgcolor: '#1976d2', width: 44, height: 44, fontWeight: 'bold' }}>
+                      <Avatar sx={{ bgcolor: corAvatar(c.nomePaciente), width: 44, height: 44, fontWeight: 'bold' }}>
                         {iniciais(c.nomePaciente)}
                       </Avatar>
                       <Box sx={{ flex: 1, minWidth: 0 }}>
@@ -109,42 +110,26 @@ export default function TriagemPage() {
                     </Box>
 
                     <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
-                      <Chip
-                        icon={<AccessTimeIcon />}
-                        label={`Esperando ${tempoLabel(min)}`}
-                        color={cor}
-                        size="small"
-                        variant="outlined"
-                      />
+                      <Chip icon={<AccessTimeIcon />} label={`Esperando ${tempoLabel(min)}`} color={cor} size="small" variant="outlined" />
                       <Typography variant="caption" color="text.secondary">
                         {new Date(c.dataConsulta).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
                       </Typography>
                     </Box>
 
-                    <LinearProgress
-                      variant="determinate"
-                      value={progresso}
-                      color={cor}
-                      sx={{ borderRadius: 1, height: 5, mb: 2 }}
-                    />
+                    <LinearProgress variant="determinate" value={progresso} color={cor} sx={{ borderRadius: 1, height: 5, mb: 2 }} />
 
-                    <Button
-                      fullWidth
-                      size="small"
-                      variant="contained"
-                      color="success"
+                    <Button fullWidth size="small" variant="contained" color="success"
                       startIcon={<CheckCircleIcon />}
                       disabled={loadingId === c.id}
-                      onClick={() => handleAguardar(c.id)}
-                    >
+                      onClick={() => handleAguardar(c.id)}>
                       Enviar para Atendimento
                     </Button>
                   </CardContent>
                 </Card>
-              </Grid>
+              </Box>
             );
           })}
-        </Grid>
+        </Box>
       )}
     </Layout>
   );

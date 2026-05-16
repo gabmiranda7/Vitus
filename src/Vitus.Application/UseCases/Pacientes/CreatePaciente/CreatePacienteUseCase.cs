@@ -16,17 +16,34 @@ namespace Vitus.Application.UseCases.Pacientes.CreatePaciente
 
         public async Task<PacienteResponseJson> Execute(CreatePacienteRequestJson request)
         {
-            var paciente = new Paciente(request.Nome);
+            var paciente = new Paciente(
+                request.Nome, request.Cpf, request.CartaoSus, request.DataNascimento,
+                request.Sexo, request.NomePai, request.NomeMae, request.Endereco,
+                request.Profissao, request.EstadoCivil, request.InformacoesAdicionais,
+                request.AceitaTermos
+            );
 
             paciente.CriarProntuario();
-
             await _pacienteRepository.Add(paciente);
 
-            return new PacienteResponseJson
-            {
-                Id = paciente.Id,
-                Nome = paciente.Nome
-            };
+            return MapToResponse(paciente);
         }
+
+        public static PacienteResponseJson MapToResponse(Paciente p) => new()
+        {
+            Id = p.Id,
+            Nome = p.Nome,
+            Cpf = p.Cpf,
+            CartaoSus = p.CartaoSus,
+            DataNascimento = p.DataNascimento,
+            Sexo = p.Sexo,
+            NomePai = p.NomePai,
+            NomeMae = p.NomeMae,
+            Endereco = p.Endereco,
+            Profissao = p.Profissao,
+            EstadoCivil = p.EstadoCivil,
+            InformacoesAdicionais = p.InformacoesAdicionais,
+            AceitaTermos = p.AceitaTermos
+        };
     }
 }

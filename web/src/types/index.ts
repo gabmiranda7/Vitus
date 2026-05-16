@@ -22,8 +22,19 @@ export interface Medico {
 }
 
 export interface Paciente {
-    id: string;
-    nome: string;
+  id: string;
+  nome: string;
+  cpf?: string;
+  cartaoSus?: string;
+  dataNascimento?: string;
+  sexo?: string;
+  nomePai?: string;
+  nomeMae?: string;
+  endereco?: string;
+  profissao?: string;
+  estadoCivil?: string;
+  informacoesAdicionais?: string;
+  aceitaTermos: boolean;
 }
 
 export interface Prontuario {

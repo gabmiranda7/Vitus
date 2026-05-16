@@ -3,7 +3,6 @@ version: '3.9'
 services:
   db:
     image: postgres:16
-    container_name: vitus-db
     environment:
       POSTGRES_DB: VitusDB
       POSTGRES_USER: ${DB_USER}
@@ -22,7 +21,6 @@ services:
     build:
       context: .
       dockerfile: src/Vitus.API/Dockerfile
-    container_name: vitus-api
     ports:
       - "5000:8080"
     depends_on:
@@ -32,6 +30,14 @@ services:
       ConnectionStrings__DefaultConnection: "Host=db;Port=5432;Database=VitusDB;Username=${DB_USER};Password=${DB_PASS}"
       JWT_KEY: ${JWT_KEY}
       ASPNETCORE_ENVIRONMENT: Production
+
+  frontend:
+    build:
+      context: ./web
+    ports:
+      - "3000:80"
+    depends_on:
+      - api
 
 volumes:
   postgres_data:
