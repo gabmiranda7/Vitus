@@ -73,6 +73,10 @@ export default function ConsultasPage() {
   const [temperatura, setTemperatura] = useState('');
   const [observacoes, setObservacoes] = useState('');
   const [erro, setErro] = useState('');
+  const [modalConfirm, setModalConfirm] = useState(false);
+  const [confirmAcao, setConfirmAcao] = useState<{
+    id: string; acao: string; label: string; cor: 'error' | 'success' | 'warning';
+  } | null>(null);
 
   useEffect(() => {
     carregar();
@@ -86,13 +90,23 @@ export default function ConsultasPage() {
   async function handleSalvarConsulta() {
     setErro('');
     try {
-      await api.post('/api/consultas', { pacienteId, medicoId, dataConsulta });
+      const dataUtc = new Date(dataConsulta).toISOString();
+      await api.post('/api/consultas', { pacienteId, medicoId, dataConsulta: dataUtc });
       fecharNova(); carregar();
     } catch { setErro('Erro ao agendar consulta'); }
   }
 
-  async function mudarStatus(id: string, acao: string) {
-    await api.patch(`/api/consultas/${id}/${acao}`); carregar();
+  function pedirConfirmacao(id: string, acao: string, label: string, cor: 'error' | 'success' | 'warning') {
+    setConfirmAcao({ id, acao, label, cor });
+    setModalConfirm(true);
+  }
+
+  async function confirmarAcao() {
+    if (!confirmAcao) return;
+    await api.patch(`/api/consultas/${confirmAcao.id}/${confirmAcao.acao}`);
+    setModalConfirm(false);
+    setConfirmAcao(null);
+    carregar();
   }
 
   async function handleSalvarAnotacao() {
@@ -113,7 +127,6 @@ export default function ConsultasPage() {
         consultaId: consultaSelecionada.id,
         pressaoArterial, temperatura: parseFloat(temperatura), observacoes,
       });
-      // Já envia direto para aguardar atendimento
       await api.patch(`/api/consultas/${consultaSelecionada.id}/aguardar-atendimento`);
       fecharTriagem(); carregar();
     } catch { setErro('Erro ao registrar triagem'); }
@@ -222,13 +235,15 @@ export default function ConsultasPage() {
                         </Button>
                       )}
                       {usuario?.perfil === 'Enfermeiro' && c.status === 'EmTriagem' && (
-                        <Button size="small" variant="outlined" onClick={() => mudarStatus(c.id, 'aguardar-atendimento')}>
+                        <Button size="small" variant="outlined"
+                          onClick={() => api.patch(`/api/consultas/${c.id}/aguardar-atendimento`).then(carregar)}>
                           Aguardar
                         </Button>
                       )}
                       {usuario?.perfil === 'Medico' && c.status === 'AguardandoAtendimento' && (
                         <Button size="small" variant="contained" color="primary"
-                          startIcon={<PersonIcon />} onClick={() => mudarStatus(c.id, 'iniciar-atendimento')}>
+                          startIcon={<PersonIcon />}
+                          onClick={() => api.patch(`/api/consultas/${c.id}/iniciar-atendimento`).then(carregar)}>
                           Iniciar
                         </Button>
                       )}
@@ -239,7 +254,7 @@ export default function ConsultasPage() {
                             Anotar
                           </Button>
                           <Button size="small" variant="contained" color="success"
-                            onClick={() => mudarStatus(c.id, 'finalizar')}>
+                            onClick={() => pedirConfirmacao(c.id, 'finalizar', `Finalizar consulta de ${c.nomePaciente}?`, 'success')}>
                             Finalizar
                           </Button>
                         </>
@@ -247,7 +262,7 @@ export default function ConsultasPage() {
                       {(['Recepcionista', 'Medico'].includes(usuario?.perfil ?? '')) &&
                         !['Finalizada', 'Cancelada'].includes(c.status) && (
                           <Button size="small" variant="outlined" color="error"
-                            onClick={() => mudarStatus(c.id, 'cancelar')}>
+                            onClick={() => pedirConfirmacao(c.id, 'cancelar', `Cancelar consulta de ${c.nomePaciente}?`, 'error')}>
                             Cancelar
                           </Button>
                         )}
@@ -409,6 +424,37 @@ export default function ConsultasPage() {
           <Button onClick={fecharAnotacao} variant="outlined">Cancelar</Button>
           <Button onClick={handleSalvarAnotacao} variant="contained" color="info" startIcon={<EditNoteIcon />}>
             Salvar Anotação
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Modal de Confirmação */}
+      <Dialog open={modalConfirm} onClose={() => setModalConfirm(false)} maxWidth="xs" fullWidth>
+        <DialogTitle sx={{
+          bgcolor: confirmAcao?.cor === 'error' ? 'error.main' : 'success.main',
+          color: 'white'
+        }}>
+          {confirmAcao?.cor === 'error' ? '⚠️ Confirmar Cancelamento' : '✅ Confirmar Finalização'}
+        </DialogTitle>
+        <DialogContent sx={{ pt: 3 }}>
+          <Typography variant="body1">{confirmAcao?.label}</Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+            {confirmAcao?.cor === 'error'
+              ? 'Esta ação não pode ser desfeita. A consulta será marcada como cancelada.'
+              : 'A consulta será marcada como finalizada e o prontuário será encerrado.'}
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ p: 2, gap: 1 }}>
+          <Button onClick={() => setModalConfirm(false)} variant="outlined" fullWidth>
+            Voltar
+          </Button>
+          <Button
+            onClick={confirmarAcao}
+            variant="contained"
+            color={confirmAcao?.cor ?? 'primary'}
+            fullWidth
+          >
+            Confirmar
           </Button>
         </DialogActions>
       </Dialog>

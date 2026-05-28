@@ -132,6 +132,36 @@ export default function PacientesPage() {
     setModalDetalhes(true);
   }
 
+  function formatarCpf(cpf: string): string {
+    const s = cpf.replace(/\D/g, '').substring(0, 11);
+    if (s.length <= 3) return s;
+    if (s.length <= 6) return `${s.slice(0,3)}.${s.slice(3)}`;
+    if (s.length <= 9) return `${s.slice(0,3)}.${s.slice(3,6)}.${s.slice(6)}`;
+    return `${s.slice(0,3)}.${s.slice(3,6)}.${s.slice(6,9)}-${s.slice(9,11)}`;
+  }
+
+  function formatarCartaoSus(sus: string): string {
+    const s = sus.replace(/\D/g, '').substring(0, 15);
+    if (s.length <= 3) return s;
+    if (s.length <= 7) return `${s.slice(0,3)}.${s.slice(3)}`;
+    if (s.length <= 11) return `${s.slice(0,3)}.${s.slice(3,7)}.${s.slice(7)}`;
+    return `${s.slice(0,3)}.${s.slice(3,7)}.${s.slice(7,11)}.${s.slice(11,15)}`;
+  }
+
+  function exibirCpf(cpf?: string): string {
+    if (!cpf) return '';
+    const s = cpf.replace(/\D/g, '');
+    if (s.length === 11) return `${s.slice(0,3)}.${s.slice(3,6)}.${s.slice(6,9)}-${s.slice(9,11)}`;
+    return cpf;
+  }
+
+  function exibirCartaoSus(sus?: string): string {
+    if (!sus) return '';
+    const s = sus.replace(/\D/g, '');
+    if (s.length === 15) return `${s.slice(0,3)}.${s.slice(3,7)}.${s.slice(7,11)}.${s.slice(11,15)}`;
+    return sus;
+  }
+
   function fechar() { setModalAberto(false); setEditando(null); setForm(campoVazio()); setErro(''); }
 
   const filtrados = useMemo(() => {
@@ -237,67 +267,90 @@ export default function PacientesPage() {
       <Dialog open={modalDetalhes} onClose={() => setModalDetalhes(false)} fullWidth maxWidth="sm">
         {pacienteSelecionado && (
           <>
+            {/* Header */}
             <Box sx={{ background: 'linear-gradient(135deg, #1565c0 0%, #1976d2 100%)', p: 3 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                <Avatar sx={{ bgcolor: 'rgba(255,255,255,0.2)', width: 56, height: 56, fontSize: 22, fontWeight: 'bold', border: '2px solid rgba(255,255,255,0.4)' }}>
+                <Avatar sx={{
+                  bgcolor: corAvatar(pacienteSelecionado.nome),
+                  width: 60, height: 60, fontSize: 22, fontWeight: 'bold',
+                  border: '3px solid rgba(255,255,255,0.4)'
+                }}>
                   {iniciais(pacienteSelecionado.nome)}
                 </Avatar>
                 <Box>
-                  <Typography variant="h6" sx={{ color: 'white', fontWeight: 'bold' }}>{pacienteSelecionado.nome}</Typography>
-                  <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.8)' }}>
-                    {pacienteSelecionado.dataNascimento ? calcularIdade(pacienteSelecionado.dataNascimento) : ''}
-                    {pacienteSelecionado.sexo ? ` · ${pacienteSelecionado.sexo}` : ''}
-                    {pacienteSelecionado.estadoCivil ? ` · ${pacienteSelecionado.estadoCivil}` : ''}
+                  <Typography variant="h6" sx={{ color: 'white', fontWeight: 'bold', lineHeight: 1.2 }}>
+                    {pacienteSelecionado.nome}
+                  </Typography>
+                  <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.85)', mt: 0.5 }}>
+                    {[
+                      pacienteSelecionado.dataNascimento ? calcularIdade(pacienteSelecionado.dataNascimento) : null,
+                      pacienteSelecionado.sexo,
+                      pacienteSelecionado.estadoCivil,
+                    ].filter(Boolean).join(' · ')}
                   </Typography>
                 </Box>
               </Box>
             </Box>
-            <DialogContent sx={{ pt: 3 }}>
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+
+            <DialogContent sx={{ p: 3 }}>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
 
                 {/* Identificação */}
-                <Box>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
-                    <BadgeIcon fontSize="small" color="primary" />
-                    <Typography variant="subtitle2" sx={{ fontWeight: 700, color: 'primary.main', textTransform: 'uppercase', letterSpacing: 0.5, fontSize: 11 }}>
-                      Identificação
-                    </Typography>
+                {(pacienteSelecionado.cpf || pacienteSelecionado.cartaoSus ||
+                  pacienteSelecionado.dataNascimento || pacienteSelecionado.profissao) && (
+                  <Box>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
+                      <BadgeIcon fontSize="small" color="primary" />
+                      <Typography variant="caption" sx={{ fontWeight: 700, color: 'primary.main', textTransform: 'uppercase', letterSpacing: 0.8, fontSize: 11 }}>
+                        Identificação
+                      </Typography>
+                    </Box>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+                      {[
+                        { label: 'CPF', value: exibirCpf(pacienteSelecionado.cpf) },
+                        { label: 'Cartão SUS', value: exibirCartaoSus(pacienteSelecionado.cartaoSus) },
+                        { label: 'Data de Nascimento', value: pacienteSelecionado.dataNascimento ? new Date(pacienteSelecionado.dataNascimento + 'T00:00:00').toLocaleDateString('pt-BR') : null },
+                        { label: 'Profissão', value: pacienteSelecionado.profissao },
+                      ].filter(item => item.value).map((item, i, arr) => (
+                        <Box key={i} sx={{
+                          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                          py: 1.25, px: 0,
+                          borderBottom: i < arr.length - 1 ? '1px solid' : 'none',
+                          borderColor: 'divider',
+                        }}>
+                          <Typography variant="body2" color="text.secondary">{item.label}</Typography>
+                          <Typography variant="body2" sx={{ fontWeight: 600 }}>{item.value}</Typography>
+                        </Box>
+                      ))}
+                    </Box>
                   </Box>
-                  <Paper variant="outlined" sx={{ borderRadius: 2, overflow: 'hidden' }}>
-                    {[
-                      { label: 'CPF', value: pacienteSelecionado.cpf },
-                      { label: 'Cartão SUS', value: pacienteSelecionado.cartaoSus },
-                      { label: 'Data de Nascimento', value: pacienteSelecionado.dataNascimento ? new Date(pacienteSelecionado.dataNascimento + 'T00:00:00').toLocaleDateString('pt-BR') : null },
-                      { label: 'Profissão', value: pacienteSelecionado.profissao },
-                    ].map((item, i) => item.value && (
-                      <Box key={i} sx={{ display: 'flex', justifyContent: 'space-between', px: 2, py: 1, borderBottom: '1px solid', borderColor: 'divider', '&:last-child': { borderBottom: 'none' } }}>
-                        <Typography variant="body2" color="text.secondary">{item.label}</Typography>
-                        <Typography variant="body2" sx={{ fontWeight: 500 }}>{item.value}</Typography>
-                      </Box>
-                    ))}
-                  </Paper>
-                </Box>
+                )}
 
                 {/* Família */}
                 {(pacienteSelecionado.nomePai || pacienteSelecionado.nomeMae) && (
                   <Box>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
                       <FamilyRestroomIcon fontSize="small" color="primary" />
-                      <Typography variant="subtitle2" sx={{ fontWeight: 700, color: 'primary.main', textTransform: 'uppercase', letterSpacing: 0.5, fontSize: 11 }}>
+                      <Typography variant="caption" sx={{ fontWeight: 700, color: 'primary.main', textTransform: 'uppercase', letterSpacing: 0.8, fontSize: 11 }}>
                         Família
                       </Typography>
                     </Box>
-                    <Paper variant="outlined" sx={{ borderRadius: 2, overflow: 'hidden' }}>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
                       {[
                         { label: 'Nome do Pai', value: pacienteSelecionado.nomePai },
                         { label: 'Nome da Mãe', value: pacienteSelecionado.nomeMae },
-                      ].map((item, i) => item.value && (
-                        <Box key={i} sx={{ display: 'flex', justifyContent: 'space-between', px: 2, py: 1, borderBottom: '1px solid', borderColor: 'divider', '&:last-child': { borderBottom: 'none' } }}>
+                      ].filter(item => item.value).map((item, i, arr) => (
+                        <Box key={i} sx={{
+                          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                          py: 1.25, px: 0,
+                          borderBottom: i < arr.length - 1 ? '1px solid' : 'none',
+                          borderColor: 'divider',
+                        }}>
                           <Typography variant="body2" color="text.secondary">{item.label}</Typography>
-                          <Typography variant="body2" sx={{ fontWeight: 500 }}>{item.value}</Typography>
+                          <Typography variant="body2" sx={{ fontWeight: 600 }}>{item.value}</Typography>
                         </Box>
                       ))}
-                    </Paper>
+                    </Box>
                   </Box>
                 )}
 
@@ -306,35 +359,57 @@ export default function PacientesPage() {
                   <Box>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
                       <HomeIcon fontSize="small" color="primary" />
-                      <Typography variant="subtitle2" sx={{ fontWeight: 700, color: 'primary.main', textTransform: 'uppercase', letterSpacing: 0.5, fontSize: 11 }}>
+                      <Typography variant="caption" sx={{ fontWeight: 700, color: 'primary.main', textTransform: 'uppercase', letterSpacing: 0.8, fontSize: 11 }}>
                         Endereço
                       </Typography>
                     </Box>
-                    <Paper variant="outlined" sx={{ borderRadius: 2, p: 2 }}>
-                      <Typography variant="body2">{pacienteSelecionado.endereco}</Typography>
-                    </Paper>
+                    <Typography variant="body2" color="text.primary">{pacienteSelecionado.endereco}</Typography>
                   </Box>
                 )}
 
-                {/* Informações adicionais */}
+                {/* Informações médicas adicionais */}
                 {pacienteSelecionado.informacoesAdicionais && (
                   <Box>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
                       <MedicalInformationIcon fontSize="small" color="warning" />
-                      <Typography variant="subtitle2" sx={{ fontWeight: 700, color: 'warning.main', textTransform: 'uppercase', letterSpacing: 0.5, fontSize: 11 }}>
+                      <Typography variant="caption" sx={{ fontWeight: 700, color: 'warning.main', textTransform: 'uppercase', letterSpacing: 0.8, fontSize: 11 }}>
                         Informações Médicas Adicionais
                       </Typography>
                     </Box>
-                    <Paper variant="outlined" sx={{ borderRadius: 2, p: 2, borderColor: 'warning.main', bgcolor: 'warning.light', opacity: 0.9 }}>
-                      <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>{pacienteSelecionado.informacoesAdicionais}</Typography>
-                    </Paper>
+                    <Box sx={{
+                      p: 2, borderRadius: 2,
+                      border: '1px solid',
+                      borderColor: 'warning.main',
+                      bgcolor: 'transparent',
+                    }}>
+                      <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap', color: 'warning.dark' }}>
+                        ⚠️ {pacienteSelecionado.informacoesAdicionais}
+                      </Typography>
+                    </Box>
+                  </Box>
+                )}
+
+                {/* Se não há nada além do nome */}
+                {!pacienteSelecionado.cpf && !pacienteSelecionado.cartaoSus &&
+                !pacienteSelecionado.dataNascimento && !pacienteSelecionado.profissao &&
+                !pacienteSelecionado.nomePai && !pacienteSelecionado.nomeMae &&
+                !pacienteSelecionado.endereco && !pacienteSelecionado.informacoesAdicionais && (
+                  <Box sx={{ textAlign: 'center', py: 4, color: 'text.secondary' }}>
+                    <PersonIcon sx={{ fontSize: 48, opacity: 0.2, mb: 1 }} />
+                    <Typography variant="body2" sx={{ opacity: 0.5 }}>
+                      Nenhuma informação adicional cadastrada
+                    </Typography>
                   </Box>
                 )}
               </Box>
             </DialogContent>
-            <DialogActions sx={{ p: 2, gap: 1 }}>
+
+            <DialogActions sx={{ p: 2.5, gap: 1, borderTop: '1px solid', borderColor: 'divider' }}>
               <Button onClick={() => setModalDetalhes(false)} variant="outlined">Fechar</Button>
-              <Button onClick={() => { setModalDetalhes(false); abrirEdicao(pacienteSelecionado); }} variant="contained" startIcon={<EditIcon />}>
+              <Button
+                onClick={() => { setModalDetalhes(false); abrirEdicao(pacienteSelecionado); }}
+                variant="contained" startIcon={<EditIcon />}
+              >
                 Editar
               </Button>
             </DialogActions>
@@ -363,10 +438,10 @@ export default function PacientesPage() {
           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, mb: 3 }}>
             <TextField label="Nome completo *" value={form.nome} onChange={(e) => setField('nome', e.target.value)}
               sx={{ flex: '1 1 100%' }} />
-            <TextField label="CPF" value={form.cpf} onChange={(e) => setField('cpf', e.target.value)}
-              placeholder="000.000.000-00" sx={{ flex: '1 1 180px' }} />
-            <TextField label="Cartão SUS" value={form.cartaoSus} onChange={(e) => setField('cartaoSus', e.target.value)}
-              sx={{ flex: '1 1 180px' }} />
+            <TextField label="CPF" value={form.cpf} onChange={(e) => setField('cpf', formatarCpf(e.target.value))}
+              placeholder="000.000.000-00" sx={{ flex: '1 1 180px' }} slotProps={{ htmlInput: { maxLength: 14 } }} />
+            <TextField label="Cartão SUS" value={form.cartaoSus} onChange={(e) => setField('cartaoSus', formatarCartaoSus(e.target.value))}
+              sx={{ flex: '1 1 180px' }} slotProps={{ htmlInput: { maxLength: 19 } }} />
             <TextField label="Data de Nascimento" type="date" value={form.dataNascimento}
               onChange={(e) => setField('dataNascimento', e.target.value)}
               sx={{ flex: '1 1 160px' }} slotProps={{ inputLabel: { shrink: true } }} />

@@ -15,6 +15,7 @@ import LogoutIcon from '@mui/icons-material/Logout';
 import DarkModeIcon from '@mui/icons-material/DarkMode';
 import LightModeIcon from '@mui/icons-material/LightMode';
 import FolderSharedIcon from '@mui/icons-material/FolderShared';
+import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import { useAuth } from '../../contexts/AuthContext';
 
 const DRAWER_WIDTH = 256;
@@ -26,6 +27,7 @@ const menuItems = [
   { label: 'Receitas',   path: '/receitas',   icon: <MedicationIcon />,       perfis: ['Medico'] },
   { label: 'Pacientes',  path: '/pacientes',  icon: <PeopleIcon />,           perfis: ['Recepcionista'] },
   { label: 'Médicos',    path: '/medicos',    icon: <LocalHospitalIcon />,    perfis: ['Recepcionista'] },
+  { label: 'Minha Agenda', path: '/agenda', icon: <CalendarTodayIcon />, perfis: ['Medico'] },
 ];
 
 const perfilCores: Record<string, string> = {

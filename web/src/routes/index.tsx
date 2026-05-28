@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import LoginPage from '../pages/auth/LoginPage';
+import AgendaPage from '../pages/agenda/AgendaPage';
 import CadastroPage from '../pages/auth/CadastroPage';
 import ConsultasPage from '../pages/consultas/ConsultasPage';
 import DashboardPage from '../pages/dashboard/DashboardPage';
@@ -23,6 +24,12 @@ export default function AppRoutes() {
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/cadastro" element={<CadastroPage />} />
+
+        <Route path="/agenda" element={
+          <PrivateRoute perfis={['Medico']}>
+            <AgendaPage />
+          </PrivateRoute>
+        } />
 
         <Route path="/consultas" element={
           <PrivateRoute perfis={['Recepcionista', 'Enfermeiro', 'Medico']}>

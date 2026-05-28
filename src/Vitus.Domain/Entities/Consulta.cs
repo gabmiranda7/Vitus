@@ -17,7 +17,7 @@ namespace Vitus.Domain.Entities
 
         public Consulta(Guid pacienteId, Guid medicoId, Guid prontuarioId, DateTime dataConsulta)
         {
-            if (dataConsulta.ToUniversalTime() < DateTime.UtcNow)
+            if (dataConsulta.ToUniversalTime() < DateTime.UtcNow.AddHours(-4))
                 throw new DomainException("Consulta não pode ser no passado");
             Id = Guid.NewGuid();
             PacienteId = pacienteId;
