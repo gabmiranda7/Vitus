@@ -3,6 +3,7 @@ using FluentAssertions;
 using Vitus.Application.UseCases.Medicos.GetMedicoById;
 using Vitus.Domain.Entities;
 using Vitus.Domain.Interfaces;
+using Vitus.Tests.Helpers;
 
 namespace Vitus.Tests.UseCases.Medicos
 {
@@ -21,7 +22,7 @@ namespace Vitus.Tests.UseCases.Medicos
         public async Task Execute_Success()
         {
             var medicoId = Guid.NewGuid();
-            var medico = new Medico("Dr. Carlos", "Cardiologia", "CRM-MG 12345");
+            var medico = EntidadeFactory.CriarMedico();
 
             _repositoryMock.Setup(r => r.GetById(medicoId)).ReturnsAsync(medico);
 

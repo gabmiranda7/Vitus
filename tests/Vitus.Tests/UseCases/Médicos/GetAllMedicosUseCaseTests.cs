@@ -3,6 +3,7 @@ using FluentAssertions;
 using Vitus.Application.UseCases.Medicos.GetAllMedicos;
 using Vitus.Domain.Entities;
 using Vitus.Domain.Interfaces;
+using Vitus.Tests.Helpers;
 
 namespace Vitus.Tests.UseCases.Medicos
 {
@@ -22,8 +23,8 @@ namespace Vitus.Tests.UseCases.Medicos
         {
             var medicos = new List<Medico>
             {
-                new Medico("Dr. Carlos", "Cardiologia", "CRM-MG 12345"),
-                new Medico("Dra. Ana", "Pediatria", "CRM-SP 67890")
+                EntidadeFactory.CriarMedico("Dr. Carlos", "Cardiologia", "CRM-MG 12345"),
+                EntidadeFactory.CriarMedico("Dra. Ana", "Pediatria", "CRM-SP 67890")
             };
 
             _repositoryMock.Setup(r => r.GetAll()).ReturnsAsync(medicos);

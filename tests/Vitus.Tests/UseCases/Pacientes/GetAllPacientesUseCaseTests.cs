@@ -3,6 +3,7 @@ using FluentAssertions;
 using Vitus.Application.UseCases.Pacientes.GetAllPacientes;
 using Vitus.Domain.Entities;
 using Vitus.Domain.Interfaces;
+using Vitus.Tests.Helpers;
 
 namespace Vitus.Tests.UseCases.Pacientes
 {
@@ -22,8 +23,8 @@ namespace Vitus.Tests.UseCases.Pacientes
         {
             var pacientes = new List<Paciente>
             {
-                new Paciente("João Silva"),
-                new Paciente("Maria Souza")
+                EntidadeFactory.CriarPaciente("João Silva"),
+                EntidadeFactory.CriarPaciente("Maria Souza")
             };
 
             _repositoryMock.Setup(r => r.GetAll()).ReturnsAsync(pacientes);

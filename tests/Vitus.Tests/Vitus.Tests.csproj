@@ -27,9 +27,4 @@
     <ProjectReference Include="..\..\src\Vitus.Communication\Vitus.Communication.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="UseCases\Consultas\" />
-    <Folder Include="UseCases\Auth\" />
-  </ItemGroup>
-
 </Project>

@@ -1,8 +1,8 @@
 ﻿using Moq;
 using FluentAssertions;
 using Vitus.Application.UseCases.Pacientes.GetPacienteById;
-using Vitus.Domain.Entities;
 using Vitus.Domain.Interfaces;
+using Vitus.Tests.Helpers;
 
 namespace Vitus.Tests.UseCases.Pacientes
 {
@@ -21,7 +21,7 @@ namespace Vitus.Tests.UseCases.Pacientes
         public async Task Execute_Success()
         {
             var pacienteId = Guid.NewGuid();
-            var paciente = new Paciente("João Silva");
+            var paciente = EntidadeFactory.CriarPaciente();
 
             _repositoryMock.Setup(r => r.GetById(pacienteId)).ReturnsAsync(paciente);
 
@@ -36,7 +36,8 @@ namespace Vitus.Tests.UseCases.Pacientes
         {
             var pacienteId = Guid.NewGuid();
 
-            _repositoryMock.Setup(r => r.GetById(pacienteId)).ReturnsAsync((Paciente?)null);
+            _repositoryMock.Setup(r => r.GetById(pacienteId))
+                .ReturnsAsync((Vitus.Domain.Entities.Paciente?)null);
 
             var resultado = await _useCase.Execute(pacienteId);
 
