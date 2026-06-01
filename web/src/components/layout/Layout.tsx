@@ -21,13 +21,14 @@ import { useAuth } from '../../contexts/AuthContext';
 const DRAWER_WIDTH = 256;
 
 const menuItems = [
+  { label: 'Minha Agenda', path: '/agenda', icon: <CalendarTodayIcon />, perfis: ['Medico'] },
   { label: 'Dashboard',  path: '/dashboard',  icon: <DashboardIcon />,       perfis: ['Recepcionista', 'Enfermeiro', 'Medico'] },
   { label: 'Consultas',  path: '/consultas',  icon: <EventNoteIcon />,        perfis: ['Recepcionista', 'Enfermeiro', 'Medico'] },
   { label: 'Triagem',    path: '/triagem',    icon: <MedicalServicesIcon />,  perfis: ['Enfermeiro'] },
   { label: 'Receitas',   path: '/receitas',   icon: <MedicationIcon />,       perfis: ['Medico'] },
+  { label: 'Prontuários', path: '/prontuarios', icon: <FolderSharedIcon />, perfis: ['Medico', 'Enfermeiro'] },
   { label: 'Pacientes',  path: '/pacientes',  icon: <PeopleIcon />,           perfis: ['Recepcionista'] },
   { label: 'Médicos',    path: '/medicos',    icon: <LocalHospitalIcon />,    perfis: ['Recepcionista'] },
-  { label: 'Minha Agenda', path: '/agenda', icon: <CalendarTodayIcon />, perfis: ['Medico'] },
 ];
 
 const perfilCores: Record<string, string> = {

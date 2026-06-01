@@ -11,10 +11,11 @@ namespace Vitus.API.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    [Authorize(Roles = "Recepcionista")]
+    [Authorize(Roles = "Recepcionista,Medico,Enfermeiro")]
     public class PacienteController : ControllerBase
     {
         [HttpPost]
+        [Authorize(Roles = "Recepcionista")]
         public async Task<IActionResult> Create(
             [FromServices] CreatePacienteUseCase useCase,
             [FromBody] CreatePacienteRequestJson request)
@@ -24,6 +25,7 @@ namespace Vitus.API.Controllers
         }
 
         [HttpPut("{id}")]
+        [Authorize(Roles = "Recepcionista")]
         public async Task<IActionResult> Update(
             [FromServices] UpdatePacienteUseCase useCase,
             Guid id,
@@ -34,6 +36,7 @@ namespace Vitus.API.Controllers
         }
 
         [HttpDelete("{id}")]
+        [Authorize(Roles = "Recepcionista")]
         public async Task<IActionResult> Delete(
             [FromServices] DeletePacienteUseCase useCase,
             Guid id)
