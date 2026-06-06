@@ -47,13 +47,13 @@ export default function MedicosPage() {
     setMedicos(r.data);
   }
 
-  async function handleSalvar() {
+async function handleSalvar() {
     setErro('');
     try {
       await api.post('/api/medicos', { nome, especialidade, crm });
       fechar(); carregar();
-    } catch { setErro('Erro ao salvar médico'); }
-  }
+    } catch (error: any) { setErro(error.mensagemBack ?? 'Erro ao salvar médico'); }
+}
 
   function fechar() { setModalAberto(false); setNome(''); setEspecialidade(''); setCrm(''); setErro(''); }
 

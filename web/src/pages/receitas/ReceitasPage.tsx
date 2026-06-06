@@ -51,7 +51,7 @@ export default function ReceitasPage() {
     try {
       await api.post('/api/receitas', { consultaId, medicamentos });
       fechar(); carregar();
-    } catch { setErro('Erro ao criar receita'); }
+    } catch (error: any) { setErro(error.mensagemBack ?? 'Erro ao criar receita'); }
   }
 
   function fechar() {

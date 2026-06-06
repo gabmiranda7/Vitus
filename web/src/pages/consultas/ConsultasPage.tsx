@@ -93,7 +93,7 @@ export default function ConsultasPage() {
       const dataUtc = new Date(dataConsulta).toISOString();
       await api.post('/api/consultas', { pacienteId, medicoId, dataConsulta: dataUtc });
       fecharNova(); carregar();
-    } catch { setErro('Erro ao agendar consulta'); }
+    } catch (error: any) { setErro(error.mensagemBack ?? 'Erro ao agendar consulta'); }
   }
 
   function pedirConfirmacao(id: string, acao: string, label: string, cor: 'error' | 'success' | 'warning') {
@@ -109,16 +109,16 @@ export default function ConsultasPage() {
     carregar();
   }
 
-  async function handleSalvarAnotacao() {
+async function handleSalvarAnotacao() {
     if (!consultaSelecionada) return;
     setErro('');
     try {
       await api.patch(`/api/consultas/${consultaSelecionada.id}/anotar`, { anotacoes });
       fecharAnotacao(); carregar();
-    } catch { setErro('Erro ao salvar anotação'); }
-  }
+    } catch (error: any) { setErro(error.mensagemBack ?? 'Erro ao salvar anotação'); }
+}
 
-  async function handleSalvarTriagem() {
+async function handleSalvarTriagem() {
     if (!consultaSelecionada) return;
     setErro('');
     try {
@@ -129,8 +129,8 @@ export default function ConsultasPage() {
       });
       await api.patch(`/api/consultas/${consultaSelecionada.id}/aguardar-atendimento`);
       fecharTriagem(); carregar();
-    } catch { setErro('Erro ao registrar triagem'); }
-  }
+    } catch (error: any) { setErro(error.mensagemBack ?? 'Erro ao registrar triagem'); }
+}
 
   function abrirAnotacao(c: Consulta) { setConsultaSelecionada(c); setAnotacoes(c.anotacoes ?? ''); setModalAnotacao(true); }
   function abrirTriagem(c: Consulta) { setConsultaSelecionada(c); setModalTriagem(true); }

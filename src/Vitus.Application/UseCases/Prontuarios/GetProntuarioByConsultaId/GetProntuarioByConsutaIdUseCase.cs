@@ -62,6 +62,7 @@ namespace Vitus.Application.UseCases.Prontuarios.GetProntuarioByConsultaId
                     {
                         Id = c.Id,
                         PacienteId = c.PacienteId,
+                        MedicoId = c.MedicoId,
                         DataConsulta = c.DataConsulta,
                         Status = c.Status.ToString(),
                         NomePaciente = paciente?.Nome ?? "",

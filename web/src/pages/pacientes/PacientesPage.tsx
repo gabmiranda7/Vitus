@@ -80,26 +80,26 @@ export default function PacientesPage() {
       setErro('O paciente precisa aceitar os termos de uso de dados.');
       return;
     }
-    try {
-      const payload = {
-        nome: form.nome,
-        cpf: form.cpf || null,
-        cartaoSus: form.cartaoSus || null,
-        dataNascimento: form.dataNascimento || null,
-        sexo: form.sexo || null,
-        nomePai: form.nomePai || null,
-        nomeMae: form.nomeMae || null,
-        endereco: form.endereco || null,
-        profissao: form.profissao || null,
-        estadoCivil: form.estadoCivil || null,
-        informacoesAdicionais: form.informacoesAdicionais || null,
-        aceitaTermos: form.aceitaTermos,
-      };
-      if (editando) await api.put(`/api/Paciente/${editando.id}`, payload);
-      else await api.post('/api/Paciente', payload);
-      fechar(); carregar();
-    } catch { setErro('Erro ao salvar paciente'); }
-  }
+  try {
+    const payload = {
+      nome: form.nome,
+      cpf: form.cpf || null,
+      cartaoSus: form.cartaoSus || null,
+      dataNascimento: form.dataNascimento || null,
+      sexo: form.sexo || null,
+      nomePai: form.nomePai || null,
+      nomeMae: form.nomeMae || null,
+      endereco: form.endereco || null,
+      profissao: form.profissao || null,
+      estadoCivil: form.estadoCivil || null,
+      informacoesAdicionais: form.informacoesAdicionais || null,
+      aceitaTermos: form.aceitaTermos,
+    };
+    if (editando) await api.put(`/api/Paciente/${editando.id}`, payload);
+    else await api.post('/api/Paciente', payload);
+    fechar(); carregar();
+  } catch (error: any) { setErro(error.mensagemBack ?? 'Erro ao salvar paciente'); }
+}
 
   async function handleDeletar(id: string) {
     if (!confirm('Deseja excluir este paciente?')) return;

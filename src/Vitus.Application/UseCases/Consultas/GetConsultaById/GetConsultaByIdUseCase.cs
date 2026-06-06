@@ -33,6 +33,7 @@ namespace Vitus.Application.UseCases.Consultas.GetConsultaById
             {
                 Id = consulta.Id,
                 PacienteId = consulta.PacienteId,
+                MedicoId = consulta.MedicoId,
                 DataConsulta = consulta.DataConsulta,
                 Status = consulta.Status.ToString(),
                 NomePaciente = paciente!.Nome,

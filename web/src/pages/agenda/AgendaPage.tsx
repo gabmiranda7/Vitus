@@ -72,13 +72,13 @@ export default function AgendaPage() {
   const hoje = new Date().toDateString();
 
   // Filtra só as consultas do médico logado, hoje
-  const minhasConsultas = consultas
+const minhasConsultas = consultas
     .filter(c => {
       const ehHoje = new Date(c.dataConsulta).toDateString() === hoje;
-      const ehMeuNome = c.nomeMedico.toLowerCase().includes(
-        (usuario?.nome ?? '').split(' ')[0].toLowerCase()
-      );
-      return ehHoje && ehMeuNome;
+      const ehMeuMedico = usuario?.medicoId
+        ? c.medicoId === usuario.medicoId
+        : c.nomeMedico.toLowerCase().includes((usuario?.nome ?? '').split(' ')[0].toLowerCase());
+      return ehHoje && ehMeuMedico;
     })
     .sort((a, b) => new Date(a.dataConsulta).getTime() - new Date(b.dataConsulta).getTime());
 

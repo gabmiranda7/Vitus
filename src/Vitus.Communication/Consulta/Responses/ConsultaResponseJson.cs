@@ -4,6 +4,7 @@
     {
         public Guid Id { get; set; }
         public Guid PacienteId { get; set; }
+        public Guid MedicoId { get; set; }
         public DateTime DataConsulta { get; set; }
         public string Status { get; set; }
         public string NomePaciente { get; set; }

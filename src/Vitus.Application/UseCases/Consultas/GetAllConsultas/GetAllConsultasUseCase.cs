@@ -34,6 +34,7 @@ namespace Vitus.Application.UseCases.Consultas.GetAllConsultas
                 {
                     Id = c.Id,
                     PacienteId = c.PacienteId,
+                    MedicoId = c.MedicoId,
                     DataConsulta = c.DataConsulta,
                     Status = c.Status.ToString(),
                     NomePaciente = paciente.Nome,

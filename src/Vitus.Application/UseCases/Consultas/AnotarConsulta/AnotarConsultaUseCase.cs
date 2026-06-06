@@ -38,6 +38,7 @@ namespace Vitus.Application.UseCases.Consultas.AnotarConsulta
             {
                 Id = consulta.Id,
                 PacienteId = consulta.PacienteId,
+                MedicoId = consulta.MedicoId,
                 DataConsulta = consulta.DataConsulta,
                 Status = consulta.Status.ToString(),
                 NomePaciente = paciente!.Nome,

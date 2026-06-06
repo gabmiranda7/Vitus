@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import {
   Box, Card, CardContent, Chip, Paper, Typography,
-  Alert, useTheme, Avatar
+  Alert, useTheme, Avatar, Button
 } from '@mui/material';
 import FolderSharedIcon from '@mui/icons-material/FolderShared';
 import EditNoteIcon from '@mui/icons-material/EditNote';
@@ -13,9 +13,12 @@ import ThermostatIcon from '@mui/icons-material/Thermostat';
 import MonitorHeartIcon from '@mui/icons-material/MonitorHeart';
 import EventNoteIcon from '@mui/icons-material/EventNote';
 import MedicalServicesIcon from '@mui/icons-material/MedicalServices';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import MedicalInformationIcon from '@mui/icons-material/MedicalInformation';
+import BadgeIcon from '@mui/icons-material/Badge';
 import Layout from '../../components/layout/Layout';
 import api from '../../services/api';
-import { Prontuario, Receita, Triagem, Consulta } from '../../types';
+import { Prontuario, Receita, Triagem, Consulta, Paciente } from '../../types';
 
 const statusCores: Record<string, string> = {
   Agendada: '#1976d2', EmTriagem: '#ed6c02', AguardandoAtendimento: '#0288d1',
@@ -40,13 +43,24 @@ function horaFormatada(data: string) {
   return new Date(data).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
 }
 
+function calcularIdade(dataNascimento?: string): string {
+  if (!dataNascimento) return '';
+  const hoje = new Date();
+  const nasc = new Date(dataNascimento);
+  let idade = hoje.getFullYear() - nasc.getFullYear();
+  const m = hoje.getMonth() - nasc.getMonth();
+  if (m < 0 || (m === 0 && hoje.getDate() < nasc.getDate())) idade--;
+  return `${idade} anos`;
+}
+
 type EventoDia = { tipo: 'triagem'; data: string; item: Triagem }
               | { tipo: 'consulta'; data: string; item: Consulta };
 
-export default function ProntuarioPage() {
+export default function ProntuarioPage(): React.ReactElement {
   const { consultaId } = useParams();
+  const navigate = useNavigate();
   const [prontuario, setProntuario] = useState<Prontuario | null>(null);
-  const [nomePaciente, setNomePaciente] = useState('');
+  const [paciente, setPaciente] = useState<Paciente | null>(null);
   const [erro, setErro] = useState('');
   const theme = useTheme();
 
@@ -60,14 +74,20 @@ export default function ProntuarioPage() {
 
   async function carregar() {
     try {
-      const r = await api.get(`/api/prontuarios/consulta/${consultaId}`);
-      setProntuario(r.data);
-      setNomePaciente(r.data.consultas?.[0]?.nomePaciente ?? '');
+      const rProntuario = await api.get(`/api/prontuarios/consulta/${consultaId}`);
+      setProntuario(rProntuario.data);
+      const pacienteId = rProntuario.data.pacienteId;
+      if (pacienteId) {
+        const rPaciente = await api.get(`/api/Paciente/${pacienteId}`);
+        setPaciente(rPaciente.data);
+      }
     } catch { setErro('Erro ao carregar prontuário'); }
   }
 
   if (erro) return <Layout><Alert severity="error">{erro}</Alert></Layout>;
   if (!prontuario) return <Layout><Typography color="text.secondary">Carregando...</Typography></Layout>;
+
+  const nomePaciente = paciente?.nome ?? prontuario.consultas?.[0]?.nomePaciente ?? 'Paciente';
 
   function receitasDaConsulta(id: string): Receita[] {
     return prontuario!.receitas.filter(r => r.consultaId === id);
@@ -97,19 +117,28 @@ export default function ProntuarioPage() {
   return (
     <Layout>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 3 }}>
-        <FolderSharedIcon color="primary" />
-        <Typography variant="h5" sx={{ fontWeight: 'bold' }}>Prontuário</Typography>
+        <Button
+          startIcon={<ArrowBackIcon />}
+          onClick={() => navigate('/consultas')}
+          variant="outlined"
+          size="small"
+        >
+          Voltar
+        </Button>
       </Box>
 
+      {/* Card do paciente com dados clínicos */}
       <Card sx={{ mb: 3, borderRadius: 2, background: 'linear-gradient(135deg, #1565c0 0%, #1976d2 100%)' }}>
         <CardContent sx={{ p: 3 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Avatar sx={{ bgcolor: 'rgba(255,255,255,0.2)', width: 60, height: 60, border: '2px solid rgba(255,255,255,0.4)' }}>
-              <PersonIcon sx={{ color: 'white', fontSize: 32 }} />
+          <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2, flexWrap: 'wrap' }}>
+            <Avatar sx={{ bgcolor: 'rgba(255,255,255,0.2)', width: 64, height: 64, border: '2px solid rgba(255,255,255,0.4)', flexShrink: 0 }}>
+              <PersonIcon sx={{ color: 'white', fontSize: 34 }} />
             </Avatar>
             <Box sx={{ flex: 1 }}>
-              <Typography variant="h5" sx={{ color: 'white', fontWeight: 'bold' }}>{nomePaciente || 'Paciente'}</Typography>
-              <Box sx={{ display: 'flex', gap: 2, mt: 0.5, flexWrap: 'wrap' }}>
+              <Typography variant="h5" sx={{ color: 'white', fontWeight: 'bold', mb: 0.5 }}>
+                {nomePaciente}
+              </Typography>
+              <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', mb: 1.5 }}>
                 {[
                   { icon: <EventNoteIcon sx={{ fontSize: 16 }} />, label: `${prontuario.consultas.length} consulta(s)` },
                   { icon: <MonitorHeartIcon sx={{ fontSize: 16 }} />, label: `${prontuario.triagens.length} triagem(ns)` },
@@ -122,11 +151,61 @@ export default function ProntuarioPage() {
                   </Box>
                 ))}
               </Box>
+
+              {/* Dados clínicos do paciente */}
+              {paciente && (
+                <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                  {paciente.dataNascimento && (
+                    <Chip
+                      icon={<PersonIcon sx={{ fontSize: 14, color: 'white !important' }} />}
+                      label={`${calcularIdade(paciente.dataNascimento)}${paciente.sexo ? ` · ${paciente.sexo}` : ''}`}
+                      size="small"
+                      sx={{ bgcolor: 'rgba(255,255,255,0.15)', color: 'white', fontSize: 11 }}
+                    />
+                  )}
+                  {paciente.cpf && (
+                    <Chip
+                      icon={<BadgeIcon sx={{ fontSize: 14, color: 'white !important' }} />}
+                      label={`CPF: ${paciente.cpf}`}
+                      size="small"
+                      sx={{ bgcolor: 'rgba(255,255,255,0.15)', color: 'white', fontSize: 11 }}
+                    />
+                  )}
+                  {paciente.cartaoSus && (
+                    <Chip
+                      label={`SUS: ${paciente.cartaoSus}`}
+                      size="small"
+                      sx={{ bgcolor: 'rgba(255,255,255,0.15)', color: 'white', fontSize: 11 }}
+                    />
+                  )}
+                </Box>
+              )}
             </Box>
           </Box>
+
+          {/* Alerta de informações médicas */}
+          {paciente?.informacoesAdicionais && (
+            <Box sx={{
+              mt: 2, p: 1.5, borderRadius: 2,
+              bgcolor: 'rgba(255,152,0,0.25)',
+              border: '1px solid rgba(255,152,0,0.5)',
+              display: 'flex', alignItems: 'flex-start', gap: 1
+            }}>
+              <MedicalInformationIcon sx={{ color: '#ffb74d', fontSize: 18, mt: 0.2, flexShrink: 0 }} />
+              <Box>
+                <Typography variant="caption" sx={{ color: '#ffb74d', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5, display: 'block' }}>
+                  Informações Médicas Adicionais
+                </Typography>
+                <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.9)', mt: 0.25 }}>
+                  {paciente.informacoesAdicionais}
+                </Typography>
+              </Box>
+            </Box>
+          )}
         </CardContent>
       </Card>
 
+      {/* Timeline */}
       <Card sx={{ borderRadius: 2 }}>
         <CardContent sx={{ p: 2.5 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 3 }}>

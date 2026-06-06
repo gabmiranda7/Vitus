@@ -52,6 +52,8 @@ namespace Vitus.Application.UseCases.Prontuarios.GetProntuarioByPacienteId
                     return new ConsultaResponseJson
                     {
                         Id = c.Id,
+                        PacienteId = c.PacienteId,
+                        MedicoId = c.MedicoId,
                         DataConsulta = c.DataConsulta,
                         Status = c.Status.ToString(),
                         NomePaciente = paciente?.Nome ?? "",

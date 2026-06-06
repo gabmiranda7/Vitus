@@ -19,7 +19,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const nome = localStorage.getItem('nome');
     const email = localStorage.getItem('email');
     const perfil = localStorage.getItem('perfil');
-    if (token && nome && email && perfil) return { token, nome, email, perfil };
+    const medicoId = localStorage.getItem('medicoId');
+    if (token && nome && email && perfil) return { token, nome, email, perfil, medicoId: medicoId ?? undefined };
     return null;
   });
 
@@ -39,6 +40,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.setItem('nome', u.nome);
     localStorage.setItem('email', u.email);
     localStorage.setItem('perfil', u.perfil);
+    if (u.medicoId) localStorage.setItem('medicoId', u.medicoId);
     setUsuario(u);
   }
 
@@ -47,6 +49,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem('nome');
     localStorage.removeItem('email');
     localStorage.removeItem('perfil');
+    localStorage.removeItem('medicoId');
     setUsuario(null);
   }
 

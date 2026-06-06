@@ -1,6 +1,7 @@
 export interface Consulta {
   id: string;
   pacienteId: string;
+  medicoId: string;
   dataConsulta: string;
   status: string;
   nomePaciente: string;
@@ -65,4 +66,5 @@ export interface Usuario {
     nome: string;
     email: string;
     perfil: string;
+    medicoId?: string;
 }

@@ -12,4 +12,19 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    const mensagem =
+      error.response?.data?.message ||
+      error.response?.data?.Message ||
+      error.response?.data ||
+      error.message ||
+      'Erro inesperado';
+
+    error.mensagemBack = typeof mensagem === 'string' ? mensagem : 'Erro inesperado';
+    return Promise.reject(error);
+  }
+);
+
 export default api;
