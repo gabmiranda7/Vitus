@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Box, Card, CardContent, Typography, Chip, Avatar,
-  Button, Paper, Divider, LinearProgress
+  Button, Paper, Divider, LinearProgress, Alert
 } from '@mui/material';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
@@ -48,6 +48,7 @@ export default function AgendaPage() {
   const navigate = useNavigate();
   const [consultas, setConsultas] = useState<Consulta[]>([]);
   const [loading, setLoading] = useState(true);
+  const [erro, setErro] = useState('');
 
   useEffect(() => {
     carregar();
@@ -59,20 +60,20 @@ export default function AgendaPage() {
     try {
       const r = await api.get('/api/consultas');
       setConsultas(r.data);
-    } finally {
-      setLoading(false);
-    }
+    } catch (error: any) { setErro(error.mensagemBack ?? 'Erro ao carregar agenda'); }
+    finally { setLoading(false); }
   }
 
   async function mudarStatus(id: string, acao: string) {
-    await api.patch(`/api/consultas/${id}/${acao}`);
-    carregar();
+    try {
+      await api.patch(`/api/consultas/${id}/${acao}`);
+      carregar();
+    } catch (error: any) { setErro(error.mensagemBack ?? 'Erro ao atualizar consulta'); }
   }
 
   const hoje = new Date().toDateString();
 
-  // Filtra só as consultas do médico logado, hoje
-const minhasConsultas = consultas
+  const minhasConsultas = consultas
     .filter(c => {
       const ehHoje = new Date(c.dataConsulta).toDateString() === hoje;
       const ehMeuMedico = usuario?.medicoId
@@ -97,7 +98,8 @@ const minhasConsultas = consultas
         <LinearProgress sx={{ position: 'fixed', top: 64, left: 0, right: 0, zIndex: 9999 }} />
       )}
 
-      {/* Cabeçalho */}
+      {erro && <Alert severity="error" sx={{ mb: 2 }}>{erro}</Alert>}
+
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 3 }}>
         <Box>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
@@ -114,7 +116,6 @@ const minhasConsultas = consultas
         </Button>
       </Box>
 
-      {/* Resumo do dia */}
       <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', mb: 3 }}>
         {[
           { label: 'Total', valor: minhasConsultas.length, cor: '#1976d2' },
@@ -133,7 +134,6 @@ const minhasConsultas = consultas
         ))}
       </Box>
 
-      {/* Barra de progresso */}
       <Card sx={{ borderRadius: 2, mb: 3 }}>
         <CardContent sx={{ p: 2.5 }}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
@@ -144,7 +144,6 @@ const minhasConsultas = consultas
         </CardContent>
       </Card>
 
-      {/* Próxima consulta em destaque */}
       {proxima && (
         <Card sx={{
           borderRadius: 2, mb: 3,
@@ -200,7 +199,6 @@ const minhasConsultas = consultas
         </Card>
       )}
 
-      {/* Lista completa do dia */}
       <Card sx={{ borderRadius: 2 }}>
         <CardContent sx={{ p: 3 }}>
           <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>
@@ -225,14 +223,12 @@ const minhasConsultas = consultas
                       display: 'flex', alignItems: 'center', gap: 2, py: 2,
                       opacity: cancelada ? 0.45 : 1,
                     }}>
-                      {/* Horário */}
                       <Box sx={{ width: 52, textAlign: 'center', flexShrink: 0 }}>
                         <Typography variant="body2" sx={{ fontWeight: 700, color: finalizada ? 'text.disabled' : cor }}>
                           {horaFormatada(c.dataConsulta)}
                         </Typography>
                       </Box>
 
-                      {/* Linha vertical + bolinha */}
                       <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flexShrink: 0 }}>
                         <Box sx={{
                           width: 12, height: 12, borderRadius: '50%',
@@ -242,7 +238,6 @@ const minhasConsultas = consultas
                         }} />
                       </Box>
 
-                      {/* Avatar + info */}
                       <Avatar sx={{ bgcolor: corAvatar(c.nomePaciente), width: 40, height: 40, fontSize: 14, fontWeight: 700, flexShrink: 0 }}>
                         {iniciais(c.nomePaciente)}
                       </Avatar>
@@ -259,7 +254,6 @@ const minhasConsultas = consultas
                         </Typography>
                       </Box>
 
-                      {/* Ações */}
                       <Box sx={{ display: 'flex', gap: 0.5, flexShrink: 0 }}>
                         {c.status === 'AguardandoAtendimento' && (
                           <Button size="small" variant="contained" color="primary"

@@ -41,6 +41,7 @@ export default function TriagemPage() {
   const [consultas, setConsultas] = useState<Consulta[]>([]);
   const [, setTick] = useState(0);
   const [loadingId, setLoadingId] = useState<string | null>(null);
+  const [erro, setErro] = useState('');
 
   useEffect(() => {
     carregar();
@@ -50,8 +51,10 @@ export default function TriagemPage() {
   }, []);
 
   async function carregar() {
-    const r = await api.get('/api/consultas');
-    setConsultas(r.data.filter((c: Consulta) => c.status === 'EmTriagem'));
+    try {
+      const r = await api.get('/api/consultas');
+      setConsultas(r.data.filter((c: Consulta) => c.status === 'EmTriagem'));
+    } catch (error: any) { setErro(error.mensagemBack ?? 'Erro ao carregar triagens'); }
   }
 
   async function handleAguardar(id: string) {
@@ -59,11 +62,14 @@ export default function TriagemPage() {
     try {
       await api.patch(`/api/consultas/${id}/aguardar-atendimento`);
       carregar();
-    } finally { setLoadingId(null); }
+    } catch (error: any) { setErro(error.mensagemBack ?? 'Erro ao enviar paciente para atendimento'); }
+    finally { setLoadingId(null); }
   }
 
   return (
     <Layout>
+      {erro && <Alert severity="error" sx={{ mb: 2 }}>{erro}</Alert>}
+
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <MedicalServicesIcon color="primary" />
