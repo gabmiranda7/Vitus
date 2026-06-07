@@ -166,7 +166,11 @@ export default function PacientesPage() {
 
   const filtrados = useMemo(() => {
     setPagina(1);
-    return pacientes.filter(p => p.nome.toLowerCase().includes(busca.toLowerCase()));
+    const q = busca.toLowerCase();
+    return pacientes.filter(p =>
+      p.nome.toLowerCase().includes(q) ||
+      (p.cpf?.replace(/\D/g, '').includes(busca.replace(/\D/g, '')) && busca.length >= 3)
+    );
   }, [pacientes, busca]);
 
   const totalPaginas = Math.max(1, Math.ceil(filtrados.length / POR_PAGINA));
@@ -185,7 +189,7 @@ export default function PacientesPage() {
         </Button>
       </Box>
 
-      <TextField fullWidth placeholder="Buscar paciente por nome..."
+      <TextField fullWidth placeholder="Buscar paciente por nome ou CPF..."
         value={busca} onChange={(e) => setBusca(e.target.value)} sx={{ mb: 3 }}
         slotProps={{ input: { startAdornment: <InputAdornment position="start"><SearchIcon color="action" /></InputAdornment> } }}
       />
