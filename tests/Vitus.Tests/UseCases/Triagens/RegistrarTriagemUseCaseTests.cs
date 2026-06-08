@@ -3,9 +3,9 @@ using FluentAssertions;
 using Vitus.Application.UseCases.Triagens.RegistrarTriagem;
 using Vitus.Communication.Triagem.Requests;
 using Vitus.Domain.Entities;
-using Vitus.Domain.Enums;
 using Vitus.Domain.Exceptions;
 using Vitus.Domain.Interfaces;
+using Vitus.Tests.Helpers;
 
 namespace Vitus.Tests.UseCases.Triagens
 {
@@ -28,21 +28,6 @@ namespace Vitus.Tests.UseCases.Triagens
             );
         }
 
-        private static Paciente CriarPaciente()
-        {
-            var paciente = new Paciente("João Silva", null, null, null, null, null, null, null, null, null, null, true);
-            paciente.CriarProntuario();
-            return paciente;
-        }
-
-        private static Consulta CriarConsulta(Guid pacienteId, Guid medicoId, StatusConsulta status = StatusConsulta.EmTriagem)
-        {
-            var consulta = new Consulta(pacienteId, medicoId, Guid.NewGuid(), DateTime.UtcNow.AddHours(1));
-            if (status == StatusConsulta.EmTriagem)
-                consulta.IniciarTriagem();
-            return consulta;
-        }
-
         private static CreateTriagemRequestJson RequestValido(Guid consultaId) => new()
         {
             ConsultaId = consultaId,
@@ -54,8 +39,8 @@ namespace Vitus.Tests.UseCases.Triagens
         [Fact]
         public async Task Execute_Success()
         {
-            var paciente = CriarPaciente();
-            var consulta = CriarConsulta(paciente.Id, Guid.NewGuid());
+            var paciente = EntidadeFactory.CriarPaciente();
+            var consulta = EntidadeFactory.CriarConsultaEmTriagem(paciente.Id);
 
             _consultaRepoMock.Setup(r => r.GetById(consulta.Id)).ReturnsAsync(consulta);
             _pacienteRepoMock.Setup(r => r.GetById(paciente.Id)).ReturnsAsync(paciente);
@@ -86,8 +71,7 @@ namespace Vitus.Tests.UseCases.Triagens
         [Fact]
         public async Task Execute_Fail_ConsultaNaoEstaEmTriagem()
         {
-            var paciente = CriarPaciente();
-            var consulta = CriarConsulta(paciente.Id, Guid.NewGuid(), StatusConsulta.Agendada);
+            var consulta = EntidadeFactory.CriarConsulta();
 
             _consultaRepoMock.Setup(r => r.GetById(consulta.Id)).ReturnsAsync(consulta);
 
@@ -100,7 +84,7 @@ namespace Vitus.Tests.UseCases.Triagens
         [Fact]
         public async Task Execute_Fail_PacienteNaoEncontrado()
         {
-            var consulta = CriarConsulta(Guid.NewGuid(), Guid.NewGuid());
+            var consulta = EntidadeFactory.CriarConsultaEmTriagem();
 
             _consultaRepoMock.Setup(r => r.GetById(consulta.Id)).ReturnsAsync(consulta);
             _pacienteRepoMock.Setup(r => r.GetById(It.IsAny<Guid>()))

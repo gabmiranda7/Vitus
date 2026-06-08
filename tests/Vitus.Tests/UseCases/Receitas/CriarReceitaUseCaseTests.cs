@@ -3,9 +3,9 @@ using FluentAssertions;
 using Vitus.Application.UseCases.Receitas.CriarReceita;
 using Vitus.Communication.Receita.Requests;
 using Vitus.Domain.Entities;
-using Vitus.Domain.Enums;
 using Vitus.Domain.Exceptions;
 using Vitus.Domain.Interfaces;
+using Vitus.Tests.Helpers;
 
 namespace Vitus.Tests.UseCases.Receitas
 {
@@ -28,22 +28,6 @@ namespace Vitus.Tests.UseCases.Receitas
             );
         }
 
-        private static Paciente CriarPaciente()
-        {
-            var paciente = new Paciente("João Silva", null, null, null, null, null, null, null, null, null, null, true);
-            paciente.CriarProntuario();
-            return paciente;
-        }
-
-        private static Consulta CriarConsultaEmAtendimento(Guid pacienteId, Guid medicoId)
-        {
-            var consulta = new Consulta(pacienteId, medicoId, Guid.NewGuid(), DateTime.UtcNow.AddHours(1));
-            consulta.IniciarTriagem();
-            consulta.AguardarAtendimento();
-            consulta.IniciarAtendimento();
-            return consulta;
-        }
-
         private static CreateReceitaRequestJson RequestValido(Guid consultaId) => new()
         {
             ConsultaId = consultaId,
@@ -57,8 +41,8 @@ namespace Vitus.Tests.UseCases.Receitas
         [Fact]
         public async Task Execute_Success()
         {
-            var paciente = CriarPaciente();
-            var consulta = CriarConsultaEmAtendimento(paciente.Id, Guid.NewGuid());
+            var paciente = EntidadeFactory.CriarPaciente();
+            var consulta = EntidadeFactory.CriarConsultaEmAtendimento(paciente.Id);
 
             _consultaRepoMock.Setup(r => r.GetById(consulta.Id)).ReturnsAsync(consulta);
             _pacienteRepoMock.Setup(r => r.GetById(paciente.Id)).ReturnsAsync(paciente);
@@ -77,8 +61,8 @@ namespace Vitus.Tests.UseCases.Receitas
         [Fact]
         public async Task Execute_Success_MedicamentoUnico()
         {
-            var paciente = CriarPaciente();
-            var consulta = CriarConsultaEmAtendimento(paciente.Id, Guid.NewGuid());
+            var paciente = EntidadeFactory.CriarPaciente();
+            var consulta = EntidadeFactory.CriarConsultaEmAtendimento(paciente.Id);
 
             _consultaRepoMock.Setup(r => r.GetById(consulta.Id)).ReturnsAsync(consulta);
             _pacienteRepoMock.Setup(r => r.GetById(paciente.Id)).ReturnsAsync(paciente);
@@ -114,8 +98,8 @@ namespace Vitus.Tests.UseCases.Receitas
         [Fact]
         public async Task Execute_Fail_ConsultaNaoEstaEmAtendimento()
         {
-            var paciente = CriarPaciente();
-            var consulta = new Consulta(paciente.Id, Guid.NewGuid(), Guid.NewGuid(), DateTime.UtcNow.AddHours(1));
+            var consulta = EntidadeFactory.CriarConsulta();
+
             _consultaRepoMock.Setup(r => r.GetById(consulta.Id)).ReturnsAsync(consulta);
 
             var act = async () => await _useCase.Execute(RequestValido(consulta.Id));
@@ -127,7 +111,7 @@ namespace Vitus.Tests.UseCases.Receitas
         [Fact]
         public async Task Execute_Fail_PacienteNaoEncontrado()
         {
-            var consulta = CriarConsultaEmAtendimento(Guid.NewGuid(), Guid.NewGuid());
+            var consulta = EntidadeFactory.CriarConsultaEmAtendimento();
 
             _consultaRepoMock.Setup(r => r.GetById(consulta.Id)).ReturnsAsync(consulta);
             _pacienteRepoMock.Setup(r => r.GetById(It.IsAny<Guid>()))
