@@ -35,9 +35,6 @@ namespace Vitus.Tests.UseCases.Consultas
             var paciente = EntidadeFactory.CriarPaciente();
             var medico = EntidadeFactory.CriarMedico();
 
-            // Paciente precisa ter prontuário
-            paciente.CriarProntuario();
-
             _pacienteRepoMock.Setup(r => r.GetById(pacienteId)).ReturnsAsync(paciente);
             _medicoRepoMock.Setup(r => r.GetById(medicoId)).ReturnsAsync(medico);
 
@@ -86,7 +83,6 @@ namespace Vitus.Tests.UseCases.Consultas
             var pacienteId = Guid.NewGuid();
             var medicoId = Guid.NewGuid();
             var paciente = EntidadeFactory.CriarPaciente();
-            paciente.CriarProntuario();
 
             _pacienteRepoMock.Setup(r => r.GetById(pacienteId)).ReturnsAsync(paciente);
             _medicoRepoMock.Setup(r => r.GetById(medicoId))
@@ -111,7 +107,6 @@ namespace Vitus.Tests.UseCases.Consultas
             var pacienteId = Guid.NewGuid();
             var medicoId = Guid.NewGuid();
             var paciente = EntidadeFactory.CriarPaciente();
-            paciente.CriarProntuario();
             var medico = EntidadeFactory.CriarMedico();
 
             _pacienteRepoMock.Setup(r => r.GetById(pacienteId)).ReturnsAsync(paciente);
