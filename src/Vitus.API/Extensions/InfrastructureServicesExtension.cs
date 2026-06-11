@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
 using Vitus.Domain.Interfaces;
 using Vitus.Infrastructure.Data;
 using Vitus.Infrastructure.Repositories;
@@ -22,6 +23,9 @@ namespace Vitus.API.Extensions
                 options.UseNpgsql(connectionString)
                     .UseSnakeCaseNamingConvention());
 
+            services.AddHttpContextAccessor();
+
+            services.AddScoped<IAuditoriaRepository, AuditoriaRepository>();
             services.AddScoped<IConsultaRepository, ConsultaRepository>();
             services.AddScoped<IMedicoRepository, MedicoRepository>();
             services.AddScoped<IPacienteRepository, PacienteRepository>();
@@ -29,6 +33,7 @@ namespace Vitus.API.Extensions
             services.AddScoped<IReceitaRepository, ReceitaRepository>();
             services.AddScoped<ITokenService, TokenService>();
             services.AddScoped<ITriagemRepository, TriagemRepository>();
+            services.AddScoped<IUsuarioContexto, UsuarioContexto>();
             services.AddScoped<IUsuarioRepository, UsuarioRepository>();
 
             return services;

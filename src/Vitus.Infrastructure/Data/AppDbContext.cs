@@ -5,12 +5,13 @@ namespace Vitus.Infrastructure.Data
 {
     public class AppDbContext : DbContext
     {
-        public DbSet<Paciente> Pacientes { get; set; }
-        public DbSet<Medico> Medicos { get; set; }
-        public DbSet<Prontuario> Prontuarios { get; set; }
+        public DbSet<AuditoriaLog> Auditorias { get; set; }
         public DbSet<Consulta> Consultas { get; set; }
-        public DbSet<Triagem> Triagens { get; set; }
+        public DbSet<Medico> Medicos { get; set; }
+        public DbSet<Paciente> Pacientes { get; set; }
+        public DbSet<Prontuario> Prontuarios { get; set; }
         public DbSet<Receita> Receitas { get; set; }
+        public DbSet<Triagem> Triagens { get; set; }
         public DbSet<Usuario> Usuarios { get; set; }
 
         public AppDbContext(DbContextOptions<AppDbContext> options)
