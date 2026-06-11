@@ -1,7 +1,9 @@
 ﻿using Vitus.Communication.Consulta.Requests;
 using Vitus.Communication.Consulta.Responses;
 using Vitus.Domain.Entities;
+using Vitus.Domain.Enums;
 using Vitus.Domain.Interfaces;
+using Vitus.Domain.Services;
 
 namespace Vitus.Application.UseCases.Consultas.CreateConsulta
 {
@@ -10,15 +12,18 @@ namespace Vitus.Application.UseCases.Consultas.CreateConsulta
         private readonly IConsultaRepository _consultaRepository;
         private readonly IMedicoRepository _medicoRepository;
         private readonly IPacienteRepository _pacienteRepository;
+        private readonly IAuditoriaService _auditoriaService;
 
         public CreateConsultaUseCase(
             IConsultaRepository consultaRepository,
             IMedicoRepository medicoRepository,
-            IPacienteRepository pacienteRepository)
+            IPacienteRepository pacienteRepository,
+            IAuditoriaService auditoriaService)
         {
             _consultaRepository = consultaRepository;
             _medicoRepository = medicoRepository;
             _pacienteRepository = pacienteRepository;
+            _auditoriaService = auditoriaService;
         }
 
         public async Task<ConsultaResponseJson> Execute(CreateConsultaRequestJson request)
@@ -41,6 +46,7 @@ namespace Vitus.Application.UseCases.Consultas.CreateConsulta
             );
 
             await _consultaRepository.Add(consulta);
+            await _auditoriaService.Registrar(AcaoAuditoria.CriacaoConsulta, "Consulta", consulta.Id);
 
             return new ConsultaResponseJson
             {
@@ -49,8 +55,8 @@ namespace Vitus.Application.UseCases.Consultas.CreateConsulta
                 MedicoId = consulta.MedicoId,
                 DataConsulta = consulta.DataConsulta,
                 Status = consulta.Status.ToString(),
-                NomePaciente = paciente!.Nome,
-                NomeMedico = medico!.Nome,
+                NomePaciente = paciente.Nome,
+                NomeMedico = medico.Nome,
                 Anotacoes = consulta.Anotacoes
             };
         }

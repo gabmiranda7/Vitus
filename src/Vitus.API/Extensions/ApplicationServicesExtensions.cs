@@ -1,6 +1,4 @@
-﻿using FluentValidation;
-using FluentValidation.AspNetCore;
-using Vitus.Application.UseCases.Auth.Login;
+﻿using Vitus.Application.UseCases.Auth.Login;
 using Vitus.Application.UseCases.Auth.Registrar;
 using Vitus.Application.UseCases.Consultas.AguardarAtendimento;
 using Vitus.Application.UseCases.Consultas.AnotarConsulta;
@@ -24,7 +22,8 @@ using Vitus.Application.UseCases.Prontuarios.GetProntuarioById;
 using Vitus.Application.UseCases.Prontuarios.GetProntuarioByPacienteId;
 using Vitus.Application.UseCases.Receitas.CriarReceita;
 using Vitus.Application.UseCases.Triagens.RegistrarTriagem;
-using Vitus.Application.Validators.Pacientes;
+using Vitus.Domain.Services;
+using Vitus.Infrastructure.Services;
 
 namespace Vitus.API.Extensions
 {
@@ -32,6 +31,8 @@ namespace Vitus.API.Extensions
     {
         public static IServiceCollection AddApplicationServices(this IServiceCollection services)
         {
+            services.AddScoped<IAuditoriaService, AuditoriaService>();
+
             services.AddScoped<LoginUsuarioUseCase>();
             services.AddScoped<RegistrarUsuarioUseCase>();
 
@@ -60,7 +61,6 @@ namespace Vitus.API.Extensions
             services.AddScoped<GetProntuarioByPacienteIdUseCase>();
 
             services.AddScoped<CriarReceitaUseCase>();
-
             services.AddScoped<RegistrarTriagemUseCase>();
 
             return services;

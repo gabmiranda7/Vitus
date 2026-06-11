@@ -1,17 +1,21 @@
 ﻿using Vitus.Communication.Paciente.Requests;
 using Vitus.Communication.Paciente.Responses;
 using Vitus.Domain.Entities;
+using Vitus.Domain.Enums;
 using Vitus.Domain.Interfaces;
+using Vitus.Domain.Services;
 
 namespace Vitus.Application.UseCases.Pacientes.CreatePaciente
 {
     public class CreatePacienteUseCase
     {
         private readonly IPacienteRepository _pacienteRepository;
+        private readonly IAuditoriaService _auditoriaService;
 
-        public CreatePacienteUseCase(IPacienteRepository pacienteRepository)
+        public CreatePacienteUseCase(IPacienteRepository pacienteRepository, IAuditoriaService auditoriaService)
         {
             _pacienteRepository = pacienteRepository;
+            _auditoriaService = auditoriaService;
         }
 
         public async Task<PacienteResponseJson> Execute(CreatePacienteRequestJson request)
@@ -25,6 +29,7 @@ namespace Vitus.Application.UseCases.Pacientes.CreatePaciente
 
             paciente.CriarProntuario();
             await _pacienteRepository.Add(paciente);
+            await _auditoriaService.Registrar(AcaoAuditoria.CriacaoPaciente, "Paciente", paciente.Id);
 
             return MapToResponse(paciente);
         }

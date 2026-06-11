@@ -1,5 +1,7 @@
 ﻿using Vitus.Communication.Consulta.Responses;
+using Vitus.Domain.Enums;
 using Vitus.Domain.Interfaces;
+using Vitus.Domain.Services;
 
 namespace Vitus.Application.UseCases.Consultas.CancelarConsulta
 {
@@ -8,15 +10,18 @@ namespace Vitus.Application.UseCases.Consultas.CancelarConsulta
         private readonly IConsultaRepository _consultaRepository;
         private readonly IPacienteRepository _pacienteRepository;
         private readonly IMedicoRepository _medicoRepository;
+        private readonly IAuditoriaService _auditoriaService;
 
         public CancelarConsultaUseCase(
             IConsultaRepository consultaRepository,
             IPacienteRepository pacienteRepository,
-            IMedicoRepository medicoRepository)
+            IMedicoRepository medicoRepository,
+            IAuditoriaService auditoriaService)
         {
             _consultaRepository = consultaRepository;
             _pacienteRepository = pacienteRepository;
             _medicoRepository = medicoRepository;
+            _auditoriaService = auditoriaService;
         }
 
         public async Task<ConsultaResponseJson> Execute(Guid id)
@@ -29,6 +34,7 @@ namespace Vitus.Application.UseCases.Consultas.CancelarConsulta
             consulta.Cancelar();
 
             await _consultaRepository.Update(consulta);
+            await _auditoriaService.Registrar(AcaoAuditoria.CancelamentoConsulta, "Consulta", consulta.Id);
 
             var paciente = await _pacienteRepository.GetById(consulta.PacienteId);
             var medico = await _medicoRepository.GetById(consulta.MedicoId);

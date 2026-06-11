@@ -1,16 +1,20 @@
 ﻿using Vitus.Communication.Paciente.Requests;
+using Vitus.Domain.Enums;
 using Vitus.Domain.Exceptions;
 using Vitus.Domain.Interfaces;
+using Vitus.Domain.Services;
 
 namespace Vitus.Application.UseCases.Pacientes.UpdatePaciente
 {
     public class UpdatePacienteUseCase
     {
         private readonly IPacienteRepository _repository;
+        private readonly IAuditoriaService _auditoriaService;
 
-        public UpdatePacienteUseCase(IPacienteRepository repository)
+        public UpdatePacienteUseCase(IPacienteRepository repository, IAuditoriaService auditoriaService)
         {
             _repository = repository;
+            _auditoriaService = auditoriaService;
         }
 
         public async Task Execute(Guid id, UpdatePacienteRequestJson request)
@@ -27,6 +31,7 @@ namespace Vitus.Application.UseCases.Pacientes.UpdatePaciente
             );
 
             await _repository.Update(paciente);
+            await _auditoriaService.Registrar(AcaoAuditoria.EdicaoPaciente, "Paciente", paciente.Id);
         }
     }
 }
