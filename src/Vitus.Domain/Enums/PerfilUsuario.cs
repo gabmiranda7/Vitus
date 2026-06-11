@@ -3,5 +3,6 @@
     Medico,
     Enfermeiro,
     Recepcionista,
-    Paciente
+    Paciente,
+    Administrador
 }
