@@ -9,6 +9,7 @@ import DashboardIcon from '@mui/icons-material/Dashboard';
 import PeopleIcon from '@mui/icons-material/People';
 import LocalHospitalIcon from '@mui/icons-material/LocalHospital';
 import EventNoteIcon from '@mui/icons-material/EventNote';
+import HistoryIcon from '@mui/icons-material/History';
 import MedicalServicesIcon from '@mui/icons-material/MedicalServices';
 import MedicationIcon from '@mui/icons-material/Medication';
 import LogoutIcon from '@mui/icons-material/Logout';
@@ -21,6 +22,7 @@ import { useAuth } from '../../contexts/AuthContext';
 const DRAWER_WIDTH = 256;
 
 const menuItems = [
+  { label: 'Auditoria', path: '/auditoria', icon: <HistoryIcon />, perfis: ['Administrador'] },
   { label: 'Minha Agenda', path: '/agenda', icon: <CalendarTodayIcon />, perfis: ['Medico'] },
   { label: 'Dashboard',  path: '/dashboard',  icon: <DashboardIcon />,       perfis: ['Recepcionista', 'Enfermeiro', 'Medico'] },
   { label: 'Consultas',  path: '/consultas',  icon: <EventNoteIcon />,        perfis: ['Recepcionista', 'Enfermeiro', 'Medico'] },
@@ -35,12 +37,14 @@ const perfilCores: Record<string, string> = {
   Medico: '#1565c0',
   Enfermeiro: '#2e7d32',
   Recepcionista: '#6a1b9a',
+  Administrador: '#37474f',
 };
 
 const perfilLabels: Record<string, string> = {
   Medico: 'Médico',
   Enfermeiro: 'Enfermeiro(a)',
   Recepcionista: 'Recepcionista',
+  Administrador: 'Administrador',
 };
 
 function iniciaisNome(nome: string) {

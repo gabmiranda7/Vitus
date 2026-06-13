@@ -1,4 +1,5 @@
-﻿using Vitus.Application.UseCases.Auth.Login;
+﻿using Vitus.Application.UseCases.Auditoria.GetAuditoriaLogs;
+using Vitus.Application.UseCases.Auth.Login;
 using Vitus.Application.UseCases.Auth.Registrar;
 using Vitus.Application.UseCases.Consultas.AguardarAtendimento;
 using Vitus.Application.UseCases.Consultas.AnotarConsulta;
@@ -31,6 +32,7 @@ namespace Vitus.API.Extensions
     {
         public static IServiceCollection AddApplicationServices(this IServiceCollection services)
         {
+            services.AddScoped<GetAuditoriaLogsUseCase>();
             services.AddScoped<IAuditoriaService, AuditoriaService>();
 
             services.AddScoped<LoginUsuarioUseCase>();

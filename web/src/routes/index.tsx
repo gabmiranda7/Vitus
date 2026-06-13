@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import AuditoriaPage from '../pages/auditoria/AuditoriaPage';
 import LoginPage from '../pages/auth/LoginPage';
 import AgendaPage from '../pages/agenda/AgendaPage';
 import CadastroPage from '../pages/auth/CadastroPage';
@@ -30,6 +31,12 @@ export default function AppRoutes() {
         <Route path="/agenda" element={
           <PrivateRoute perfis={['Medico']}>
             <AgendaPage />
+          </PrivateRoute>
+        } />
+
+        <Route path="/auditoria" element={
+          <PrivateRoute perfis={['Administrador']}>
+            <AuditoriaPage />
           </PrivateRoute>
         } />
 

@@ -1,3 +1,14 @@
+export interface AuditoriaLog {
+    id: string;
+    usuarioId: string;
+    usuarioNome: string;
+    acao: string;
+    entidadeAfetada: string;
+    entidadeId: string;
+    dataHora: string;
+    detalhes?: string;
+}
+
 export interface Consulta {
   id: string;
   pacienteId: string;
