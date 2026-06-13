@@ -10,12 +10,14 @@ namespace Vitus.Tests.UseCases.Pacientes
     public class DeletePacienteUseCaseTests
     {
         private readonly Mock<IPacienteRepository> _repositoryMock;
+        private readonly Mock<IAuditoriaService> _auditoriaServiceMock;
         private readonly DeletePacienteUseCase _useCase;
 
         public DeletePacienteUseCaseTests()
         {
             _repositoryMock = new Mock<IPacienteRepository>();
-            _useCase = new DeletePacienteUseCase(_repositoryMock.Object);
+            _auditoriaServiceMock = new Mock<IAuditoriaService>();
+            _useCase = new DeletePacienteUseCase(_repositoryMock.Object, _auditoriaServiceMock.Object);
         }
 
         [Fact]

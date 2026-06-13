@@ -1,7 +1,6 @@
 ﻿using Vitus.Domain.Enums;
 using Vitus.Domain.Exceptions;
 using Vitus.Domain.Interfaces;
-using Vitus.Domain.Services;
 
 namespace Vitus.Application.UseCases.Pacientes.DeletePaciente
 {

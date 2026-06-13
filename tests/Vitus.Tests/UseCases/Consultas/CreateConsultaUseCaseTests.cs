@@ -13,6 +13,7 @@ namespace Vitus.Tests.UseCases.Consultas
         private readonly Mock<IConsultaRepository> _consultaRepoMock;
         private readonly Mock<IMedicoRepository> _medicoRepoMock;
         private readonly Mock<IPacienteRepository> _pacienteRepoMock;
+        private readonly Mock<IAuditoriaService> _auditoriaServiceMock;
         private readonly CreateConsultaUseCase _useCase;
 
         public CreateConsultaUseCaseTests()
@@ -20,10 +21,12 @@ namespace Vitus.Tests.UseCases.Consultas
             _consultaRepoMock = new Mock<IConsultaRepository>();
             _medicoRepoMock = new Mock<IMedicoRepository>();
             _pacienteRepoMock = new Mock<IPacienteRepository>();
+            _auditoriaServiceMock = new Mock<IAuditoriaService>();
             _useCase = new CreateConsultaUseCase(
                 _consultaRepoMock.Object,
                 _medicoRepoMock.Object,
-                _pacienteRepoMock.Object
+                _pacienteRepoMock.Object,
+                _auditoriaServiceMock.Object
             );
         }
 

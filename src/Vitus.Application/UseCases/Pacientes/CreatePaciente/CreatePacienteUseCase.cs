@@ -3,7 +3,6 @@ using Vitus.Communication.Paciente.Responses;
 using Vitus.Domain.Entities;
 using Vitus.Domain.Enums;
 using Vitus.Domain.Interfaces;
-using Vitus.Domain.Services;
 
 namespace Vitus.Application.UseCases.Pacientes.CreatePaciente
 {

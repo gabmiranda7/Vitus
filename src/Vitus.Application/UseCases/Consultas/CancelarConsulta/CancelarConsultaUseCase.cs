@@ -1,7 +1,6 @@
 ﻿using Vitus.Communication.Consulta.Responses;
 using Vitus.Domain.Enums;
 using Vitus.Domain.Interfaces;
-using Vitus.Domain.Services;
 
 namespace Vitus.Application.UseCases.Consultas.CancelarConsulta
 {

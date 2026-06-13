@@ -14,6 +14,7 @@ namespace Vitus.Tests.UseCases.Receitas
         private readonly Mock<IConsultaRepository> _consultaRepoMock;
         private readonly Mock<IPacienteRepository> _pacienteRepoMock;
         private readonly Mock<IReceitaRepository> _receitaRepoMock;
+        private readonly Mock<IAuditoriaService> _auditoriaServiceMock;
         private readonly CriarReceitaUseCase _useCase;
 
         public CriarReceitaUseCaseTests()
@@ -21,10 +22,12 @@ namespace Vitus.Tests.UseCases.Receitas
             _consultaRepoMock = new Mock<IConsultaRepository>();
             _pacienteRepoMock = new Mock<IPacienteRepository>();
             _receitaRepoMock = new Mock<IReceitaRepository>();
+            _auditoriaServiceMock = new Mock<IAuditoriaService>();
             _useCase = new CriarReceitaUseCase(
                 _consultaRepoMock.Object,
                 _pacienteRepoMock.Object,
-                _receitaRepoMock.Object
+                _receitaRepoMock.Object,
+                _auditoriaServiceMock.Object
             );
         }
 

@@ -22,7 +22,7 @@ using Vitus.Application.UseCases.Prontuarios.GetProntuarioById;
 using Vitus.Application.UseCases.Prontuarios.GetProntuarioByPacienteId;
 using Vitus.Application.UseCases.Receitas.CriarReceita;
 using Vitus.Application.UseCases.Triagens.RegistrarTriagem;
-using Vitus.Domain.Services;
+using Vitus.Domain.Interfaces;
 using Vitus.Infrastructure.Services;
 
 namespace Vitus.API.Extensions

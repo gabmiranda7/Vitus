@@ -1,6 +1,6 @@
 ﻿using Vitus.Domain.Enums;
 
-namespace Vitus.Domain.Services
+namespace Vitus.Domain.Interfaces
 {
     public interface IAuditoriaService
     {

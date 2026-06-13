@@ -5,7 +5,6 @@ using Vitus.Communication.Triagem.Responses;
 using Vitus.Domain.Enums;
 using Vitus.Domain.Exceptions;
 using Vitus.Domain.Interfaces;
-using Vitus.Domain.Services;
 
 namespace Vitus.Application.UseCases.Prontuarios.GetProntuarioById
 {

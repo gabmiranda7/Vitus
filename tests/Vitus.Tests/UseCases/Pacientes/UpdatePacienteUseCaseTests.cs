@@ -11,12 +11,14 @@ namespace Vitus.Tests.UseCases.Pacientes
     public class UpdatePacienteUseCaseTests
     {
         private readonly Mock<IPacienteRepository> _repositoryMock;
+        private readonly Mock<IAuditoriaService> _auditoriaServiceMock;
         private readonly UpdatePacienteUseCase _useCase;
 
         public UpdatePacienteUseCaseTests()
         {
             _repositoryMock = new Mock<IPacienteRepository>();
-            _useCase = new UpdatePacienteUseCase(_repositoryMock.Object);
+            _auditoriaServiceMock = new Mock<IAuditoriaService>();
+            _useCase = new UpdatePacienteUseCase(_repositoryMock.Object, _auditoriaServiceMock.Object);
         }
 
         private static UpdatePacienteRequestJson RequestValido(string nome = "João Atualizado") => new()
