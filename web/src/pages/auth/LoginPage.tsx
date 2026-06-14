@@ -31,6 +31,7 @@ export default function LoginPage() {
       if (perfil === 'Recepcionista') navigate('/dashboard');
       else if (perfil === 'Enfermeiro') navigate('/dashboard');
       else if (perfil === 'Medico') navigate('/dashboard');
+      else if (perfil === 'Administrador') navigate('/auditoria');
       else navigate('/login');
     } catch (err: unknown) {
       const e = err as { response?: { data?: { messages?: string[] } } };
