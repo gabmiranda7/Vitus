@@ -28,7 +28,12 @@ namespace Vitus.Application.UseCases.Pacientes.CreatePaciente
 
             paciente.CriarProntuario();
             await _pacienteRepository.Add(paciente);
-            await _auditoriaService.Registrar(AcaoAuditoria.CriacaoPaciente, "Paciente", paciente.Id);
+            await _auditoriaService.Registrar(
+                AcaoAuditoria.CriacaoPaciente,
+                "Paciente",
+                paciente.Id,
+                $"Paciente '{paciente.Nome}' cadastrado"
+            );
 
             return MapToResponse(paciente);
         }

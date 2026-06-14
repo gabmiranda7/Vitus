@@ -22,7 +22,12 @@ namespace Vitus.Application.UseCases.Pacientes.DeletePaciente
             if (paciente == null)
                 throw new DomainException("Paciente não encontrado.");
 
-            await _auditoriaService.Registrar(AcaoAuditoria.ExclusaoPaciente, "Paciente", paciente.Id, paciente.Nome);
+            await _auditoriaService.Registrar(
+                AcaoAuditoria.ExclusaoPaciente,
+                "Paciente",
+                paciente.Id,
+                $"Paciente '{paciente.Nome}' excluído"
+                        );
             await _repository.Delete(paciente);
         }
     }
