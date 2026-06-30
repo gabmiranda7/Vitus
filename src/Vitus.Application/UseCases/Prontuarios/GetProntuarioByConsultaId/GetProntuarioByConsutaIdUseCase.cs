@@ -55,6 +55,7 @@ namespace Vitus.Application.UseCases.Prontuarios.GetProntuarioByConsultaId
                 {
                     Id = t.Id,
                     ProntuarioId = t.ProntuarioId,
+                    ConsultaId = t.ConsultaId,
                     Observacoes = t.Observacoes,
                     PressaoArterial = t.PressaoArterial,
                     Temperatura = t.Temperatura,

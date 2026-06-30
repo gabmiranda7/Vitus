@@ -14,7 +14,6 @@ namespace Vitus.Tests.UseCases.Triagens
         private readonly Mock<IConsultaRepository> _consultaRepoMock;
         private readonly Mock<ITriagemRepository> _triagemRepoMock;
         private readonly Mock<IPacienteRepository> _pacienteRepoMock;
-        private readonly Mock<IAuditoriaService> _auditoriaServiceMock;
         private readonly RegistrarTriagemUseCase _useCase;
 
         public RegistrarTriagemUseCaseTests()
@@ -22,12 +21,10 @@ namespace Vitus.Tests.UseCases.Triagens
             _consultaRepoMock = new Mock<IConsultaRepository>();
             _triagemRepoMock = new Mock<ITriagemRepository>();
             _pacienteRepoMock = new Mock<IPacienteRepository>();
-            _auditoriaServiceMock = new Mock<IAuditoriaService>();
             _useCase = new RegistrarTriagemUseCase(
                 _consultaRepoMock.Object,
                 _triagemRepoMock.Object,
-                _pacienteRepoMock.Object,
-                _auditoriaServiceMock.Object
+                _pacienteRepoMock.Object
             );
         }
 

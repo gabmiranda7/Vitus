@@ -15,6 +15,9 @@ namespace Vitus.Infrastructure.Mappings
             builder.Property(t => t.Observacoes)
                    .HasMaxLength(500);
 
+            builder.Property(t => t.ConsultaId)
+                .IsRequired();
+
             builder.Property(t => t.PressaoArterial)
                    .HasMaxLength(20);
 

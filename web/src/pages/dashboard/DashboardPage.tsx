@@ -2,11 +2,11 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Box, Card, CardContent, Typography, Chip, Avatar,
-  LinearProgress, Button, Paper
+  LinearProgress, Button, Paper, useTheme, alpha,
 } from '@mui/material';
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip,
-  ResponsiveContainer, PieChart, Pie, Cell, Legend
+  ResponsiveContainer,
 } from 'recharts';
 import EventNoteIcon from '@mui/icons-material/EventNote';
 import MedicalServicesIcon from '@mui/icons-material/MedicalServices';
@@ -54,21 +54,15 @@ function saudacao() {
 
 function dataHoje() {
   return new Date().toLocaleDateString('pt-BR', {
-    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
   });
-}
-
-interface StatCard {
-  label: string;
-  valor: number;
-  cor: string;
-  icon: React.ReactNode;
-  descricao: string;
 }
 
 export default function DashboardPage() {
   const { usuario } = useAuth();
   const navigate = useNavigate();
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
   const [consultas, setConsultas] = useState<Consulta[]>([]);
   const [totalPacientes, setTotalPacientes] = useState(0);
   const [totalMedicos, setTotalMedicos] = useState(0);
@@ -96,10 +90,7 @@ export default function DashboardPage() {
   }
 
   const hoje = new Date().toDateString();
-  const consultasHoje = consultas.filter(c =>
-    new Date(c.dataConsulta).toDateString() === hoje
-  );
-
+  const consultasHoje = consultas.filter(c => new Date(c.dataConsulta).toDateString() === hoje);
   const ativas = consultas.filter(c =>
     ['Agendada', 'EmTriagem', 'AguardandoAtendimento', 'EmAtendimento'].includes(c.status)
   );
@@ -108,10 +99,7 @@ export default function DashboardPage() {
   const emAtendimento = consultas.filter(c => c.status === 'EmAtendimento');
   const finalizadas = consultas.filter(c => c.status === 'Finalizada');
   const canceladas = consultas.filter(c => c.status === 'Cancelada');
-  const finalizadasHoje = finalizadas.filter(c =>
-    new Date(c.dataConsulta).toDateString() === hoje
-  );
-
+  const finalizadasHoje = finalizadas.filter(c => new Date(c.dataConsulta).toDateString() === hoje);
   const progressoHoje = consultasHoje.length > 0
     ? Math.round((finalizadasHoje.length / consultasHoje.length) * 100)
     : 0;
@@ -121,31 +109,20 @@ export default function DashboardPage() {
     d.setDate(d.getDate() - (6 - i));
     const label = DIAS_SEMANA[d.getDay()];
     const dateStr = d.toDateString();
-    const total = consultas.filter(c =>
-      new Date(c.dataConsulta).toDateString() === dateStr
-    ).length;
-    const finalizadasDia = consultas.filter(c =>
+    const total = consultas.filter(c => new Date(c.dataConsulta).toDateString() === dateStr).length;
+    const fin = consultas.filter(c =>
       new Date(c.dataConsulta).toDateString() === dateStr && c.status === 'Finalizada'
     ).length;
-    return { label, total, finalizadas: finalizadasDia };
+    return { label, total, finalizadas: fin };
   });
 
-  const dadosPizza = [
-    { name: 'Agendada', value: consultas.filter(c => c.status === 'Agendada').length, cor: '#1976d2' },
-    { name: 'Em Triagem', value: emTriagem.length, cor: '#ed6c02' },
-    { name: 'Aguardando', value: aguardando.length, cor: '#0288d1' },
-    { name: 'Em Atendimento', value: emAtendimento.length, cor: '#7b1fa2' },
-    { name: 'Finalizada', value: finalizadas.length, cor: '#2e7d32' },
-    { name: 'Cancelada', value: canceladas.length, cor: '#d32f2f' },
-  ].filter(d => d.value > 0);
-
-  const statCards: StatCard[] = [
-    { label: 'Consultas Ativas', valor: ativas.length, cor: '#1976d2', icon: <EventNoteIcon />, descricao: 'Em andamento agora' },
-    { label: 'Em Triagem', valor: emTriagem.length, cor: '#ed6c02', icon: <MedicalServicesIcon />, descricao: 'Aguardando triagem' },
-    { label: 'Aguardando', valor: aguardando.length, cor: '#0288d1', icon: <HourglassIcon />, descricao: 'Aguardando atendimento' },
-    { label: 'Em Atendimento', valor: emAtendimento.length, cor: '#7b1fa2', icon: <LocalHospitalIcon />, descricao: 'Com médico agora' },
-    { label: 'Finalizadas Hoje', valor: finalizadasHoje.length, cor: '#2e7d32', icon: <CheckCircleIcon />, descricao: 'Concluídas no dia' },
-    { label: 'Canceladas', valor: canceladas.length, cor: '#d32f2f', icon: <CancelIcon />, descricao: 'Total canceladas' },
+  const miniStats = [
+    { label: 'Ativas',        valor: ativas.length,        cor: '#1976d2', icon: <EventNoteIcon sx={{ fontSize: 14 }} /> },
+    { label: 'Em Triagem',    valor: emTriagem.length,      cor: '#ed6c02', icon: <MedicalServicesIcon sx={{ fontSize: 14 }} /> },
+    { label: 'Aguardando',    valor: aguardando.length,     cor: '#0288d1', icon: <HourglassIcon sx={{ fontSize: 14 }} /> },
+    { label: 'Atendimento',   valor: emAtendimento.length,  cor: '#7b1fa2', icon: <LocalHospitalIcon sx={{ fontSize: 14 }} /> },
+    { label: 'Finalizadas',   valor: finalizadasHoje.length, cor: '#2e7d32', icon: <CheckCircleIcon sx={{ fontSize: 14 }} /> },
+    { label: 'Canceladas',    valor: canceladas.length,     cor: '#d32f2f', icon: <CancelIcon sx={{ fontSize: 14 }} /> },
   ];
 
   return (
@@ -154,7 +131,8 @@ export default function DashboardPage() {
         <LinearProgress sx={{ position: 'fixed', top: 64, left: 0, right: 0, zIndex: 9999 }} />
       )}
 
-      <Box sx={{ mb: 4 }}>
+      {/* Cabeçalho */}
+      <Box sx={{ mb: 3 }}>
         <Typography variant="h4" sx={{ fontWeight: 800, mb: 0.5 }}>
           {saudacao()}, {usuario?.nome?.split(' ')[0]}! 👋
         </Typography>
@@ -163,40 +141,110 @@ export default function DashboardPage() {
         </Typography>
       </Box>
 
-      {/* Cards de estatísticas */}
-      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, mb: 3 }}>
-        {statCards.map((s) => (
-          <Box key={s.label} sx={{ flex: '1 1 150px', minWidth: 130 }}>
-            <Card sx={{
-              borderRadius: 3, height: '100%',
-              borderTop: `4px solid ${s.cor}`,
-              transition: '0.2s', '&:hover': { boxShadow: 6 }
-            }}>
-              <CardContent sx={{ p: 2.5 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5 }}>
-                  <Box sx={{ p: 1, borderRadius: 2, bgcolor: `${s.cor}18` }}>
-                    <Box sx={{ color: s.cor, display: 'flex' }}>{s.icon}</Box>
-                  </Box>
-                  <Typography variant="h4" sx={{ fontWeight: 800, color: s.cor }}>{s.valor}</Typography>
-                </Box>
-                <Typography variant="body2" sx={{ fontWeight: 600 }}>{s.label}</Typography>
-                <Typography variant="caption" color="text.secondary">{s.descricao}</Typography>
-              </CardContent>
-            </Card>
+      {/* Mini chips de stat — compactos, em linha */}
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 3 }}>
+        {miniStats.map((s) => (
+          <Box key={s.label} sx={{
+            display: 'flex', alignItems: 'center', gap: 0.75,
+            px: 1.5, py: 0.75, borderRadius: 2,
+            bgcolor: alpha(s.cor, isDark ? 0.15 : 0.08),
+            border: `1px solid ${alpha(s.cor, 0.2)}`,
+          }}>
+            <Box sx={{ color: s.cor, display: 'flex', alignItems: 'center' }}>{s.icon}</Box>
+            <Typography variant="body2" sx={{ fontWeight: 700, color: s.cor }}>{s.valor}</Typography>
+            <Typography variant="caption" color="text.secondary">{s.label}</Typography>
           </Box>
         ))}
       </Box>
 
-      {/* Gráficos */}
+      {/* Ativas Agora — destaque principal */}
+      <Card sx={{ borderRadius: 3, mb: 3 }}>
+        <CardContent sx={{ p: 3 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2.5 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <AccessTimeIcon color="warning" />
+              <Typography variant="h6" sx={{ fontWeight: 700 }}>Ativas Agora</Typography>
+              {ativas.length > 0 && (
+                <Chip label={ativas.length} size="small" color="warning" />
+              )}
+            </Box>
+            <Button size="small" endIcon={<ArrowForwardIcon />} onClick={() => navigate('/consultas')}>
+              Ver todas
+            </Button>
+          </Box>
+
+          {ativas.length === 0 ? (
+            <Box sx={{ textAlign: 'center', py: 5, color: 'text.secondary' }}>
+              <EventNoteIcon sx={{ fontSize: 44, opacity: 0.15, mb: 1 }} />
+              <Typography variant="body2" sx={{ opacity: 0.5 }}>Nenhuma consulta ativa no momento</Typography>
+            </Box>
+          ) : (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+              {ativas.slice(0, 8).map((c) => {
+                const cor = statusCores[c.status] ?? '#1976d2';
+                return (
+                  <Paper
+                    key={c.id}
+                    variant="outlined"
+                    onClick={() => navigate('/consultas')}
+                    sx={{
+                      p: 2, borderRadius: 2,
+                      borderLeft: `4px solid ${cor}`,
+                      cursor: 'pointer', transition: '0.15s',
+                      '&:hover': { bgcolor: 'action.hover', transform: 'translateX(2px)' },
+                    }}
+                  >
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                      <Avatar sx={{
+                        width: 40, height: 40, fontSize: 13, fontWeight: 700,
+                        bgcolor: corAvatar(c.nomePaciente), flexShrink: 0,
+                      }}>
+                        {iniciais(c.nomePaciente)}
+                      </Avatar>
+                      <Box sx={{ flex: 1, minWidth: 0 }}>
+                        <Typography variant="body2" sx={{
+                          fontWeight: 600,
+                          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                        }}>
+                          {c.nomePaciente}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {c.nomeMedico} · {new Date(c.dataConsulta).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                        </Typography>
+                      </Box>
+                      <Chip
+                        label={statusLabels[c.status]}
+                        size="small"
+                        sx={{ bgcolor: alpha(cor, 0.12), color: cor, fontWeight: 600, fontSize: 11, flexShrink: 0 }}
+                      />
+                    </Box>
+                  </Paper>
+                );
+              })}
+              {ativas.length > 8 && (
+                <Typography
+                  variant="caption" color="text.secondary"
+                  sx={{ textAlign: 'center', pt: 1, cursor: 'pointer', '&:hover': { color: 'primary.main' } }}
+                  onClick={() => navigate('/consultas')}
+                >
+                  +{ativas.length - 8} consultas — ver todas
+                </Typography>
+              )}
+            </Box>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Gráfico + Progresso do dia */}
       <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', mb: 3 }}>
-        <Box sx={{ flex: '2 1 400px' }}>
-          <Card sx={{ borderRadius: 3 }}>
+        <Box sx={{ flex: '2 1 380px' }}>
+          <Card sx={{ borderRadius: 3, height: '100%' }}>
             <CardContent sx={{ p: 3 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 3 }}>
                 <TrendingUpIcon color="primary" />
-                <Typography variant="h6" sx={{ fontWeight: 700 }}>Consultas — Últimos 7 Dias</Typography>
+                <Typography variant="h6" sx={{ fontWeight: 700 }}>Últimos 7 Dias</Typography>
               </Box>
-              <ResponsiveContainer width="100%" height={200}>
+              <ResponsiveContainer width="100%" height={180}>
                 <BarChart data={dadosSemana} barGap={4}>
                   <XAxis dataKey="label" tick={{ fontSize: 12 }} axisLine={false} tickLine={false} />
                   <YAxis allowDecimals={false} tick={{ fontSize: 12 }} axisLine={false} tickLine={false} />
@@ -204,180 +252,77 @@ export default function DashboardPage() {
                     contentStyle={{ borderRadius: 8, fontSize: 13 }}
                     formatter={(value, name) => [value, name === 'total' ? 'Total' : 'Finalizadas']}
                   />
-                  <Bar dataKey="total" fill="#1976d220" radius={[4, 4, 0, 0]} name="total" />
+                  <Bar dataKey="total" fill={alpha('#1976d2', 0.15)} radius={[4, 4, 0, 0]} name="total" />
                   <Bar dataKey="finalizadas" fill="#1976d2" radius={[4, 4, 0, 0]} name="finalizadas" />
                 </BarChart>
               </ResponsiveContainer>
               <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center', mt: 1 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                  <Box sx={{ width: 12, height: 12, borderRadius: 1, bgcolor: '#1976d220', border: '1px solid #1976d2' }} />
-                  <Typography variant="caption" color="text.secondary">Total agendadas</Typography>
-                </Box>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                  <Box sx={{ width: 12, height: 12, borderRadius: 1, bgcolor: '#1976d2' }} />
-                  <Typography variant="caption" color="text.secondary">Finalizadas</Typography>
-                </Box>
-              </Box>
-            </CardContent>
-          </Card>
-        </Box>
-
-        <Box sx={{ flex: '1 1 280px' }}>
-          <Card sx={{ borderRadius: 3, height: '100%' }}>
-            <CardContent sx={{ p: 3 }}>
-              <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>Distribuição de Status</Typography>
-              {dadosPizza.length === 0 ? (
-                <Box sx={{ textAlign: 'center', py: 4, color: 'text.secondary' }}>
-                  <Typography variant="body2" sx={{ opacity: 0.5 }}>Nenhuma consulta</Typography>
-                </Box>
-              ) : (
-                <ResponsiveContainer width="100%" height={200}>
-                  <PieChart>
-                    <Pie
-                      data={dadosPizza}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={50}
-                      outerRadius={80}
-                      dataKey="value"
-                      paddingAngle={3}
-                    >
-                      {dadosPizza.map((entry, index) => (
-                        <Cell key={index} fill={entry.cor} />
-                      ))}
-                    </Pie>
-                    <RechartsTooltip
-                      contentStyle={{ borderRadius: 8, fontSize: 13 }}
-                      formatter={(value, name) => [value, name]}
-                    />
-                    <Legend
-                      iconType="circle"
-                      iconSize={8}
-                      formatter={(value) => (
-                        <span style={{ fontSize: 11 }}>{value}</span>
-                      )}
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
-              )}
-            </CardContent>
-          </Card>
-        </Box>
-      </Box>
-
-      <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-        <Box sx={{ flex: '1 1 300px' }}>
-          <Card sx={{ borderRadius: 3, mb: 2 }}>
-            <CardContent sx={{ p: 3 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <TrendingUpIcon color="primary" />
-                  <Typography variant="h6" sx={{ fontWeight: 700 }}>Progresso do Dia</Typography>
-                </Box>
-                <Chip label={`${consultasHoje.length} hoje`} size="small" color="primary" variant="outlined" />
-              </Box>
-              <Box sx={{ mb: 1.5 }}>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-                  <Typography variant="body2" color="text.secondary">Consultas finalizadas</Typography>
-                  <Typography variant="body2" sx={{ fontWeight: 600 }}>{progressoHoje}%</Typography>
-                </Box>
-                <LinearProgress variant="determinate" value={progressoHoje} sx={{ height: 8, borderRadius: 4 }} />
-              </Box>
-              <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mt: 2 }}>
                 {[
-                  { label: 'Agendadas', valor: consultasHoje.filter(c => c.status === 'Agendada').length, cor: '#1976d2' },
-                  { label: 'Em andamento', valor: consultasHoje.filter(c => ['EmTriagem', 'AguardandoAtendimento', 'EmAtendimento'].includes(c.status)).length, cor: '#ed6c02' },
-                  { label: 'Finalizadas', valor: finalizadasHoje.length, cor: '#2e7d32' },
+                  { label: 'Total agendadas', color: alpha('#1976d2', 0.15), border: true },
+                  { label: 'Finalizadas', color: '#1976d2', border: false },
                 ].map(item => (
-                  <Box key={item.label} sx={{
-                    flex: 1, textAlign: 'center', p: 1.5, borderRadius: 2,
-                    bgcolor: `${item.cor}10`, border: `1px solid ${item.cor}30`
-                  }}>
-                    <Typography variant="h5" sx={{ fontWeight: 800, color: item.cor }}>{item.valor}</Typography>
+                  <Box key={item.label} sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                    <Box sx={{ width: 12, height: 12, borderRadius: 1, bgcolor: item.color, border: item.border ? `1px solid #1976d2` : 'none' }} />
                     <Typography variant="caption" color="text.secondary">{item.label}</Typography>
                   </Box>
                 ))}
               </Box>
             </CardContent>
           </Card>
-
-          {usuario?.perfil === 'Recepcionista' && (
-            <Card sx={{ borderRadius: 3 }}>
-              <CardContent sx={{ p: 3 }}>
-                <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>Base de Dados</Typography>
-                <Box sx={{ display: 'flex', gap: 2 }}>
-                  <Box sx={{ flex: 1, p: 2, borderRadius: 2, bgcolor: 'primary.main', textAlign: 'center', cursor: 'pointer' }}
-                    onClick={() => navigate('/pacientes')}>
-                    <PeopleIcon sx={{ color: 'white', fontSize: 28, mb: 0.5 }} />
-                    <Typography variant="h5" sx={{ color: 'white', fontWeight: 800 }}>{totalPacientes}</Typography>
-                    <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.8)' }}>Pacientes</Typography>
-                  </Box>
-                  <Box sx={{ flex: 1, p: 2, borderRadius: 2, bgcolor: '#1565c0', textAlign: 'center', cursor: 'pointer' }}
-                    onClick={() => navigate('/medicos')}>
-                    <LocalHospitalIcon sx={{ color: 'white', fontSize: 28, mb: 0.5 }} />
-                    <Typography variant="h5" sx={{ color: 'white', fontWeight: 800 }}>{totalMedicos}</Typography>
-                    <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.8)' }}>Médicos</Typography>
-                  </Box>
-                </Box>
-              </CardContent>
-            </Card>
-          )}
         </Box>
 
-        <Box sx={{ flex: '1 1 300px' }}>
-          <Card sx={{ borderRadius: 3 }}>
-            <CardContent sx={{ p: 3 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <AccessTimeIcon color="warning" />
-                  <Typography variant="h6" sx={{ fontWeight: 700 }}>Ativas Agora</Typography>
+        <Box sx={{ flex: '1 1 200px' }}>
+          <Card sx={{ borderRadius: 3, height: '100%' }}>
+            <CardContent sx={{ p: 3, display: 'flex', flexDirection: 'column', gap: 2, height: '100%', boxSizing: 'border-box' }}>
+              <Box>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
+                  <TrendingUpIcon color="primary" fontSize="small" />
+                  <Typography variant="h6" sx={{ fontWeight: 700 }}>Progresso</Typography>
                 </Box>
-                <Button size="small" endIcon={<ArrowForwardIcon />} onClick={() => navigate('/consultas')}>
-                  Ver todas
-                </Button>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
+                  <Typography variant="body2" color="text.secondary">Hoje</Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 700 }}>{progressoHoje}%</Typography>
+                </Box>
+                <LinearProgress variant="determinate" value={progressoHoje} sx={{ height: 8, borderRadius: 5 }} />
               </Box>
 
-              {ativas.length === 0 ? (
-                <Box sx={{ textAlign: 'center', py: 6, color: 'text.secondary' }}>
-                  <EventNoteIcon sx={{ fontSize: 48, opacity: 0.2, mb: 1 }} />
-                  <Typography variant="body2" sx={{ opacity: 0.5 }}>Nenhuma consulta ativa</Typography>
-                </Box>
-              ) : (
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, maxHeight: 380, overflowY: 'auto' }}>
-                  {ativas.slice(0, 8).map((c) => {
-                    const cor = statusCores[c.status] ?? '#1976d2';
-                    return (
-                      <Paper key={c.id} variant="outlined" sx={{
-                        p: 1.5, borderRadius: 2, borderLeft: `4px solid ${cor}`,
-                        cursor: 'pointer', transition: '0.15s',
-                        '&:hover': { bgcolor: 'action.hover' }
-                      }}
-                        onClick={() => navigate('/consultas')}
-                      >
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                          <Avatar sx={{ width: 36, height: 36, fontSize: 13, fontWeight: 700, bgcolor: corAvatar(c.nomePaciente), flexShrink: 0 }}>
-                            {iniciais(c.nomePaciente)}
-                          </Avatar>
-                          <Box sx={{ flex: 1, minWidth: 0 }}>
-                            <Typography variant="body2" sx={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                              {c.nomePaciente}
-                            </Typography>
-                            <Typography variant="caption" color="text.secondary">{c.nomeMedico}</Typography>
-                          </Box>
-                          <Chip
-                            label={statusLabels[c.status]}
-                            size="small"
-                            sx={{ bgcolor: cor, color: 'white', fontWeight: 600, fontSize: 10, flexShrink: 0 }}
-                          />
-                        </Box>
-                      </Paper>
-                    );
-                  })}
-                  {ativas.length > 8 && (
-                    <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center', pt: 1 }}>
-                      +{ativas.length - 8} consultas — ver todas
-                    </Typography>
-                  )}
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
+                {[
+                  { label: 'Agendadas', valor: consultasHoje.filter(c => c.status === 'Agendada').length, cor: '#1976d2' },
+                  { label: 'Em andamento', valor: consultasHoje.filter(c => ['EmTriagem', 'AguardandoAtendimento', 'EmAtendimento'].includes(c.status)).length, cor: '#ed6c02' },
+                  { label: 'Finalizadas', valor: finalizadasHoje.length, cor: '#2e7d32' },
+                ].map(item => (
+                  <Box key={item.label} sx={{
+                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                    px: 1.5, py: 0.875, borderRadius: 2,
+                    bgcolor: alpha(item.cor, isDark ? 0.15 : 0.07),
+                  }}>
+                    <Typography variant="caption" color="text.secondary">{item.label}</Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 700, color: item.cor }}>{item.valor}</Typography>
+                  </Box>
+                ))}
+              </Box>
+
+              {usuario?.perfil === 'Recepcionista' && (
+                <Box sx={{ display: 'flex', gap: 1.5, mt: 'auto' }}>
+                  <Box sx={{
+                    flex: 1, p: 1.5, borderRadius: 2, bgcolor: 'primary.main',
+                    textAlign: 'center', cursor: 'pointer',
+                    transition: '0.15s', '&:hover': { opacity: 0.9 },
+                  }} onClick={() => navigate('/pacientes')}>
+                    <PeopleIcon sx={{ color: 'white', fontSize: 20, mb: 0.25 }} />
+                    <Typography variant="h6" sx={{ color: 'white', fontWeight: 800, lineHeight: 1 }}>{totalPacientes}</Typography>
+                    <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.8)' }}>Pacientes</Typography>
+                  </Box>
+                  <Box sx={{
+                    flex: 1, p: 1.5, borderRadius: 2, bgcolor: '#1565c0',
+                    textAlign: 'center', cursor: 'pointer',
+                    transition: '0.15s', '&:hover': { opacity: 0.9 },
+                  }} onClick={() => navigate('/medicos')}>
+                    <LocalHospitalIcon sx={{ color: 'white', fontSize: 20, mb: 0.25 }} />
+                    <Typography variant="h6" sx={{ color: 'white', fontWeight: 800, lineHeight: 1 }}>{totalMedicos}</Typography>
+                    <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.8)' }}>Médicos</Typography>
+                  </Box>
                 </Box>
               )}
             </CardContent>

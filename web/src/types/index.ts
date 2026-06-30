@@ -66,6 +66,7 @@ export interface Receita {
 export interface Triagem {
     id: string;
     prontuarioId: string;
+    consultaId: string;
     observacoes: string;
     pressaoArterial: string;
     temperatura: number;
