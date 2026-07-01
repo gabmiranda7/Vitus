@@ -10,6 +10,10 @@ using Vitus.Application.UseCases.Consultas.GetAllConsultas;
 using Vitus.Application.UseCases.Consultas.GetConsultaById;
 using Vitus.Application.UseCases.Consultas.IniciarAtendimento;
 using Vitus.Application.UseCases.Consultas.IniciarTriagem;
+using Vitus.Application.UseCases.Exames.AnexarArquivo;
+using Vitus.Application.UseCases.Exames.DownloadArquivo;
+using Vitus.Application.UseCases.Exames.GetExamesByProntuario;
+using Vitus.Application.UseCases.Exames.RegistrarExame;
 using Vitus.Application.UseCases.Medicos.CreateMedico;
 using Vitus.Application.UseCases.Medicos.GetAllMedicos;
 using Vitus.Application.UseCases.Medicos.GetMedicoById;
@@ -47,6 +51,11 @@ namespace Vitus.API.Extensions
             services.AddScoped<GetConsultaByIdUseCase>();
             services.AddScoped<IniciarAtendimentoUseCase>();
             services.AddScoped<IniciarTriagemUseCase>();
+
+            services.AddScoped<AnexarArquivoExameUseCase>();
+            services.AddScoped<DownloadArquivoExameUseCase>();
+            services.AddScoped<GetExamesByProntuarioUseCase>();
+            services.AddScoped<RegistrarExameUseCase>();
 
             services.AddScoped<CreateMedicoUseCase>();
             services.AddScoped<GetAllMedicosUseCase>();
