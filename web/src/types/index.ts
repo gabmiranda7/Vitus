@@ -20,6 +20,20 @@ export interface Consulta {
   anotacoes?: string;
 }
 
+export interface Exame {
+  id: string;
+  prontuarioId: string;
+  consultaId?: string;
+  categoria: string;
+  nome: string;
+  descricao?: string;
+  medicoSolicitante: string;
+  dataExame: string;
+  observacoes?: string;
+  nomeArquivoOriginal?: string;
+  temArquivo: boolean;
+}
+
 export interface Medicamento {
     nome: string;
     dosagem: string;

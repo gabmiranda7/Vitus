@@ -21,7 +21,7 @@ namespace Vitus.Application.Validators.Auth
 
             RuleFor(x => x.Perfil)
                 .NotEmpty().WithMessage("Perfil é obrigatório")
-                .Must(p => new[] { "Medico", "Enfermeiro", "Recepcionista", "Paciente" }.Contains(p))
+                .Must(p => new[] { "Medico", "Enfermeiro", "Recepcionista", "Paciente", "Administrador" }.Contains(p))
                 .WithMessage("Perfil inválido. Use: Medico, Enfermeiro, Recepcionista ou Paciente");
         }
     }

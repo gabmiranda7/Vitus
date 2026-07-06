@@ -14,6 +14,7 @@ namespace Vitus.API.Controllers
     public class ExameController : ControllerBase
     {
         [HttpPost]
+        [Authorize(Roles = "Medico")]
         public async Task<IActionResult> Registrar(
             [FromServices] RegistrarExameUseCase useCase,
             [FromBody] CreateExameRequestJson request)
@@ -32,6 +33,7 @@ namespace Vitus.API.Controllers
         }
 
         [HttpPost("{id}/arquivo")]
+        [Authorize(Roles = "Medico")]
         public async Task<IActionResult> AnexarArquivo(
             [FromServices] AnexarArquivoExameUseCase useCase,
             Guid id,
