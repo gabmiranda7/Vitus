@@ -1,0 +1,84 @@
+﻿using Vitus.Communication.Receita.Requests;
+using Vitus.Domain.Enums;
+using Vitus.Domain.Exceptions;
+using Vitus.Domain.Interfaces;
+
+namespace Vitus.Application.UseCases.Receitas.GerarReceita
+{
+    public class GerarReceitaUseCase
+    {
+        private readonly IConsultaRepository _consultaRepository;
+        private readonly IPacienteRepository _pacienteRepository;
+        private readonly IMedicoRepository _medicoRepository;
+        private readonly IReceitaRepository _receitaRepository;
+        private readonly IDocumentoService _documentoService;
+        private readonly IAuditoriaService _auditoriaService;
+
+        public GerarReceitaUseCase(
+            IConsultaRepository consultaRepository,
+            IPacienteRepository pacienteRepository,
+            IMedicoRepository medicoRepository,
+            IReceitaRepository receitaRepository,
+            IDocumentoService documentoService,
+            IAuditoriaService auditoriaService)
+        {
+            _consultaRepository = consultaRepository;
+            _pacienteRepository = pacienteRepository;
+            _medicoRepository = medicoRepository;
+            _receitaRepository = receitaRepository;
+            _documentoService = documentoService;
+            _auditoriaService = auditoriaService;
+        }
+
+        public async Task<(byte[] Arquivo, string NomeArquivo)> Execute(GerarReceitaRequestJson request)
+        {
+            var consulta = await _consultaRepository.GetById(request.ConsultaId);
+            if (consulta == null)
+                throw new DomainException("Consulta não encontrada");
+
+            if (consulta.Status != StatusConsulta.EmAtendimento)
+                throw new DomainException("Receita só pode ser gerada durante o atendimento");
+
+            var paciente = await _pacienteRepository.GetById(consulta.PacienteId);
+            if (paciente == null)
+                throw new DomainException("Paciente não encontrado");
+
+            var medico = await _medicoRepository.GetById(consulta.MedicoId);
+            if (medico == null)
+                throw new DomainException("Médico não encontrado");
+
+            if (!Enum.TryParse<TipoReceita>(request.TipoReceita, ignoreCase: true, out var tipoReceita))
+                throw new DomainException("Tipo de receita inválido. Use: Comum ou Especial");
+
+            if (!Enum.TryParse<TipoUso>(request.TipoUso, ignoreCase: true, out var tipoUso))
+                throw new DomainException("Tipo de uso inválido. Use: Oral, Interno ou Externo");
+
+            var receita = new Vitus.Domain.Entities.Receita(consulta.Id);
+            foreach (var m in request.Medicamentos)
+                receita.AdicionarMedicamento(m.Nome, m.Dosagem, m.Posologia);
+
+            paciente.Prontuario.AdicionarReceita(receita);
+            await _receitaRepository.Add(receita);
+            await _auditoriaService.Registrar(AcaoAuditoria.EmissaoReceita, "Receita", receita.Id);
+
+            var medicamentosDoc = request.Medicamentos
+                .Select(m => ($"{m.Nome}{(string.IsNullOrWhiteSpace(m.Dosagem) ? "" : $" {m.Dosagem}")}", m.Posologia))
+                .ToList();
+
+            var dataFormatada = DateTime.Now.ToString("dd/MM/yyyy");
+
+            var arquivo = await _documentoService.GerarReceita(
+                tipoReceita,
+                tipoUso,
+                paciente.Nome,
+                paciente.Endereco,
+                medico.Nome,
+                dataFormatada,
+                medicamentosDoc);
+
+            var nomeArquivo = $"Receita_{tipoReceita}_{paciente.Nome.Replace(" ", "_")}_{dataFormatada.Replace("/", "-")}.docx";
+
+            return (arquivo, nomeArquivo);
+        }
+    }
+}
