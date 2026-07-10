@@ -29,7 +29,9 @@ namespace Vitus.Infrastructure.Services
                 ? "receita_especial.docx"
                 : "receita_comum.docx";
 
-            var caminhoTemplate = Path.Combine(_raizTemplates, nomeTemplate);
+            var caminhoTemplate = Path.Combine(
+                _raizTemplates.Replace('/', Path.DirectorySeparatorChar),
+                nomeTemplate);
 
             if (!File.Exists(caminhoTemplate))
                 throw new FileNotFoundException($"Template não encontrado: {caminhoTemplate}");
@@ -39,10 +41,6 @@ namespace Vitus.Infrastructure.Services
                 await fs.CopyToAsync(ms);
             ms.Position = 0;
 
-            using var doc = WordprocessingDocument.Open(ms, true);
-            var body = doc.MainDocumentPart!.Document.Body!;
-            var paragrafos = body.Elements<Paragraph>().ToList();
-
             var labelUso = tipoUso switch
             {
                 TipoUso.Interno => "Uso Interno:",
@@ -50,96 +48,97 @@ namespace Vitus.Infrastructure.Services
                 _ => "Uso Oral:"
             };
 
-            foreach (var paragrafo in paragrafos)
+            var doc = WordprocessingDocument.Open(ms, true);
+            var body = doc.MainDocumentPart!.Document.Body!;
+
+            // Substitui Nome, Endereço, Uso e Data — colapsa todos os runs em um único
+            foreach (var para in body.Elements<Paragraph>().ToList())
             {
-                var texto = ObterTexto(paragrafo);
+                var texto = TextoParagrafo(para);
 
-                if (texto.StartsWith("Nome:"))
-                    SubstituirTexto(paragrafo, $"Nome: {nomePaciente}");
+                if (texto.StartsWith("Nome:", StringComparison.OrdinalIgnoreCase))
+                    ColapsarRuns(para, $"Nome: {nomePaciente}");
 
-                else if (texto.StartsWith("End:"))
-                    SubstituirTexto(paragrafo, $"End: {enderecoPaciente ?? string.Empty}");
+                else if (texto.StartsWith("End:", StringComparison.OrdinalIgnoreCase))
+                    ColapsarRuns(para, $"End: {enderecoPaciente ?? string.Empty}");
 
-                else if (texto.StartsWith("Uso Oral:") ||
-                         texto.StartsWith("Uso Interno:") ||
-                         texto.StartsWith("Uso Externo:"))
-                    SubstituirTexto(paragrafo, labelUso);
+                else if (texto.StartsWith("Uso ", StringComparison.OrdinalIgnoreCase) &&
+                         (texto.Contains("Oral", StringComparison.OrdinalIgnoreCase) ||
+                          texto.Contains("Interno", StringComparison.OrdinalIgnoreCase) ||
+                          texto.Contains("Externo", StringComparison.OrdinalIgnoreCase)))
+                    ColapsarRuns(para, labelUso);
+
+                else if (ContemData(texto))
+                    ColapsarRuns(para, $"{new string(' ', 75)}{dataReceita}");
             }
 
+            // Localiza parágrafo de Uso após substituição
             var parasLista = body.Elements<Paragraph>().ToList();
             var idxUso = parasLista.FindIndex(p =>
-                ObterTexto(p).StartsWith("Uso Oral:") ||
-                ObterTexto(p).StartsWith("Uso Interno:") ||
-                ObterTexto(p).StartsWith("Uso Externo:"));
+                TextoParagrafo(p).StartsWith("Uso ", StringComparison.OrdinalIgnoreCase));
 
             if (idxUso >= 0)
             {
-                var parasRemover = parasLista.Skip(idxUso + 1)
-                    .TakeWhile(p => {
-                        var t = ObterTexto(p);
-                        return !t.StartsWith("Nome:") &&
-                               !t.StartsWith("End:") &&
-                               !t.TrimStart().StartsWith("06/") &&
-                               !string.IsNullOrWhiteSpace(t) == false || !string.IsNullOrWhiteSpace(t);
-                    })
-                    .Where(p => {
-                        var t = ObterTexto(p);
-                        return !t.StartsWith("Nome:") &&
-                               !t.TrimStart().Contains("2026") &&
-                               !t.TrimStart().Contains("2025") &&
-                               !string.IsNullOrWhiteSpace(t);
-                    })
-                    .ToList();
+                // Remove parágrafos de medicamento do template (entre Uso e parágrafo vazio/data)
+                var parasRemover = new List<Paragraph>();
+                for (int i = idxUso + 1; i < parasLista.Count; i++)
+                {
+                    var t = TextoParagrafo(parasLista[i]);
+                    if (string.IsNullOrWhiteSpace(t) || ContemData(t)) break;
+                    parasRemover.Add(parasLista[i]);
+                }
+                foreach (var p in parasRemover) p.Remove();
 
-                foreach (var p in parasRemover)
-                    p.Remove();
-
+                // Recarrega e insere medicamentos
                 parasLista = body.Elements<Paragraph>().ToList();
                 idxUso = parasLista.FindIndex(p =>
-                    ObterTexto(p).StartsWith("Uso Oral:") ||
-                    ObterTexto(p).StartsWith("Uso Interno:") ||
-                    ObterTexto(p).StartsWith("Uso Externo:"));
+                    TextoParagrafo(p).StartsWith("Uso ", StringComparison.OrdinalIgnoreCase));
 
-                var referencia = parasLista[idxUso];
+                var refPara = parasLista[idxUso];
 
-                foreach (var (med, pos) in medicamentos)
+                // Insere em ordem reversa para manter sequência correta
+                foreach (var (med, pos) in ((IEnumerable<(string, string)>)medicamentos).Reverse())
                 {
-                    var paraMed = CriarParagrafo(referencia, med);
-                    var paraPos = CriarParagrafo(referencia, pos);
-                    referencia.InsertAfterSelf(paraPos);
-                    referencia.InsertAfterSelf(paraMed);
+                    refPara.InsertAfterSelf(CriarParagrafo(refPara, pos));
+                    refPara.InsertAfterSelf(CriarParagrafo(refPara, med));
                 }
             }
 
-            parasLista = body.Elements<Paragraph>().ToList();
-            var paraData = parasLista.FirstOrDefault(p => ObterTexto(p).Contains("/202"));
-            if (paraData != null)
-                SubstituirTexto(paraData, $"{new string(' ', 76)}{dataReceita}");
+            doc.MainDocumentPart!.Document.Save();
+            doc.Dispose();
 
-            doc.MainDocumentPart.Document.Save();
             return ms.ToArray();
         }
 
-        private static string ObterTexto(Paragraph paragrafo)
-            => string.Concat(paragrafo.Elements<Run>().Select(r => r.InnerText));
+        private static string TextoParagrafo(Paragraph para)
+            => string.Concat(para.Elements<Run>().Select(r => r.InnerText));
 
-        private static void SubstituirTexto(Paragraph paragrafo, string novoTexto)
+        private static bool ContemData(string texto)
+            => texto.Contains("/202") || texto.Contains("/203");
+
+        private static void ColapsarRuns(Paragraph para, string novoTexto)
         {
-            var runs = paragrafo.Elements<Run>().ToList();
-            if (!runs.Any()) return;
+            var runs = para.Elements<Run>().ToList();
+            if (runs.Count == 0) return;
 
-            var primeiroRun = runs.First();
-            var textElement = primeiroRun.GetFirstChild<Text>();
-            if (textElement == null)
+            // Pega as propriedades do primeiro run para preservar formatação
+            var primeiroRun = runs[0];
+            var runProps = primeiroRun.GetFirstChild<RunProperties>();
+
+            // Remove todos os runs
+            foreach (var r in runs) r.Remove();
+
+            // Cria um único run novo com o texto completo
+            var novoRun = new Run();
+            if (runProps != null)
+                novoRun.AppendChild((RunProperties)runProps.CloneNode(true));
+
+            novoRun.AppendChild(new Text(novoTexto)
             {
-                textElement = new Text();
-                primeiroRun.AppendChild(textElement);
-            }
-            textElement.Text = novoTexto;
-            textElement.Space = SpaceProcessingModeValues.Preserve;
+                Space = SpaceProcessingModeValues.Preserve
+            });
 
-            foreach (var run in runs.Skip(1))
-                run.Remove();
+            para.AppendChild(novoRun);
         }
 
         private static Paragraph CriarParagrafo(Paragraph referencia, string texto)
@@ -152,8 +151,11 @@ namespace Vitus.Infrastructure.Services
             if (runRefProps != null)
                 novoRun.AppendChild((RunProperties)runRefProps.CloneNode(true));
 
-            var textEl = new Text(texto) { Space = SpaceProcessingModeValues.Preserve };
-            novoRun.AppendChild(textEl);
+            novoRun.AppendChild(new Text(texto)
+            {
+                Space = SpaceProcessingModeValues.Preserve
+            });
+
             novoPara.AppendChild(novoRun);
             return novoPara;
         }

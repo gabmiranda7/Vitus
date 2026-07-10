@@ -3,8 +3,7 @@ import {
   Box, Button, Chip, Dialog, DialogActions, DialogContent,
   Divider, FormControl, IconButton, InputLabel, MenuItem, Select,
   TextField, Typography, Alert, Card, CardContent,
-  Avatar, InputAdornment, Paper, CircularProgress,
-  NavigateBeforeIcon as _NB
+  Avatar, InputAdornment, Paper, CircularProgress
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -14,6 +13,7 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import NavigateBeforeIcon from '@mui/icons-material/NavigateBefore';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 import PersonIcon from '@mui/icons-material/Person';
+import DownloadIcon from '@mui/icons-material/Download';
 import Layout from '../../components/layout/Layout';
 import api from '../../services/api';
 import { Consulta, Medicamento, Paciente, Prontuario } from '../../types';
@@ -29,6 +29,19 @@ function corAvatar(nome: string) {
   return cores[nome.charCodeAt(0) % cores.length];
 }
 
+const TIPOS_RECEITA = [
+  { value: 'Comum', label: 'Receita Comum (1 via)' },
+  { value: 'Especial', label: 'Receita Especial (2 vias — controlados)' },
+];
+
+const TIPOS_USO = [
+  { value: 'Oral', label: 'Uso Oral' },
+  { value: 'Interno', label: 'Uso Interno' },
+  { value: 'Externo', label: 'Uso Externo' },
+];
+
+const medVazio = (): Medicamento => ({ nome: '', dosagem: '', posologia: '', quantidade: '' });
+
 export default function ReceitasPage() {
   const [pacientes, setPacientes] = useState<Paciente[]>([]);
   const [consultasAtivas, setConsultasAtivas] = useState<Consulta[]>([]);
@@ -40,10 +53,21 @@ export default function ReceitasPage() {
   const [erroProntuario, setErroProntuario] = useState('');
   const [modalAberto, setModalAberto] = useState(false);
   const [consultaId, setConsultaId] = useState('');
-  const [medicamentos, setMedicamentos] = useState<Medicamento[]>([{ nome: '', dosagem: '', posologia: '' }]);
+  const [tipoReceita, setTipoReceita] = useState('Comum');
+  const [tipoUso, setTipoUso] = useState('Oral');
+  const [medicamentos, setMedicamentos] = useState<Medicamento[]>([medVazio()]);
   const [erro, setErro] = useState('');
+  const [gerando, setGerando] = useState(false);
 
   useEffect(() => { carregar(); }, []);
+
+  useEffect(() => {
+    if (consultasAtivas.length > 0) {
+      setConsultaId(prev =>
+        prev && consultasAtivas.some(c => c.id === prev) ? prev : consultasAtivas[0].id
+      );
+    }
+  }, [consultasAtivas]);
 
   async function carregar() {
     const [rPacientes, rConsultas] = await Promise.all([
@@ -75,23 +99,63 @@ export default function ReceitasPage() {
     setErroProntuario('');
   }
 
-  function addMed() { setMedicamentos([...medicamentos, { nome: '', dosagem: '', posologia: '' }]); }
+  function addMed() { setMedicamentos([...medicamentos, medVazio()]); }
   function removeMed(i: number) { setMedicamentos(medicamentos.filter((_, idx) => idx !== i)); }
   function changeMed(i: number, campo: keyof Medicamento, valor: string) {
     const novos = [...medicamentos]; novos[i][campo] = valor; setMedicamentos(novos);
   }
 
-  async function handleSalvar() {
+  async function handleGerar() {
     setErro('');
+    if (!consultaId) return setErro('Selecione uma consulta');
+    if (medicamentos.some(m => !m.nome.trim())) return setErro('Preencha o nome de todos os medicamentos');
+
+    setGerando(true);
     try {
-      await api.post('/api/receitas', { consultaId, medicamentos });
-      fechar(); carregar();
-    } catch (error: any) { setErro(error.mensagemBack ?? 'Erro ao criar receita'); }
+      const r = await api.post('/api/receitas/gerar', {
+        consultaId,
+        tipoReceita,
+        tipoUso,
+        medicamentos,
+      }, { responseType: 'blob' });
+
+      const contentDisposition = r.headers['content-disposition'] ?? '';
+      const match = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+      const nomeArquivo = match ? match[1].replace(/['"]/g, '') : `Receita_${tipoReceita}.docx`;
+
+      const url = URL.createObjectURL(new Blob([r.data]));
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = nomeArquivo;
+      a.click();
+      URL.revokeObjectURL(url);
+
+      fechar();
+      carregar();
+      if (pacienteSelecionado) await abrirPaciente(pacienteSelecionado);
+    } catch (error: any) {
+      let mensagem = 'Erro ao gerar receita';
+      if (error.response?.data instanceof Blob) {
+        const texto = await error.response.data.text();
+        try {
+          const json = JSON.parse(texto);
+          mensagem = json.Messages?.[0] ?? json.mensagem ?? json.title ?? mensagem;
+        } catch { mensagem = texto; }
+      } else {
+        mensagem = error.response?.data?.mensagem ?? mensagem;
+      }
+      setErro(mensagem);
+    } finally {
+      setGerando(false);
+    }
   }
 
   function fechar() {
-    setModalAberto(false); setConsultaId('');
-    setMedicamentos([{ nome: '', dosagem: '', posologia: '' }]); setErro('');
+    setModalAberto(false);
+    setTipoReceita('Comum');
+    setTipoUso('Oral');
+    setMedicamentos([medVazio()]);
+    setErro('');
   }
 
   const filtrados = useMemo(() => {
@@ -105,10 +169,104 @@ export default function ReceitasPage() {
 
   const totalPaginas = Math.max(1, Math.ceil(filtrados.length / POR_PAGINA));
   const paginaAtual = filtrados.slice((pagina - 1) * POR_PAGINA, pagina * POR_PAGINA);
-
   const receitas = prontuario?.receitas ?? [];
 
-  // --- View: receitas do paciente selecionado ---
+  const modalReceita = (
+    <Dialog open={modalAberto} onClose={fechar} fullWidth maxWidth="md">
+      <Box sx={{ background: 'linear-gradient(135deg, #1565c0 0%, #1976d2 100%)', p: 3 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <Avatar sx={{ bgcolor: 'rgba(255,255,255,0.2)', width: 52, height: 52, border: '2px solid rgba(255,255,255,0.4)' }}>
+            <MedicationIcon sx={{ color: 'white', fontSize: 28 }} />
+          </Avatar>
+          <Box>
+            <Typography variant="h6" sx={{ color: 'white', fontWeight: 'bold' }}>Nova Receita</Typography>
+            <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.8)' }}>
+              O documento Word será gerado automaticamente
+            </Typography>
+          </Box>
+        </Box>
+      </Box>
+      <DialogContent sx={{ pt: 3 }}>
+        {erro && <Alert severity="error" sx={{ mb: 2 }}>{erro}</Alert>}
+
+        <FormControl fullWidth sx={{ mt: 1, mb: 2 }}>
+          <InputLabel>Consulta</InputLabel>
+          <Select value={consultaId} label="Consulta" onChange={(e) => setConsultaId(e.target.value)}>
+            {consultasAtivas.map((c) => (
+              <MenuItem key={c.id} value={c.id}>{c.nomePaciente} — {c.nomeMedico}</MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+
+        <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
+          <FormControl sx={{ flex: 1 }}>
+            <InputLabel>Tipo de Receita</InputLabel>
+            <Select value={tipoReceita} label="Tipo de Receita" onChange={(e) => setTipoReceita(e.target.value)}>
+              {TIPOS_RECEITA.map(t => <MenuItem key={t.value} value={t.value}>{t.label}</MenuItem>)}
+            </Select>
+          </FormControl>
+          <FormControl sx={{ flex: 1 }}>
+            <InputLabel>Tipo de Uso</InputLabel>
+            <Select value={tipoUso} label="Tipo de Uso" onChange={(e) => setTipoUso(e.target.value)}>
+              {TIPOS_USO.map(t => <MenuItem key={t.value} value={t.value}>{t.label}</MenuItem>)}
+            </Select>
+          </FormControl>
+        </Box>
+
+        {tipoReceita === 'Especial' && (
+          <Alert severity="info" sx={{ mb: 2 }}>
+            Receita especial — será gerado um documento com 2 vias para impressão.
+          </Alert>
+        )}
+
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+          <Box>
+            <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>Medicamentos</Typography>
+            <Typography variant="caption" color="text.secondary">{medicamentos.length} item(s)</Typography>
+          </Box>
+          <Button size="small" startIcon={<AddIcon />} variant="outlined" onClick={addMed}>Adicionar</Button>
+        </Box>
+        <Divider sx={{ mb: 2 }} />
+        {medicamentos.map((med, i) => (
+          <Paper key={i} variant="outlined" sx={{ p: 2, mb: 2, borderRadius: 2 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
+              <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                Medicamento {i + 1}
+              </Typography>
+              {medicamentos.length > 1 && (
+                <IconButton size="small" color="error" onClick={() => removeMed(i)}>
+                  <DeleteIcon fontSize="small" />
+                </IconButton>
+              )}
+            </Box>
+            <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap' }}>
+              <TextField label="Nome" value={med.nome}
+                onChange={(e) => changeMed(i, 'nome', e.target.value)}
+                sx={{ flex: '2 1 160px' }} size="small" />
+              <TextField label="Dosagem" value={med.dosagem}
+                onChange={(e) => changeMed(i, 'dosagem', e.target.value)}
+                sx={{ flex: '1 1 80px' }} size="small" placeholder="ex: 50mg" />
+              <TextField label="Quantidade" value={med.quantidade}
+                onChange={(e) => changeMed(i, 'quantidade', e.target.value)}
+                sx={{ flex: '1 1 80px' }} size="small" placeholder="ex: 60 cps." />
+              <TextField label="Posologia" value={med.posologia}
+                onChange={(e) => changeMed(i, 'posologia', e.target.value)}
+                sx={{ flex: '2 1 160px' }} size="small" placeholder="ex: 1 cp. ao dia" />
+            </Box>
+          </Paper>
+        ))}
+      </DialogContent>
+      <DialogActions sx={{ p: 2, gap: 1 }}>
+        <Button onClick={fechar} variant="outlined" disabled={gerando}>Cancelar</Button>
+        <Button onClick={handleGerar} variant="contained"
+          startIcon={gerando ? <CircularProgress size={16} color="inherit" /> : <DownloadIcon />}
+          disabled={gerando}>
+          {gerando ? 'Gerando...' : 'Gerar e Baixar Receita'}
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+
   if (pacienteSelecionado) {
     return (
       <Layout>
@@ -166,12 +324,7 @@ export default function ReceitasPage() {
                             : 'Receita'}
                         </Typography>
                       </Box>
-                      <Chip
-                        label={`${receita.medicamentos.length} medicamento(s)`}
-                        size="small"
-                        color="success"
-                        variant="outlined"
-                      />
+                      <Chip label={`${receita.medicamentos.length} medicamento(s)`} size="small" color="success" variant="outlined" />
                     </Box>
                     <Divider sx={{ mb: 2 }} />
                     <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5 }}>
@@ -195,63 +348,11 @@ export default function ReceitasPage() {
           </Box>
         )}
 
-        {/* Modal Nova Receita */}
-        <Dialog open={modalAberto} onClose={fechar} fullWidth maxWidth="md">
-          <Box sx={{ background: 'linear-gradient(135deg, #1565c0 0%, #1976d2 100%)', p: 3 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-              <Avatar sx={{ bgcolor: 'rgba(255,255,255,0.2)', width: 52, height: 52, border: '2px solid rgba(255,255,255,0.4)' }}>
-                <MedicationIcon sx={{ color: 'white', fontSize: 28 }} />
-              </Avatar>
-              <Box>
-                <Typography variant="h6" sx={{ color: 'white', fontWeight: 'bold' }}>Nova Receita</Typography>
-                <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.8)' }}>Prescreva medicamentos para a consulta</Typography>
-              </Box>
-            </Box>
-          </Box>
-          <DialogContent sx={{ pt: 3 }}>
-            {erro && <Alert severity="error" sx={{ mb: 2 }}>{erro}</Alert>}
-            <FormControl fullWidth sx={{ mt: 1, mb: 3 }}>
-              <InputLabel>Consulta</InputLabel>
-              <Select value={consultaId} label="Consulta" onChange={(e) => setConsultaId(e.target.value)}>
-                {consultasAtivas.map((c) => <MenuItem key={c.id} value={c.id}>{c.nomePaciente} — {c.nomeMedico}</MenuItem>)}
-              </Select>
-            </FormControl>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-              <Box>
-                <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>Medicamentos</Typography>
-                <Typography variant="caption" color="text.secondary">{medicamentos.length} item(s)</Typography>
-              </Box>
-              <Button size="small" startIcon={<AddIcon />} variant="outlined" onClick={addMed}>Adicionar</Button>
-            </Box>
-            <Divider sx={{ mb: 2 }} />
-            {medicamentos.map((med, i) => (
-              <Paper key={i} variant="outlined" sx={{ p: 2, mb: 2, borderRadius: 2 }}>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
-                  <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                    Medicamento {i + 1}
-                  </Typography>
-                  {medicamentos.length > 1 && (
-                    <IconButton size="small" color="error" onClick={() => removeMed(i)}><DeleteIcon fontSize="small" /></IconButton>
-                  )}
-                </Box>
-                <Box sx={{ display: 'flex', gap: 1.5 }}>
-                  <TextField label="Nome" value={med.nome} onChange={(e) => changeMed(i, 'nome', e.target.value)} sx={{ flex: 2 }} size="small" />
-                  <TextField label="Dosagem" value={med.dosagem} onChange={(e) => changeMed(i, 'dosagem', e.target.value)} sx={{ flex: 1 }} size="small" placeholder="ex: 500mg" />
-                  <TextField label="Posologia" value={med.posologia} onChange={(e) => changeMed(i, 'posologia', e.target.value)} sx={{ flex: 2 }} size="small" placeholder="ex: 1 cp 8/8h" />
-                </Box>
-              </Paper>
-            ))}
-          </DialogContent>
-          <DialogActions sx={{ p: 2, gap: 1 }}>
-            <Button onClick={fechar} variant="outlined">Cancelar</Button>
-            <Button onClick={handleSalvar} variant="contained" startIcon={<MedicationIcon />}>Emitir Receita</Button>
-          </DialogActions>
-        </Dialog>
+        {modalReceita}
       </Layout>
     );
   }
 
-  // --- View: lista de pacientes ---
   return (
     <Layout>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
@@ -283,8 +384,7 @@ export default function ReceitasPage() {
         <>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
             {paginaAtual.map((p) => (
-              <Card
-                key={p.id}
+              <Card key={p.id}
                 sx={{ borderRadius: 2, cursor: 'pointer', transition: '0.2s', '&:hover': { boxShadow: 4, transform: 'translateY(-1px)' } }}
                 onClick={() => abrirPaciente(p)}
               >
@@ -327,58 +427,7 @@ export default function ReceitasPage() {
         </>
       )}
 
-      {/* Modal Nova Receita */}
-      <Dialog open={modalAberto} onClose={fechar} fullWidth maxWidth="md">
-        <Box sx={{ background: 'linear-gradient(135deg, #1565c0 0%, #1976d2 100%)', p: 3 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Avatar sx={{ bgcolor: 'rgba(255,255,255,0.2)', width: 52, height: 52, border: '2px solid rgba(255,255,255,0.4)' }}>
-              <MedicationIcon sx={{ color: 'white', fontSize: 28 }} />
-            </Avatar>
-            <Box>
-              <Typography variant="h6" sx={{ color: 'white', fontWeight: 'bold' }}>Nova Receita</Typography>
-              <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.8)' }}>Prescreva medicamentos para a consulta</Typography>
-            </Box>
-          </Box>
-        </Box>
-        <DialogContent sx={{ pt: 3 }}>
-          {erro && <Alert severity="error" sx={{ mb: 2 }}>{erro}</Alert>}
-          <FormControl fullWidth sx={{ mt: 1, mb: 3 }}>
-            <InputLabel>Consulta</InputLabel>
-            <Select value={consultaId} label="Consulta" onChange={(e) => setConsultaId(e.target.value)}>
-              {consultasAtivas.map((c) => <MenuItem key={c.id} value={c.id}>{c.nomePaciente} — {c.nomeMedico}</MenuItem>)}
-            </Select>
-          </FormControl>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-            <Box>
-              <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>Medicamentos</Typography>
-              <Typography variant="caption" color="text.secondary">{medicamentos.length} item(s)</Typography>
-            </Box>
-            <Button size="small" startIcon={<AddIcon />} variant="outlined" onClick={addMed}>Adicionar</Button>
-          </Box>
-          <Divider sx={{ mb: 2 }} />
-          {medicamentos.map((med, i) => (
-            <Paper key={i} variant="outlined" sx={{ p: 2, mb: 2, borderRadius: 2 }}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
-                <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                  Medicamento {i + 1}
-                </Typography>
-                {medicamentos.length > 1 && (
-                  <IconButton size="small" color="error" onClick={() => removeMed(i)}><DeleteIcon fontSize="small" /></IconButton>
-                )}
-              </Box>
-              <Box sx={{ display: 'flex', gap: 1.5 }}>
-                <TextField label="Nome" value={med.nome} onChange={(e) => changeMed(i, 'nome', e.target.value)} sx={{ flex: 2 }} size="small" />
-                <TextField label="Dosagem" value={med.dosagem} onChange={(e) => changeMed(i, 'dosagem', e.target.value)} sx={{ flex: 1 }} size="small" placeholder="ex: 500mg" />
-                <TextField label="Posologia" value={med.posologia} onChange={(e) => changeMed(i, 'posologia', e.target.value)} sx={{ flex: 2 }} size="small" placeholder="ex: 1 cp 8/8h" />
-              </Box>
-            </Paper>
-          ))}
-        </DialogContent>
-        <DialogActions sx={{ p: 2, gap: 1 }}>
-          <Button onClick={fechar} variant="outlined">Cancelar</Button>
-          <Button onClick={handleSalvar} variant="contained" startIcon={<MedicationIcon />}>Emitir Receita</Button>
-        </DialogActions>
-      </Dialog>
+      {modalReceita}
     </Layout>
   );
 }

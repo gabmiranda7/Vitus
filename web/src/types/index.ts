@@ -35,9 +35,10 @@ export interface Exame {
 }
 
 export interface Medicamento {
-    nome: string;
-    dosagem: string;
-    posologia: string;
+  nome: string;
+  dosagem: string;
+  posologia: string;
+  quantidade: string;
 }
 
 export interface Medico {

@@ -1,4 +1,5 @@
 ﻿using Vitus.Communication.Receita.Requests;
+using Vitus.Domain.Entities;
 using Vitus.Domain.Enums;
 using Vitus.Domain.Exceptions;
 using Vitus.Domain.Interfaces;
@@ -36,8 +37,8 @@ namespace Vitus.Application.UseCases.Receitas.GerarReceita
             if (consulta == null)
                 throw new DomainException("Consulta não encontrada");
 
-            if (consulta.Status != StatusConsulta.EmAtendimento)
-                throw new DomainException("Receita só pode ser gerada durante o atendimento");
+            if (consulta.Status == StatusConsulta.Cancelada)
+                throw new DomainException("Não é possível gerar receita para consulta cancelada");
 
             var paciente = await _pacienteRepository.GetById(consulta.PacienteId);
             if (paciente == null)
@@ -53,28 +54,41 @@ namespace Vitus.Application.UseCases.Receitas.GerarReceita
             if (!Enum.TryParse<TipoUso>(request.TipoUso, ignoreCase: true, out var tipoUso))
                 throw new DomainException("Tipo de uso inválido. Use: Oral, Interno ou Externo");
 
-            var receita = new Vitus.Domain.Entities.Receita(consulta.Id);
+            var receita = new Receita(consulta.Id);
             foreach (var m in request.Medicamentos)
                 receita.AdicionarMedicamento(m.Nome, m.Dosagem, m.Posologia);
 
-            paciente.Prontuario.AdicionarReceita(receita);
             await _receitaRepository.Add(receita);
             await _auditoriaService.Registrar(AcaoAuditoria.EmissaoReceita, "Receita", receita.Id);
 
             var medicamentosDoc = request.Medicamentos
-                .Select(m => ($"{m.Nome}{(string.IsNullOrWhiteSpace(m.Dosagem) ? "" : $" {m.Dosagem}")}", m.Posologia))
+                .Select((m, idx) =>
+                {
+                    var tracos = new string('-', 45);
+                    var linha = $"{idx + 1}) {m.Nome}{(string.IsNullOrWhiteSpace(m.Dosagem) ? "" : $" {m.Dosagem}")} {tracos} {m.Quantidade}";
+                    return (linha, m.Posologia);
+                })
                 .ToList();
+
 
             var dataFormatada = DateTime.Now.ToString("dd/MM/yyyy");
 
-            var arquivo = await _documentoService.GerarReceita(
-                tipoReceita,
-                tipoUso,
-                paciente.Nome,
-                paciente.Endereco,
-                medico.Nome,
-                dataFormatada,
-                medicamentosDoc);
+            byte[] arquivo;
+            try
+            {
+                arquivo = await _documentoService.GerarReceita(
+                    tipoReceita,
+                    tipoUso,
+                    paciente.Nome,
+                    paciente.Endereco,
+                    medico.Nome,
+                    dataFormatada,
+                    medicamentosDoc);
+            }
+            catch (Exception ex)
+            {
+                throw new DomainException($"Erro ao gerar documento: {ex.GetType().Name} - {ex.Message}");
+            }
 
             var nomeArquivo = $"Receita_{tipoReceita}_{paciente.Nome.Replace(" ", "_")}_{dataFormatada.Replace("/", "-")}.docx";
 
