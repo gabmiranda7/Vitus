@@ -11,6 +11,7 @@ namespace Vitus.Application.UseCases.Receitas.GerarReceita
         private readonly IConsultaRepository _consultaRepository;
         private readonly IPacienteRepository _pacienteRepository;
         private readonly IMedicoRepository _medicoRepository;
+        private readonly IProntuarioRepository _prontuarioRepository;
         private readonly IReceitaRepository _receitaRepository;
         private readonly IDocumentoService _documentoService;
         private readonly IAuditoriaService _auditoriaService;
@@ -19,6 +20,7 @@ namespace Vitus.Application.UseCases.Receitas.GerarReceita
             IConsultaRepository consultaRepository,
             IPacienteRepository pacienteRepository,
             IMedicoRepository medicoRepository,
+            IProntuarioRepository prontuarioRepository,
             IReceitaRepository receitaRepository,
             IDocumentoService documentoService,
             IAuditoriaService auditoriaService)
@@ -26,6 +28,7 @@ namespace Vitus.Application.UseCases.Receitas.GerarReceita
             _consultaRepository = consultaRepository;
             _pacienteRepository = pacienteRepository;
             _medicoRepository = medicoRepository;
+            _prontuarioRepository = prontuarioRepository;
             _receitaRepository = receitaRepository;
             _documentoService = documentoService;
             _auditoriaService = auditoriaService;
@@ -48,15 +51,19 @@ namespace Vitus.Application.UseCases.Receitas.GerarReceita
             if (medico == null)
                 throw new DomainException("Médico não encontrado");
 
+            var prontuario = await _prontuarioRepository.GetByPacienteId(consulta.PacienteId);
+            if (prontuario == null)
+                throw new DomainException("Prontuário não encontrado");
+
             if (!Enum.TryParse<TipoReceita>(request.TipoReceita, ignoreCase: true, out var tipoReceita))
                 throw new DomainException("Tipo de receita inválido. Use: Comum ou Especial");
 
             if (!Enum.TryParse<TipoUso>(request.TipoUso, ignoreCase: true, out var tipoUso))
                 throw new DomainException("Tipo de uso inválido. Use: Oral, Interno ou Externo");
 
-            var receita = new Receita(consulta.Id);
+            var receita = new Receita(consulta.Id, prontuario.Id);
             foreach (var m in request.Medicamentos)
-                receita.AdicionarMedicamento(m.Nome, m.Dosagem, m.Posologia);
+                receita.AdicionarMedicamento(m.Nome, m.Dosagem, m.Posologia, m.Quantidade);
 
             await _receitaRepository.Add(receita);
             await _auditoriaService.Registrar(AcaoAuditoria.EmissaoReceita, "Receita", receita.Id);
@@ -69,7 +76,6 @@ namespace Vitus.Application.UseCases.Receitas.GerarReceita
                     return (linha, m.Posologia);
                 })
                 .ToList();
-
 
             var dataFormatada = DateTime.Now.ToString("dd/MM/yyyy");
 

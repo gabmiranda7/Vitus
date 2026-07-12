@@ -16,18 +16,20 @@ namespace Vitus.Infrastructure.Mappings
                    .WithMany()
                    .HasForeignKey(r => r.ConsultaId);
 
+            builder.HasOne<Prontuario>()
+                   .WithMany(p => p.Receitas)
+                   .HasForeignKey(r => r.ProntuarioId);
+
             builder.OwnsMany(r => r.Medicamentos, m =>
             {
                 m.ToTable("medicamentos");
-
                 m.WithOwner().HasForeignKey("ReceitaId");
-
                 m.Property<Guid>("Id");
                 m.HasKey("Id");
-
                 m.Property(p => p.Nome).IsRequired().HasMaxLength(200);
                 m.Property(p => p.Dosagem).HasMaxLength(50);
                 m.Property(p => p.Posologia).HasMaxLength(300);
+                m.Property(p => p.Quantidade).HasMaxLength(50);
             });
         }
     }
