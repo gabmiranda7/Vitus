@@ -1,5 +1,5 @@
 version: '3.9'
-
+ 
 services:
   db:
     image: postgres:16
@@ -8,7 +8,7 @@ services:
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASS}
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -16,7 +16,7 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
-
+ 
   api:
     build:
       context: .
@@ -30,14 +30,22 @@ services:
       ConnectionStrings__DefaultConnection: "Host=db;Port=5432;Database=VitusDB;Username=${DB_USER};Password=${DB_PASS}"
       JWT_KEY: ${JWT_KEY}
       ASPNETCORE_ENVIRONMENT: Production
-
+      Storage__Raiz: /app/storage
+      Storage__Templates: /app/storage/templates
+    volumes:
+      - storage_data:/app/storage
+      - ./storage/templates:/app/storage/templates:ro
+ 
   frontend:
     build:
       context: ./web
+      args:
+        VITE_API_URL: http://localhost:5000
     ports:
       - "3000:80"
     depends_on:
       - api
-
+ 
 volumes:
   postgres_data:
+  storage_data:
