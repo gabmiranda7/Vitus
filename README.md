@@ -256,6 +256,8 @@ dotnet test
 - [x] Testes automatizados
 - [x] Containerização com Docker
 - [x] Conformidade com LGPD
+- [x] Anexo de exames vinculados ao prontuário
+- [x] Geração de receitas automaticamente
 - [ ] Deploy em produção
 
 ---
