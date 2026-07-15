@@ -18,6 +18,8 @@ import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import CancelIcon from '@mui/icons-material/Cancel';
 import HourglassIcon from '@mui/icons-material/HourglassEmpty';
+import MedicationIcon from '@mui/icons-material/Medication';
+import ScienceIcon from '@mui/icons-material/Science';
 import Layout from '../../components/layout/Layout';
 import api from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
@@ -68,6 +70,10 @@ export default function DashboardPage() {
   const [totalMedicos, setTotalMedicos] = useState(0);
   const [loading, setLoading] = useState(true);
 
+  const isMedico = usuario?.perfil === 'Medico';
+  const isEnfermeiro = usuario?.perfil === 'Enfermeiro';
+  const isRecepcionista = usuario?.perfil === 'Recepcionista';
+
   useEffect(() => {
     carregar();
     const interval = setInterval(carregar, 60000);
@@ -77,7 +83,7 @@ export default function DashboardPage() {
   async function carregar() {
     try {
       const promises: Promise<any>[] = [api.get('/api/consultas')];
-      if (usuario?.perfil === 'Recepcionista') {
+      if (isRecepcionista) {
         promises.push(api.get('/api/Paciente'), api.get('/api/medicos'));
       }
       const [rConsultas, rPacientes, rMedicos] = await Promise.all(promises);
@@ -104,6 +110,11 @@ export default function DashboardPage() {
     ? Math.round((finalizadasHoje.length / consultasHoje.length) * 100)
     : 0;
 
+  // Consultas relevantes por perfil
+  const consultasDoMedico = isMedico
+    ? ativas.filter(c => c.nomeMedico === usuario?.nome)
+    : ativas;
+
   const dadosSemana = Array.from({ length: 7 }, (_, i) => {
     const d = new Date();
     d.setDate(d.getDate() - (6 - i));
@@ -117,12 +128,31 @@ export default function DashboardPage() {
   });
 
   const miniStats = [
-    { label: 'Ativas',        valor: ativas.length,        cor: '#1976d2', icon: <EventNoteIcon sx={{ fontSize: 14 }} /> },
-    { label: 'Em Triagem',    valor: emTriagem.length,      cor: '#ed6c02', icon: <MedicalServicesIcon sx={{ fontSize: 14 }} /> },
-    { label: 'Aguardando',    valor: aguardando.length,     cor: '#0288d1', icon: <HourglassIcon sx={{ fontSize: 14 }} /> },
-    { label: 'Atendimento',   valor: emAtendimento.length,  cor: '#7b1fa2', icon: <LocalHospitalIcon sx={{ fontSize: 14 }} /> },
-    { label: 'Finalizadas',   valor: finalizadasHoje.length, cor: '#2e7d32', icon: <CheckCircleIcon sx={{ fontSize: 14 }} /> },
-    { label: 'Canceladas',    valor: canceladas.length,     cor: '#d32f2f', icon: <CancelIcon sx={{ fontSize: 14 }} /> },
+    { label: 'Ativas',      valor: ativas.length,         cor: '#1976d2', icon: <EventNoteIcon sx={{ fontSize: 14 }} /> },
+    { label: 'Em Triagem',  valor: emTriagem.length,       cor: '#ed6c02', icon: <MedicalServicesIcon sx={{ fontSize: 14 }} /> },
+    { label: 'Aguardando',  valor: aguardando.length,      cor: '#0288d1', icon: <HourglassIcon sx={{ fontSize: 14 }} /> },
+    { label: 'Atendimento', valor: emAtendimento.length,   cor: '#7b1fa2', icon: <LocalHospitalIcon sx={{ fontSize: 14 }} /> },
+    { label: 'Finalizadas', valor: finalizadasHoje.length, cor: '#2e7d32', icon: <CheckCircleIcon sx={{ fontSize: 14 }} /> },
+    { label: 'Canceladas',  valor: canceladas.length,      cor: '#d32f2f', icon: <CancelIcon sx={{ fontSize: 14 }} /> },
+  ];
+
+  // Atalhos por perfil
+  const atalhos = [
+    ...(isRecepcionista ? [
+      { label: 'Pacientes', sublabel: `${totalPacientes} cadastrados`, cor: '#1976d2', icon: <PeopleIcon />, rota: '/pacientes' },
+      { label: 'Médicos', sublabel: `${totalMedicos} cadastrados`, cor: '#1565c0', icon: <LocalHospitalIcon />, rota: '/medicos' },
+      { label: 'Consultas', sublabel: `${ativas.length} ativas`, cor: '#7b1fa2', icon: <EventNoteIcon />, rota: '/consultas' },
+    ] : []),
+    ...(isMedico ? [
+      { label: 'Consultas', sublabel: `${consultasDoMedico.length} ativas`, cor: '#1976d2', icon: <EventNoteIcon />, rota: '/consultas' },
+      { label: 'Prontuários', sublabel: 'Histórico de pacientes', cor: '#7b1fa2', icon: <PeopleIcon />, rota: '/prontuarios' },
+      { label: 'Receitas', sublabel: 'Emitir receitas', cor: '#2e7d32', icon: <MedicationIcon />, rota: '/receitas' },
+    ] : []),
+    ...(isEnfermeiro ? [
+      { label: 'Consultas', sublabel: `${emTriagem.length} em triagem`, cor: '#ed6c02', icon: <MedicalServicesIcon />, rota: '/consultas' },
+      { label: 'Triagem', sublabel: 'Registrar sinais vitais', cor: '#0288d1', icon: <ScienceIcon />, rota: '/triagem' },
+      { label: 'Prontuários', sublabel: 'Histórico de pacientes', cor: '#7b1fa2', icon: <PeopleIcon />, rota: '/prontuarios' },
+    ] : []),
   ];
 
   return (
@@ -141,31 +171,73 @@ export default function DashboardPage() {
         </Typography>
       </Box>
 
-      {/* Mini chips de stat — compactos, em linha */}
+      {/* Mini chips de stat — fix de alinhamento vertical */}
       <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 3 }}>
         {miniStats.map((s) => (
           <Box key={s.label} sx={{
-            display: 'flex', alignItems: 'center', gap: 0.75,
-            px: 1.5, py: 0.75, borderRadius: 2,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 0.75,
+            px: 1.5,
+            py: 0.75,
+            borderRadius: 2,
             bgcolor: alpha(s.cor, isDark ? 0.15 : 0.08),
             border: `1px solid ${alpha(s.cor, 0.2)}`,
+            lineHeight: 1,
           }}>
-            <Box sx={{ color: s.cor, display: 'flex', alignItems: 'center' }}>{s.icon}</Box>
-            <Typography variant="body2" sx={{ fontWeight: 700, color: s.cor }}>{s.valor}</Typography>
-            <Typography variant="caption" color="text.secondary">{s.label}</Typography>
+            <Box sx={{ color: s.cor, display: 'flex', alignItems: 'center', lineHeight: 1 }}>{s.icon}</Box>
+            <Typography
+              component="span"
+              sx={{ fontWeight: 700, color: s.cor, fontSize: 14, lineHeight: 1, display: 'inline-flex', alignItems: 'center' }}
+            >
+              {s.valor}
+            </Typography>
+            <Typography
+              component="span"
+              sx={{ color: 'text.secondary', fontSize: 12, lineHeight: 1, display: 'inline-flex', alignItems: 'center' }}
+            >
+              {s.label}
+            </Typography>
           </Box>
         ))}
       </Box>
 
-      {/* Ativas Agora — destaque principal */}
+      {/* Atalhos por perfil */}
+      {atalhos.length > 0 && (
+        <Box sx={{ display: 'flex', gap: 2, mb: 3, flexWrap: 'wrap' }}>
+          {atalhos.map((a) => (
+            <Paper
+              key={a.label}
+              onClick={() => navigate(a.rota)}
+              sx={{
+                flex: '1 1 140px',
+                p: 2, borderRadius: 3,
+                cursor: 'pointer',
+                border: `1px solid ${alpha(a.cor, 0.2)}`,
+                bgcolor: alpha(a.cor, isDark ? 0.1 : 0.05),
+                transition: '0.2s',
+                '&:hover': { transform: 'translateY(-2px)', boxShadow: 3, bgcolor: alpha(a.cor, isDark ? 0.18 : 0.1) },
+              }}
+            >
+              <Box sx={{ color: a.cor, mb: 1 }}>{a.icon}</Box>
+              <Typography variant="body2" sx={{ fontWeight: 700 }}>{a.label}</Typography>
+              <Typography variant="caption" color="text.secondary">{a.sublabel}</Typography>
+            </Paper>
+          ))}
+        </Box>
+      )}
+
+      {/* Ativas Agora */}
       <Card sx={{ borderRadius: 3, mb: 3 }}>
         <CardContent sx={{ p: 3 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2.5 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <AccessTimeIcon color="warning" />
-              <Typography variant="h6" sx={{ fontWeight: 700 }}>Ativas Agora</Typography>
-              {ativas.length > 0 && (
-                <Chip label={ativas.length} size="small" color="warning" />
+              <Typography variant="h6" sx={{ fontWeight: 700 }}>
+                {isMedico ? 'Minhas Consultas Ativas' : 'Ativas Agora'}
+              </Typography>
+              {consultasDoMedico.length > 0 && (
+                <Chip label={consultasDoMedico.length} size="small" color="warning" />
               )}
             </Box>
             <Button size="small" endIcon={<ArrowForwardIcon />} onClick={() => navigate('/consultas')}>
@@ -173,14 +245,14 @@ export default function DashboardPage() {
             </Button>
           </Box>
 
-          {ativas.length === 0 ? (
+          {consultasDoMedico.length === 0 ? (
             <Box sx={{ textAlign: 'center', py: 5, color: 'text.secondary' }}>
               <EventNoteIcon sx={{ fontSize: 44, opacity: 0.15, mb: 1 }} />
               <Typography variant="body2" sx={{ opacity: 0.5 }}>Nenhuma consulta ativa no momento</Typography>
             </Box>
           ) : (
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-              {ativas.slice(0, 8).map((c) => {
+              {consultasDoMedico.slice(0, 8).map((c) => {
                 const cor = statusCores[c.status] ?? '#1976d2';
                 return (
                   <Paper
@@ -221,13 +293,13 @@ export default function DashboardPage() {
                   </Paper>
                 );
               })}
-              {ativas.length > 8 && (
+              {consultasDoMedico.length > 8 && (
                 <Typography
                   variant="caption" color="text.secondary"
                   sx={{ textAlign: 'center', pt: 1, cursor: 'pointer', '&:hover': { color: 'primary.main' } }}
                   onClick={() => navigate('/consultas')}
                 >
-                  +{ativas.length - 8} consultas — ver todas
+                  +{consultasDoMedico.length - 8} consultas — ver todas
                 </Typography>
               )}
             </Box>
@@ -302,29 +374,6 @@ export default function DashboardPage() {
                   </Box>
                 ))}
               </Box>
-
-              {usuario?.perfil === 'Recepcionista' && (
-                <Box sx={{ display: 'flex', gap: 1.5, mt: 'auto' }}>
-                  <Box sx={{
-                    flex: 1, p: 1.5, borderRadius: 2, bgcolor: 'primary.main',
-                    textAlign: 'center', cursor: 'pointer',
-                    transition: '0.15s', '&:hover': { opacity: 0.9 },
-                  }} onClick={() => navigate('/pacientes')}>
-                    <PeopleIcon sx={{ color: 'white', fontSize: 20, mb: 0.25 }} />
-                    <Typography variant="h6" sx={{ color: 'white', fontWeight: 800, lineHeight: 1 }}>{totalPacientes}</Typography>
-                    <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.8)' }}>Pacientes</Typography>
-                  </Box>
-                  <Box sx={{
-                    flex: 1, p: 1.5, borderRadius: 2, bgcolor: '#1565c0',
-                    textAlign: 'center', cursor: 'pointer',
-                    transition: '0.15s', '&:hover': { opacity: 0.9 },
-                  }} onClick={() => navigate('/medicos')}>
-                    <LocalHospitalIcon sx={{ color: 'white', fontSize: 20, mb: 0.25 }} />
-                    <Typography variant="h6" sx={{ color: 'white', fontWeight: 800, lineHeight: 1 }}>{totalMedicos}</Typography>
-                    <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.8)' }}>Médicos</Typography>
-                  </Box>
-                </Box>
-              )}
             </CardContent>
           </Card>
         </Box>
