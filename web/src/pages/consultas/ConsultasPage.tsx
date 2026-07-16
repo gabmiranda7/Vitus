@@ -4,8 +4,7 @@ import {
   Box, Button, Chip, Dialog, DialogActions, DialogContent,
   FormControl, InputLabel, MenuItem, Select, TextField, Typography,
   Alert, Tabs, Tab, Avatar, Divider, InputAdornment, useTheme,
-  IconButton, CircularProgress, Paper, Drawer, alpha,
-  FormControl as MuiFormControl
+  IconButton, CircularProgress, Paper, Drawer, alpha, Tooltip
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import EditNoteIcon from '@mui/icons-material/EditNote';
@@ -27,6 +26,8 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import AttachFileIcon from '@mui/icons-material/AttachFile';
 import CloseIcon from '@mui/icons-material/Close';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
+import FilterListIcon from '@mui/icons-material/FilterList';
+import FilterListOffIcon from '@mui/icons-material/FilterListOff';
 import Layout from '../../components/layout/Layout';
 import api from '../../services/api';
 import { Consulta, Medico, Paciente, Medicamento } from '../../types';
@@ -96,6 +97,13 @@ export default function ConsultasPage() {
   const [aba, setAba] = useState(0);
   const [busca, setBusca] = useState('');
 
+  // Filtros
+  const [filtrosVisiveis, setFiltrosVisiveis] = useState(false);
+  const [filtroMedico, setFiltroMedico] = useState('');
+  const [filtroStatus, setFiltroStatus] = useState('');
+  const [filtroDataInicio, setFiltroDataInicio] = useState('');
+  const [filtroDataFim, setFiltroDataFim] = useState('');
+
   // Drawer
   const [drawerAberto, setDrawerAberto] = useState(false);
   const [consultaDrawer, setConsultaDrawer] = useState<Consulta | null>(null);
@@ -131,17 +139,20 @@ export default function ConsultasPage() {
   useEffect(() => {
     carregar();
     if (usuario?.perfil === 'Recepcionista') { carregarPacientes(); carregarMedicos(); }
+    else { carregarMedicos(); } // médicos para o filtro
   }, []);
 
-  async function carregar() {
-    const r = await api.get('/api/consultas');
-    setConsultas(r.data);
-  }
+  async function carregar() { const r = await api.get('/api/consultas'); setConsultas(r.data); }
   async function carregarPacientes() { const r = await api.get('/api/Paciente'); setPacientes(r.data); }
   async function carregarMedicos() { const r = await api.get('/api/medicos'); setMedicos(r.data); }
 
   function abrirDrawer(c: Consulta) { setConsultaDrawer(c); setDrawerAberto(true); }
   function fecharDrawer() { setDrawerAberto(false); }
+
+  const temFiltroAtivo = filtroMedico !== '' || filtroStatus !== '' || filtroDataInicio !== '' || filtroDataFim !== '';
+  const qtdFiltrosAtivos = [filtroMedico, filtroStatus, filtroDataInicio || filtroDataFim].filter(Boolean).length;
+
+  function limparFiltros() { setFiltroMedico(''); setFiltroStatus(''); setFiltroDataInicio(''); setFiltroDataFim(''); }
 
   async function handleSalvarConsulta() {
     setErro('');
@@ -255,21 +266,41 @@ export default function ConsultasPage() {
 
   const consultasFiltradas = useMemo(() => {
     const lista = aba === 0 ? consultasAtivas : consultasHistorico;
-    if (!busca.trim()) return lista;
-    const q = busca.toLowerCase();
-    return lista.filter(c =>
-      c.nomePaciente.toLowerCase().includes(q) ||
-      c.nomeMedico.toLowerCase().includes(q) ||
-      new Date(c.dataConsulta).toLocaleDateString('pt-BR').includes(q) ||
-      statusLabels[c.status]?.toLowerCase().includes(q)
-    );
-  }, [aba, consultasAtivas, consultasHistorico, busca]);
+    return lista.filter(c => {
+      const q = busca.toLowerCase();
+      const buscaOk = !busca.trim() ||
+        c.nomePaciente.toLowerCase().includes(q) ||
+        c.nomeMedico.toLowerCase().includes(q) ||
+        new Date(c.dataConsulta).toLocaleDateString('pt-BR').includes(q) ||
+        statusLabels[c.status]?.toLowerCase().includes(q);
+
+      const medicoOk = filtroMedico === '' || c.nomeMedico === filtroMedico;
+      const statusOk = filtroStatus === '' || c.status === filtroStatus;
+
+      const dataC = new Date(c.dataConsulta);
+      const inicioOk = filtroDataInicio === '' || dataC >= new Date(filtroDataInicio);
+      const fimOk = filtroDataFim === '' || dataC <= new Date(filtroDataFim + 'T23:59:59');
+
+      return buscaOk && medicoOk && statusOk && inicioOk && fimOk;
+    });
+  }, [aba, consultasAtivas, consultasHistorico, busca, filtroMedico, filtroStatus, filtroDataInicio, filtroDataFim]);
+
+  // Médicos que aparecem nas consultas (para o filtro)
+  const medicosNasConsultas = useMemo(() => {
+    const lista = aba === 0 ? consultasAtivas : consultasHistorico;
+    return [...new Set(lista.map(c => c.nomeMedico))].sort();
+  }, [aba, consultasAtivas, consultasHistorico]);
+
+  const statusNaAba = aba === 0 ? statusAtivos : statusHistorico;
 
   function renderCards(lista: Consulta[]) {
     if (lista.length === 0) return (
       <Box sx={{ textAlign: 'center', py: 10, color: 'text.secondary' }}>
         <EventNoteIcon sx={{ fontSize: 64, opacity: 0.15, mb: 2 }} />
         <Typography variant="h6" sx={{ opacity: 0.4 }}>Nenhuma consulta encontrada</Typography>
+        {temFiltroAtivo && (
+          <Button size="small" onClick={limparFiltros} sx={{ mt: 1 }}>Limpar filtros</Button>
+        )}
       </Box>
     );
 
@@ -278,33 +309,21 @@ export default function ConsultasPage() {
         {lista.map((c) => {
           const cor = statusCores[c.status] ?? '#1976d2';
           return (
-            <Paper
-              key={c.id}
-              onClick={() => abrirDrawer(c)}
-              sx={{
-                flex: '1 1 280px',
-                maxWidth: { xs: '100%', sm: 'calc(50% - 8px)', md: 'calc(33.33% - 11px)' },
-                borderRadius: 3,
-                overflow: 'hidden',
-                cursor: 'pointer',
-                border: `1px solid ${alpha(cor, 0.25)}`,
-                borderTop: `4px solid ${cor}`,
-                transition: '0.2s',
-                '&:hover': { transform: 'translateY(-3px)', boxShadow: 4 },
-              }}
-            >
+            <Paper key={c.id} onClick={() => abrirDrawer(c)} sx={{
+              flex: '1 1 280px',
+              maxWidth: { xs: '100%', sm: 'calc(50% - 8px)', md: 'calc(33.33% - 11px)' },
+              borderRadius: 3, overflow: 'hidden', cursor: 'pointer',
+              border: `1px solid ${alpha(cor, 0.25)}`,
+              borderTop: `4px solid ${cor}`,
+              transition: '0.2s',
+              '&:hover': { transform: 'translateY(-3px)', boxShadow: 4 },
+            }}>
               <Box sx={{ p: 2.5 }}>
-                {/* Status */}
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-                  <Chip
-                    label={statusLabels[c.status]}
-                    size="small"
-                    sx={{ bgcolor: alpha(cor, 0.12), color: cor, fontWeight: 700, fontSize: 11 }}
-                  />
+                  <Chip label={statusLabels[c.status]} size="small"
+                    sx={{ bgcolor: alpha(cor, 0.12), color: cor, fontWeight: 700, fontSize: 11 }} />
                   <ChevronRightIcon sx={{ color: 'text.disabled', fontSize: 18 }} />
                 </Box>
-
-                {/* Paciente */}
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1.5 }}>
                   <Avatar sx={{ width: 42, height: 42, fontSize: 14, fontWeight: 700, bgcolor: corAvatar(c.nomePaciente), flexShrink: 0 }}>
                     {iniciais(c.nomePaciente)}
@@ -316,10 +335,7 @@ export default function ConsultasPage() {
                     <Typography variant="caption" color="text.secondary">Paciente</Typography>
                   </Box>
                 </Box>
-
                 <Divider sx={{ mb: 1.5 }} />
-
-                {/* Médico */}
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
                   <Avatar sx={{ width: 28, height: 28, fontSize: 11, bgcolor: '#1565c0', flexShrink: 0 }}>
                     {iniciais(c.nomeMedico)}
@@ -328,8 +344,6 @@ export default function ConsultasPage() {
                     {c.nomeMedico}
                   </Typography>
                 </Box>
-
-                {/* Data/Hora */}
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                     <CalendarMonthIcon sx={{ fontSize: 13, color: 'text.disabled' }} />
@@ -344,7 +358,6 @@ export default function ConsultasPage() {
                     </Typography>
                   </Box>
                 </Box>
-
                 {c.anotacoes && (
                   <Box sx={{ mt: 1.5, p: 1, borderRadius: 1, bgcolor: isDark ? 'grey.800' : 'grey.50', borderLeft: `3px solid ${alpha('#0288d1', 0.4)}` }}>
                     <Typography variant="caption" color="text.secondary" sx={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
@@ -376,16 +389,66 @@ export default function ConsultasPage() {
       </Box>
 
       <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
-        <Tabs value={aba} onChange={(_, v) => { setAba(v); setBusca(''); }}>
+        <Tabs value={aba} onChange={(_, v) => { setAba(v); setBusca(''); limparFiltros(); }}>
           <Tab label={`Ativas (${consultasAtivas.length})`} />
           <Tab label={`Histórico (${consultasHistorico.length})`} />
         </Tabs>
       </Box>
 
-      <TextField fullWidth placeholder="Buscar por paciente, médico, data ou status..."
-        value={busca} onChange={(e) => setBusca(e.target.value)} sx={{ mb: 3 }}
-        slotProps={{ input: { startAdornment: <InputAdornment position="start"><SearchIcon color="action" /></InputAdornment> } }}
-      />
+      {/* Busca + botão filtros */}
+      <Box sx={{ display: 'flex', gap: 1, mb: filtrosVisiveis ? 2 : 3 }}>
+        <TextField fullWidth placeholder="Buscar por paciente, médico, data ou status..."
+          value={busca} onChange={(e) => setBusca(e.target.value)}
+          slotProps={{ input: { startAdornment: <InputAdornment position="start"><SearchIcon color="action" /></InputAdornment> } }}
+        />
+        <Tooltip title={filtrosVisiveis ? 'Ocultar filtros' : 'Mostrar filtros'}>
+          <Button
+            variant={temFiltroAtivo ? 'contained' : 'outlined'}
+            color={temFiltroAtivo ? 'primary' : 'inherit'}
+            onClick={() => setFiltrosVisiveis(v => !v)}
+            startIcon={filtrosVisiveis ? <FilterListOffIcon /> : <FilterListIcon />}
+            sx={{ borderRadius: 2, whiteSpace: 'nowrap' }}
+          >
+            Filtros {qtdFiltrosAtivos > 0 && `(${qtdFiltrosAtivos})`}
+          </Button>
+        </Tooltip>
+      </Box>
+
+      {/* Filtros expandíveis */}
+      {filtrosVisiveis && (
+        <Paper variant="outlined" sx={{ p: 2, mb: 3, borderRadius: 2 }}>
+          <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
+            <FormControl sx={{ minWidth: 200 }} size="small">
+              <InputLabel>Médico</InputLabel>
+              <Select value={filtroMedico} label="Médico" onChange={(e) => setFiltroMedico(e.target.value)}>
+                <MenuItem value="">Todos</MenuItem>
+                {medicosNasConsultas.map(m => <MenuItem key={m} value={m}>{m}</MenuItem>)}
+              </Select>
+            </FormControl>
+            <FormControl sx={{ minWidth: 180 }} size="small">
+              <InputLabel>Status</InputLabel>
+              <Select value={filtroStatus} label="Status" onChange={(e) => setFiltroStatus(e.target.value)}>
+                <MenuItem value="">Todos</MenuItem>
+                {statusNaAba.map(s => <MenuItem key={s} value={s}>{statusLabels[s]}</MenuItem>)}
+              </Select>
+            </FormControl>
+            <TextField label="Data início" type="date" size="small" value={filtroDataInicio}
+              onChange={(e) => setFiltroDataInicio(e.target.value)}
+              slotProps={{ inputLabel: { shrink: true } }} sx={{ minWidth: 160 }} />
+            <TextField label="Data fim" type="date" size="small" value={filtroDataFim}
+              onChange={(e) => setFiltroDataFim(e.target.value)}
+              slotProps={{ inputLabel: { shrink: true } }} sx={{ minWidth: 160 }} />
+            {temFiltroAtivo && (
+              <Button size="small" variant="outlined" color="error" onClick={limparFiltros}>
+                Limpar filtros
+              </Button>
+            )}
+            <Typography variant="caption" color="text.secondary" sx={{ ml: 'auto' }}>
+              {consultasFiltradas.length} de {(aba === 0 ? consultasAtivas : consultasHistorico).length} consulta(s)
+            </Typography>
+          </Box>
+        </Paper>
+      )}
 
       {renderCards(consultasFiltradas)}
 
@@ -396,7 +459,6 @@ export default function ConsultasPage() {
           const cor = statusCores[consultaDrawer.status] ?? '#1976d2';
           return (
             <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-              {/* Header do drawer */}
               <Box sx={{ background: `linear-gradient(135deg, ${cor}dd, ${cor})`, p: 3 }}>
                 <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 2 }}>
                   <Chip label={statusLabels[consultaDrawer.status]} size="small"
@@ -434,11 +496,9 @@ export default function ConsultasPage() {
                 </Box>
               </Box>
 
-              {/* Ações */}
               <Box sx={{ flex: 1, overflow: 'auto', p: 3 }}>
                 <Typography variant="overline" color="text.secondary" sx={{ letterSpacing: 1 }}>Ações disponíveis</Typography>
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, mt: 1.5 }}>
-
                   {podeVerProntuario && (
                     <Button fullWidth variant="outlined" color="secondary" size="large"
                       startIcon={<FolderSharedIcon />}
@@ -447,7 +507,6 @@ export default function ConsultasPage() {
                       Ver Prontuário
                     </Button>
                   )}
-
                   {usuario?.perfil === 'Enfermeiro' && consultaDrawer.status === 'Agendada' && (
                     <Button fullWidth variant="contained" color="warning" size="large"
                       startIcon={<MedicalServicesIcon />}
@@ -456,7 +515,6 @@ export default function ConsultasPage() {
                       Iniciar Triagem
                     </Button>
                   )}
-
                   {usuario?.perfil === 'Enfermeiro' && consultaDrawer.status === 'EmTriagem' && (
                     <Button fullWidth variant="contained" size="large"
                       onClick={() => api.patch(`/api/consultas/${consultaDrawer.id}/aguardar-atendimento`).then(() => { fecharDrawer(); carregar(); })}
@@ -464,7 +522,6 @@ export default function ConsultasPage() {
                       Mover para Aguardando
                     </Button>
                   )}
-
                   {usuario?.perfil === 'Medico' && consultaDrawer.status === 'AguardandoAtendimento' && (
                     <Button fullWidth variant="contained" color="primary" size="large"
                       startIcon={<PersonIcon />}
@@ -473,7 +530,6 @@ export default function ConsultasPage() {
                       Iniciar Atendimento
                     </Button>
                   )}
-
                   {usuario?.perfil === 'Medico' && consultaDrawer.status === 'EmAtendimento' && (<>
                     <Button fullWidth variant="outlined" color="info" size="large"
                       startIcon={<EditNoteIcon />}
@@ -501,7 +557,6 @@ export default function ConsultasPage() {
                       Finalizar Consulta
                     </Button>
                   </>)}
-
                   {['Recepcionista', 'Medico'].includes(usuario?.perfil ?? '') &&
                     !['Finalizada', 'Cancelada'].includes(consultaDrawer.status) && (
                       <Button fullWidth variant="outlined" color="error" size="large"
@@ -511,7 +566,6 @@ export default function ConsultasPage() {
                         Cancelar Consulta
                       </Button>
                     )}
-
                   {['Finalizada', 'Cancelada'].includes(consultaDrawer.status) && !podeVerProntuario && (
                     <Box sx={{ textAlign: 'center', py: 4, color: 'text.secondary' }}>
                       <Typography variant="body2" sx={{ opacity: 0.5 }}>Nenhuma ação disponível</Typography>

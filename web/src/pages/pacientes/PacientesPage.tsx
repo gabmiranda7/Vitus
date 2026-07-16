@@ -18,6 +18,8 @@ import BadgeIcon from '@mui/icons-material/Badge';
 import HomeIcon from '@mui/icons-material/Home';
 import FamilyRestroomIcon from '@mui/icons-material/FamilyRestroom';
 import MedicalInformationIcon from '@mui/icons-material/MedicalInformation';
+import FilterListIcon from '@mui/icons-material/FilterList';
+import FilterListOffIcon from '@mui/icons-material/FilterListOff';
 import Layout from '../../components/layout/Layout';
 import api from '../../services/api';
 import { Paciente } from '../../types';
@@ -26,6 +28,13 @@ const POR_PAGINA = 12;
 
 const SEXOS = ['Masculino', 'Feminino', 'Outro', 'Prefiro não informar'];
 const ESTADOS_CIVIS = ['Solteiro(a)', 'Casado(a)', 'Divorciado(a)', 'Viúvo(a)', 'União estável'];
+const FAIXAS_ETARIAS = [
+  { label: 'Todas', min: 0, max: 999 },
+  { label: 'Criança (0–12)', min: 0, max: 12 },
+  { label: 'Adolescente (13–17)', min: 13, max: 17 },
+  { label: 'Adulto (18–59)', min: 18, max: 59 },
+  { label: 'Idoso (60+)', min: 60, max: 999 },
+];
 
 function iniciais(nome: string) {
   return nome.split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase();
@@ -36,14 +45,19 @@ function corAvatar(nome: string) {
   return cores[nome.charCodeAt(0) % cores.length];
 }
 
-function calcularIdade(dataNascimento?: string): string {
-  if (!dataNascimento) return '';
+function calcularIdade(dataNascimento?: string): number | null {
+  if (!dataNascimento) return null;
   const hoje = new Date();
   const nasc = new Date(dataNascimento);
   let idade = hoje.getFullYear() - nasc.getFullYear();
   const m = hoje.getMonth() - nasc.getMonth();
   if (m < 0 || (m === 0 && hoje.getDate() < nasc.getDate())) idade--;
-  return `${idade} anos`;
+  return idade;
+}
+
+function idadeLabel(dataNascimento?: string): string {
+  const idade = calcularIdade(dataNascimento);
+  return idade !== null ? `${idade} anos` : '';
 }
 
 const campoVazio = () => ({
@@ -55,6 +69,9 @@ const campoVazio = () => ({
 export default function PacientesPage() {
   const [pacientes, setPacientes] = useState<Paciente[]>([]);
   const [busca, setBusca] = useState('');
+  const [filtroSexo, setFiltroSexo] = useState('');
+  const [filtroFaixa, setFiltroFaixa] = useState('Todas');
+  const [filtrosVisiveis, setFiltrosVisiveis] = useState(false);
   const [pagina, setPagina] = useState(1);
   const [modalAberto, setModalAberto] = useState(false);
   const [modalDetalhes, setModalDetalhes] = useState(false);
@@ -80,26 +97,21 @@ export default function PacientesPage() {
       setErro('O paciente precisa aceitar os termos de uso de dados.');
       return;
     }
-  try {
-    const payload = {
-      nome: form.nome,
-      cpf: form.cpf || null,
-      cartaoSus: form.cartaoSus || null,
-      dataNascimento: form.dataNascimento || null,
-      sexo: form.sexo || null,
-      nomePai: form.nomePai || null,
-      nomeMae: form.nomeMae || null,
-      endereco: form.endereco || null,
-      profissao: form.profissao || null,
-      estadoCivil: form.estadoCivil || null,
-      informacoesAdicionais: form.informacoesAdicionais || null,
-      aceitaTermos: form.aceitaTermos,
-    };
-    if (editando) await api.put(`/api/Paciente/${editando.id}`, payload);
-    else await api.post('/api/Paciente', payload);
-    fechar(); carregar();
-  } catch (error: any) { setErro(error.mensagemBack ?? 'Erro ao salvar paciente'); }
-}
+    try {
+      const payload = {
+        nome: form.nome, cpf: form.cpf || null, cartaoSus: form.cartaoSus || null,
+        dataNascimento: form.dataNascimento || null, sexo: form.sexo || null,
+        nomePai: form.nomePai || null, nomeMae: form.nomeMae || null,
+        endereco: form.endereco || null, profissao: form.profissao || null,
+        estadoCivil: form.estadoCivil || null,
+        informacoesAdicionais: form.informacoesAdicionais || null,
+        aceitaTermos: form.aceitaTermos,
+      };
+      if (editando) await api.put(`/api/Paciente/${editando.id}`, payload);
+      else await api.post('/api/Paciente', payload);
+      fechar(); carregar();
+    } catch (error: any) { setErro(error.mensagemBack ?? 'Erro ao salvar paciente'); }
+  }
 
   async function handleDeletar(id: string) {
     if (!confirm('Deseja excluir este paciente?')) return;
@@ -107,11 +119,7 @@ export default function PacientesPage() {
     carregar();
   }
 
-  function abrirCadastro() {
-    setEditando(null);
-    setForm(campoVazio());
-    setModalAberto(true);
-  }
+  function abrirCadastro() { setEditando(null); setForm(campoVazio()); setModalAberto(true); }
 
   function abrirEdicao(p: Paciente) {
     setEditando(p);
@@ -127,10 +135,7 @@ export default function PacientesPage() {
     setModalAberto(true);
   }
 
-  function abrirDetalhes(p: Paciente) {
-    setPacienteSelecionado(p);
-    setModalDetalhes(true);
-  }
+  function abrirDetalhes(p: Paciente) { setPacienteSelecionado(p); setModalDetalhes(true); }
 
   function formatarCpf(cpf: string): string {
     const s = cpf.replace(/\D/g, '').substring(0, 11);
@@ -164,14 +169,24 @@ export default function PacientesPage() {
 
   function fechar() { setModalAberto(false); setEditando(null); setForm(campoVazio()); setErro(''); }
 
+  const temFiltroAtivo = filtroSexo !== '' || filtroFaixa !== 'Todas';
+
+  function limparFiltros() { setFiltroSexo(''); setFiltroFaixa('Todas'); }
+
   const filtrados = useMemo(() => {
     setPagina(1);
     const q = busca.toLowerCase();
-    return pacientes.filter(p =>
-      p.nome.toLowerCase().includes(q) ||
-      (p.cpf?.replace(/\D/g, '').includes(busca.replace(/\D/g, '')) && busca.length >= 3)
-    );
-  }, [pacientes, busca]);
+    const faixa = FAIXAS_ETARIAS.find(f => f.label === filtroFaixa) ?? FAIXAS_ETARIAS[0];
+
+    return pacientes.filter(p => {
+      const buscaOk = p.nome.toLowerCase().includes(q) ||
+        (p.cpf?.replace(/\D/g, '').includes(busca.replace(/\D/g, '')) && busca.length >= 3);
+      const sexoOk = filtroSexo === '' || p.sexo === filtroSexo;
+      const idade = calcularIdade(p.dataNascimento ?? undefined);
+      const faixaOk = filtroFaixa === 'Todas' || (idade !== null && idade >= faixa.min && idade <= faixa.max);
+      return buscaOk && sexoOk && faixaOk;
+    });
+  }, [pacientes, busca, filtroSexo, filtroFaixa]);
 
   const totalPaginas = Math.max(1, Math.ceil(filtrados.length / POR_PAGINA));
   const paginaAtual = filtrados.slice((pagina - 1) * POR_PAGINA, pagina * POR_PAGINA);
@@ -189,17 +204,63 @@ export default function PacientesPage() {
         </Button>
       </Box>
 
-      <TextField fullWidth placeholder="Buscar paciente por nome ou CPF..."
-        value={busca} onChange={(e) => setBusca(e.target.value)} sx={{ mb: 3 }}
-        slotProps={{ input: { startAdornment: <InputAdornment position="start"><SearchIcon color="action" /></InputAdornment> } }}
-      />
+      {/* Barra de busca + botão de filtros */}
+      <Box sx={{ display: 'flex', gap: 1, mb: filtrosVisiveis ? 2 : 3 }}>
+        <TextField fullWidth placeholder="Buscar paciente por nome ou CPF..."
+          value={busca} onChange={(e) => setBusca(e.target.value)}
+          slotProps={{ input: { startAdornment: <InputAdornment position="start"><SearchIcon color="action" /></InputAdornment> } }}
+        />
+        <Tooltip title={filtrosVisiveis ? 'Ocultar filtros' : 'Mostrar filtros'}>
+          <Button
+            variant={temFiltroAtivo ? 'contained' : 'outlined'}
+            color={temFiltroAtivo ? 'primary' : 'inherit'}
+            onClick={() => setFiltrosVisiveis(v => !v)}
+            startIcon={filtrosVisiveis ? <FilterListOffIcon /> : <FilterListIcon />}
+            sx={{ borderRadius: 2, whiteSpace: 'nowrap' }}
+          >
+            Filtros {temFiltroAtivo && `(${[filtroSexo, filtroFaixa !== 'Todas' ? filtroFaixa : ''].filter(Boolean).length})`}
+          </Button>
+        </Tooltip>
+      </Box>
+
+      {/* Filtros expandíveis */}
+      {filtrosVisiveis && (
+        <Paper variant="outlined" sx={{ p: 2, mb: 3, borderRadius: 2 }}>
+          <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
+            <FormControl sx={{ minWidth: 160 }} size="small">
+              <InputLabel>Sexo</InputLabel>
+              <Select value={filtroSexo} label="Sexo" onChange={(e) => setFiltroSexo(e.target.value)}>
+                <MenuItem value="">Todos</MenuItem>
+                {SEXOS.map(s => <MenuItem key={s} value={s}>{s}</MenuItem>)}
+              </Select>
+            </FormControl>
+            <FormControl sx={{ minWidth: 200 }} size="small">
+              <InputLabel>Faixa etária</InputLabel>
+              <Select value={filtroFaixa} label="Faixa etária" onChange={(e) => setFiltroFaixa(e.target.value)}>
+                {FAIXAS_ETARIAS.map(f => <MenuItem key={f.label} value={f.label}>{f.label}</MenuItem>)}
+              </Select>
+            </FormControl>
+            {temFiltroAtivo && (
+              <Button size="small" variant="outlined" color="error" onClick={limparFiltros}>
+                Limpar filtros
+              </Button>
+            )}
+            <Typography variant="caption" color="text.secondary" sx={{ ml: 'auto' }}>
+              {filtrados.length} de {pacientes.length} paciente(s)
+            </Typography>
+          </Box>
+        </Paper>
+      )}
 
       {filtrados.length === 0 ? (
         <Box sx={{ textAlign: 'center', py: 8, color: 'text.secondary' }}>
           <PersonIcon sx={{ fontSize: 64, opacity: 0.2, mb: 2 }} />
           <Typography variant="h6" sx={{ opacity: 0.5 }}>
-            {busca ? 'Nenhum paciente encontrado' : 'Nenhum paciente cadastrado'}
+            {busca || temFiltroAtivo ? 'Nenhum paciente encontrado' : 'Nenhum paciente cadastrado'}
           </Typography>
+          {temFiltroAtivo && (
+            <Button size="small" onClick={limparFiltros} sx={{ mt: 1 }}>Limpar filtros</Button>
+          )}
         </Box>
       ) : (
         <>
@@ -220,7 +281,7 @@ export default function PacientesPage() {
                           {p.nome}
                         </Typography>
                         <Typography variant="caption" color="text.secondary">
-                          {p.dataNascimento ? calcularIdade(p.dataNascimento) : 'Idade não informada'}
+                          {idadeLabel(p.dataNascimento ?? undefined) || 'Idade não informada'}
                           {p.sexo ? ` · ${p.sexo}` : ''}
                         </Typography>
                       </Box>
@@ -271,14 +332,9 @@ export default function PacientesPage() {
       <Dialog open={modalDetalhes} onClose={() => setModalDetalhes(false)} fullWidth maxWidth="sm">
         {pacienteSelecionado && (
           <>
-            {/* Header */}
             <Box sx={{ background: 'linear-gradient(135deg, #1565c0 0%, #1976d2 100%)', p: 3 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                <Avatar sx={{
-                  bgcolor: corAvatar(pacienteSelecionado.nome),
-                  width: 60, height: 60, fontSize: 22, fontWeight: 'bold',
-                  border: '3px solid rgba(255,255,255,0.4)'
-                }}>
+                <Avatar sx={{ bgcolor: corAvatar(pacienteSelecionado.nome), width: 60, height: 60, fontSize: 22, fontWeight: 'bold', border: '3px solid rgba(255,255,255,0.4)' }}>
                   {iniciais(pacienteSelecionado.nome)}
                 </Avatar>
                 <Box>
@@ -286,11 +342,7 @@ export default function PacientesPage() {
                     {pacienteSelecionado.nome}
                   </Typography>
                   <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.85)', mt: 0.5 }}>
-                    {[
-                      pacienteSelecionado.dataNascimento ? calcularIdade(pacienteSelecionado.dataNascimento) : null,
-                      pacienteSelecionado.sexo,
-                      pacienteSelecionado.estadoCivil,
-                    ].filter(Boolean).join(' · ')}
+                    {[idadeLabel(pacienteSelecionado.dataNascimento ?? undefined), pacienteSelecionado.sexo, pacienteSelecionado.estadoCivil].filter(Boolean).join(' · ')}
                   </Typography>
                 </Box>
               </Box>
@@ -298,16 +350,11 @@ export default function PacientesPage() {
 
             <DialogContent sx={{ p: 3 }}>
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-
-                {/* Identificação */}
-                {(pacienteSelecionado.cpf || pacienteSelecionado.cartaoSus ||
-                  pacienteSelecionado.dataNascimento || pacienteSelecionado.profissao) && (
+                {(pacienteSelecionado.cpf || pacienteSelecionado.cartaoSus || pacienteSelecionado.dataNascimento || pacienteSelecionado.profissao) && (
                   <Box>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
                       <BadgeIcon fontSize="small" color="primary" />
-                      <Typography variant="caption" sx={{ fontWeight: 700, color: 'primary.main', textTransform: 'uppercase', letterSpacing: 0.8, fontSize: 11 }}>
-                        Identificação
-                      </Typography>
+                      <Typography variant="caption" sx={{ fontWeight: 700, color: 'primary.main', textTransform: 'uppercase', letterSpacing: 0.8, fontSize: 11 }}>Identificação</Typography>
                     </Box>
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
                       {[
@@ -316,12 +363,7 @@ export default function PacientesPage() {
                         { label: 'Data de Nascimento', value: pacienteSelecionado.dataNascimento ? new Date(pacienteSelecionado.dataNascimento + 'T00:00:00').toLocaleDateString('pt-BR') : null },
                         { label: 'Profissão', value: pacienteSelecionado.profissao },
                       ].filter(item => item.value).map((item, i, arr) => (
-                        <Box key={i} sx={{
-                          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                          py: 1.25, px: 0,
-                          borderBottom: i < arr.length - 1 ? '1px solid' : 'none',
-                          borderColor: 'divider',
-                        }}>
+                        <Box key={i} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 1.25, borderBottom: i < arr.length - 1 ? '1px solid' : 'none', borderColor: 'divider' }}>
                           <Typography variant="body2" color="text.secondary">{item.label}</Typography>
                           <Typography variant="body2" sx={{ fontWeight: 600 }}>{item.value}</Typography>
                         </Box>
@@ -330,26 +372,15 @@ export default function PacientesPage() {
                   </Box>
                 )}
 
-                {/* Família */}
                 {(pacienteSelecionado.nomePai || pacienteSelecionado.nomeMae) && (
                   <Box>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
                       <FamilyRestroomIcon fontSize="small" color="primary" />
-                      <Typography variant="caption" sx={{ fontWeight: 700, color: 'primary.main', textTransform: 'uppercase', letterSpacing: 0.8, fontSize: 11 }}>
-                        Família
-                      </Typography>
+                      <Typography variant="caption" sx={{ fontWeight: 700, color: 'primary.main', textTransform: 'uppercase', letterSpacing: 0.8, fontSize: 11 }}>Família</Typography>
                     </Box>
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
-                      {[
-                        { label: 'Nome do Pai', value: pacienteSelecionado.nomePai },
-                        { label: 'Nome da Mãe', value: pacienteSelecionado.nomeMae },
-                      ].filter(item => item.value).map((item, i, arr) => (
-                        <Box key={i} sx={{
-                          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                          py: 1.25, px: 0,
-                          borderBottom: i < arr.length - 1 ? '1px solid' : 'none',
-                          borderColor: 'divider',
-                        }}>
+                      {[{ label: 'Nome do Pai', value: pacienteSelecionado.nomePai }, { label: 'Nome da Mãe', value: pacienteSelecionado.nomeMae }].filter(item => item.value).map((item, i, arr) => (
+                        <Box key={i} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 1.25, borderBottom: i < arr.length - 1 ? '1px solid' : 'none', borderColor: 'divider' }}>
                           <Typography variant="body2" color="text.secondary">{item.label}</Typography>
                           <Typography variant="body2" sx={{ fontWeight: 600 }}>{item.value}</Typography>
                         </Box>
@@ -358,51 +389,32 @@ export default function PacientesPage() {
                   </Box>
                 )}
 
-                {/* Endereço */}
                 {pacienteSelecionado.endereco && (
                   <Box>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
                       <HomeIcon fontSize="small" color="primary" />
-                      <Typography variant="caption" sx={{ fontWeight: 700, color: 'primary.main', textTransform: 'uppercase', letterSpacing: 0.8, fontSize: 11 }}>
-                        Endereço
-                      </Typography>
+                      <Typography variant="caption" sx={{ fontWeight: 700, color: 'primary.main', textTransform: 'uppercase', letterSpacing: 0.8, fontSize: 11 }}>Endereço</Typography>
                     </Box>
-                    <Typography variant="body2" color="text.primary">{pacienteSelecionado.endereco}</Typography>
+                    <Typography variant="body2">{pacienteSelecionado.endereco}</Typography>
                   </Box>
                 )}
 
-                {/* Informações médicas adicionais */}
                 {pacienteSelecionado.informacoesAdicionais && (
                   <Box>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
                       <MedicalInformationIcon fontSize="small" color="warning" />
-                      <Typography variant="caption" sx={{ fontWeight: 700, color: 'warning.main', textTransform: 'uppercase', letterSpacing: 0.8, fontSize: 11 }}>
-                        Informações Médicas Adicionais
-                      </Typography>
+                      <Typography variant="caption" sx={{ fontWeight: 700, color: 'warning.main', textTransform: 'uppercase', letterSpacing: 0.8, fontSize: 11 }}>Informações Médicas Adicionais</Typography>
                     </Box>
-                    <Box sx={{
-                      p: 2, borderRadius: 2,
-                      border: '1px solid',
-                      borderColor: 'warning.main',
-                      bgcolor: 'transparent',
-                    }}>
-                      <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap', color: 'warning.dark' }}>
-                        ⚠️ {pacienteSelecionado.informacoesAdicionais}
-                      </Typography>
+                    <Box sx={{ p: 2, borderRadius: 2, border: '1px solid', borderColor: 'warning.main' }}>
+                      <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap', color: 'warning.dark' }}>⚠️ {pacienteSelecionado.informacoesAdicionais}</Typography>
                     </Box>
                   </Box>
                 )}
 
-                {/* Se não há nada além do nome */}
-                {!pacienteSelecionado.cpf && !pacienteSelecionado.cartaoSus &&
-                !pacienteSelecionado.dataNascimento && !pacienteSelecionado.profissao &&
-                !pacienteSelecionado.nomePai && !pacienteSelecionado.nomeMae &&
-                !pacienteSelecionado.endereco && !pacienteSelecionado.informacoesAdicionais && (
+                {!pacienteSelecionado.cpf && !pacienteSelecionado.cartaoSus && !pacienteSelecionado.dataNascimento && !pacienteSelecionado.profissao && !pacienteSelecionado.nomePai && !pacienteSelecionado.nomeMae && !pacienteSelecionado.endereco && !pacienteSelecionado.informacoesAdicionais && (
                   <Box sx={{ textAlign: 'center', py: 4, color: 'text.secondary' }}>
                     <PersonIcon sx={{ fontSize: 48, opacity: 0.2, mb: 1 }} />
-                    <Typography variant="body2" sx={{ opacity: 0.5 }}>
-                      Nenhuma informação adicional cadastrada
-                    </Typography>
+                    <Typography variant="body2" sx={{ opacity: 0.5 }}>Nenhuma informação adicional cadastrada</Typography>
                   </Box>
                 )}
               </Box>
@@ -410,12 +422,7 @@ export default function PacientesPage() {
 
             <DialogActions sx={{ p: 2.5, gap: 1, borderTop: '1px solid', borderColor: 'divider' }}>
               <Button onClick={() => setModalDetalhes(false)} variant="outlined">Fechar</Button>
-              <Button
-                onClick={() => { setModalDetalhes(false); abrirEdicao(pacienteSelecionado); }}
-                variant="contained" startIcon={<EditIcon />}
-              >
-                Editar
-              </Button>
+              <Button onClick={() => { setModalDetalhes(false); abrirEdicao(pacienteSelecionado); }} variant="contained" startIcon={<EditIcon />}>Editar</Button>
             </DialogActions>
           </>
         )}
@@ -423,32 +430,29 @@ export default function PacientesPage() {
 
       {/* Modal de Cadastro/Edição */}
       <Dialog open={modalAberto} onClose={fechar} fullWidth maxWidth="md">
-        <DialogTitle sx={{ bgcolor: 'primary.main', color: 'white' }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <PersonIcon />
-            {editando ? 'Editar Paciente' : 'Novo Paciente'}
+        <Box sx={{ background: 'linear-gradient(135deg, #1565c0 0%, #1976d2 100%)', p: 3 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Avatar sx={{ bgcolor: 'rgba(255,255,255,0.2)', width: 52, height: 52, border: '2px solid rgba(255,255,255,0.4)' }}>
+              <PersonIcon sx={{ color: 'white', fontSize: 28 }} />
+            </Avatar>
+            <Box>
+              <Typography variant="h6" sx={{ color: 'white', fontWeight: 'bold' }}>{editando ? 'Editar Paciente' : 'Novo Paciente'}</Typography>
+              <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.8)' }}>Preencha os dados do paciente</Typography>
+            </Box>
           </Box>
-        </DialogTitle>
+        </Box>
         <DialogContent sx={{ pt: 3 }}>
           {erro && <Alert severity="error" sx={{ mb: 2 }}>{erro}</Alert>}
 
-          {/* Dados pessoais */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
             <PersonIcon fontSize="small" color="primary" />
-            <Typography variant="subtitle2" sx={{ fontWeight: 700, color: 'primary.main', textTransform: 'uppercase', letterSpacing: 0.5, fontSize: 11 }}>
-              Dados Pessoais
-            </Typography>
+            <Typography variant="subtitle2" sx={{ fontWeight: 700, color: 'primary.main', textTransform: 'uppercase', letterSpacing: 0.5, fontSize: 11 }}>Dados Pessoais</Typography>
           </Box>
           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, mb: 3 }}>
-            <TextField label="Nome completo *" value={form.nome} onChange={(e) => setField('nome', e.target.value)}
-              sx={{ flex: '1 1 100%' }} />
-            <TextField label="CPF" value={form.cpf} onChange={(e) => setField('cpf', formatarCpf(e.target.value))}
-              placeholder="000.000.000-00" sx={{ flex: '1 1 180px' }} slotProps={{ htmlInput: { maxLength: 14 } }} />
-            <TextField label="Cartão SUS" value={form.cartaoSus} onChange={(e) => setField('cartaoSus', formatarCartaoSus(e.target.value))}
-              sx={{ flex: '1 1 180px' }} slotProps={{ htmlInput: { maxLength: 19 } }} />
-            <TextField label="Data de Nascimento" type="date" value={form.dataNascimento}
-              onChange={(e) => setField('dataNascimento', e.target.value)}
-              sx={{ flex: '1 1 160px' }} slotProps={{ inputLabel: { shrink: true } }} />
+            <TextField label="Nome completo *" value={form.nome} onChange={(e) => setField('nome', e.target.value)} sx={{ flex: '1 1 100%' }} />
+            <TextField label="CPF" value={form.cpf} onChange={(e) => setField('cpf', formatarCpf(e.target.value))} placeholder="000.000.000-00" sx={{ flex: '1 1 180px' }} slotProps={{ htmlInput: { maxLength: 14 } }} />
+            <TextField label="Cartão SUS" value={form.cartaoSus} onChange={(e) => setField('cartaoSus', formatarCartaoSus(e.target.value))} sx={{ flex: '1 1 180px' }} slotProps={{ htmlInput: { maxLength: 19 } }} />
+            <TextField label="Data de Nascimento" type="date" value={form.dataNascimento} onChange={(e) => setField('dataNascimento', e.target.value)} sx={{ flex: '1 1 160px' }} slotProps={{ inputLabel: { shrink: true } }} />
             <FormControl sx={{ flex: '1 1 160px' }}>
               <InputLabel>Sexo</InputLabel>
               <Select value={form.sexo} label="Sexo" onChange={(e) => setField('sexo', e.target.value)}>
@@ -463,72 +467,48 @@ export default function PacientesPage() {
                 {ESTADOS_CIVIS.map(s => <MenuItem key={s} value={s}>{s}</MenuItem>)}
               </Select>
             </FormControl>
-            <TextField label="Profissão" value={form.profissao} onChange={(e) => setField('profissao', e.target.value)}
-              sx={{ flex: '1 1 200px' }} />
+            <TextField label="Profissão" value={form.profissao} onChange={(e) => setField('profissao', e.target.value)} sx={{ flex: '1 1 200px' }} />
           </Box>
 
           <Divider sx={{ mb: 3 }} />
 
-          {/* Família */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
             <FamilyRestroomIcon fontSize="small" color="primary" />
-            <Typography variant="subtitle2" sx={{ fontWeight: 700, color: 'primary.main', textTransform: 'uppercase', letterSpacing: 0.5, fontSize: 11 }}>
-              Família
-            </Typography>
+            <Typography variant="subtitle2" sx={{ fontWeight: 700, color: 'primary.main', textTransform: 'uppercase', letterSpacing: 0.5, fontSize: 11 }}>Família</Typography>
           </Box>
           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, mb: 3 }}>
-            <TextField label="Nome do Pai" value={form.nomePai} onChange={(e) => setField('nomePai', e.target.value)}
-              sx={{ flex: '1 1 200px' }} />
-            <TextField label="Nome da Mãe" value={form.nomeMae} onChange={(e) => setField('nomeMae', e.target.value)}
-              sx={{ flex: '1 1 200px' }} />
+            <TextField label="Nome do Pai" value={form.nomePai} onChange={(e) => setField('nomePai', e.target.value)} sx={{ flex: '1 1 200px' }} />
+            <TextField label="Nome da Mãe" value={form.nomeMae} onChange={(e) => setField('nomeMae', e.target.value)} sx={{ flex: '1 1 200px' }} />
           </Box>
 
           <Divider sx={{ mb: 3 }} />
 
-          {/* Endereço */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
             <HomeIcon fontSize="small" color="primary" />
-            <Typography variant="subtitle2" sx={{ fontWeight: 700, color: 'primary.main', textTransform: 'uppercase', letterSpacing: 0.5, fontSize: 11 }}>
-              Endereço
-            </Typography>
+            <Typography variant="subtitle2" sx={{ fontWeight: 700, color: 'primary.main', textTransform: 'uppercase', letterSpacing: 0.5, fontSize: 11 }}>Endereço</Typography>
           </Box>
-          <TextField label="Endereço completo" value={form.endereco} onChange={(e) => setField('endereco', e.target.value)}
-            fullWidth sx={{ mb: 3 }} placeholder="Rua, número, bairro, cidade, estado" />
+          <TextField label="Endereço completo" value={form.endereco} onChange={(e) => setField('endereco', e.target.value)} fullWidth sx={{ mb: 3 }} placeholder="Rua, número, bairro, cidade, estado" />
 
           <Divider sx={{ mb: 3 }} />
 
-          {/* Informações médicas */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
             <MedicalInformationIcon fontSize="small" color="warning" />
-            <Typography variant="subtitle2" sx={{ fontWeight: 700, color: 'warning.main', textTransform: 'uppercase', letterSpacing: 0.5, fontSize: 11 }}>
-              Informações Médicas Adicionais
-            </Typography>
+            <Typography variant="subtitle2" sx={{ fontWeight: 700, color: 'warning.main', textTransform: 'uppercase', letterSpacing: 0.5, fontSize: 11 }}>Informações Médicas Adicionais</Typography>
           </Box>
           <TextField label="Alergias, condições especiais, observações..." value={form.informacoesAdicionais}
             onChange={(e) => setField('informacoesAdicionais', e.target.value)}
             fullWidth multiline rows={3} sx={{ mb: 3 }}
             placeholder="Ex: Alergia à Dipirona, hipertenso, membro amputado..." />
 
-          {/* Termos */}
           {!editando && (
             <>
               <Divider sx={{ mb: 2 }} />
               <Alert severity="info" icon={<InfoIcon />} sx={{ mb: 2 }}>
-                Os dados coletados são utilizados exclusivamente para fins clínicos e de atendimento médico, em conformidade com a LGPD. O paciente pode solicitar exclusão dos seus dados a qualquer momento.
+                Os dados coletados são utilizados exclusivamente para fins clínicos e de atendimento médico, em conformidade com a LGPD.
               </Alert>
               <FormControlLabel
-                control={
-                  <Checkbox
-                    checked={form.aceitaTermos}
-                    onChange={(e) => setField('aceitaTermos', e.target.checked)}
-                    color="primary"
-                  />
-                }
-                label={
-                  <Typography variant="body2">
-                    O paciente autoriza o uso dos seus dados pessoais e clínicos para fins de atendimento médico, conforme a <strong>Lei Geral de Proteção de Dados (LGPD)</strong>.
-                  </Typography>
-                }
+                control={<Checkbox checked={form.aceitaTermos} onChange={(e) => setField('aceitaTermos', e.target.checked)} color="primary" />}
+                label={<Typography variant="body2">O paciente autoriza o uso dos seus dados pessoais e clínicos para fins de atendimento médico, conforme a <strong>Lei Geral de Proteção de Dados (LGPD)</strong>.</Typography>}
               />
             </>
           )}
