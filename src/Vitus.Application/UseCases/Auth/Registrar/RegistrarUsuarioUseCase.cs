@@ -10,6 +10,7 @@ namespace Vitus.Application.UseCases.Auth.Registrar
     public class RegistrarUsuarioUseCase
     {
         private readonly IUsuarioRepository _usuarioRepository;
+        private readonly IEnfermeiroRepository _enfermeiroRepository;
         private readonly IMedicoRepository _medicoRepository;
         private readonly ITokenService _tokenService;
 
@@ -43,6 +44,13 @@ namespace Vitus.Application.UseCases.Auth.Registrar
                 var especialidade = request.Especialidade ?? "Clínico Geral";
                 var medico = new Medico(request.Nome, especialidade, crm);
                 await _medicoRepository.Add(medico);
+            }
+
+            if (perfil == PerfilUsuario.Enfermeiro)
+            {
+                var coren = request.COREN ?? $"COREN-PROVISÓRIO-{Guid.NewGuid().ToString()[..8].ToUpper()}";
+                var enfermeiro = new Enfermeiro(request.Nome, coren, request.Especializacao);
+                await _enfermeiroRepository.Add(enfermeiro);
             }
 
             var token = _tokenService.Generate(usuario);

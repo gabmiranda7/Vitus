@@ -8,5 +8,7 @@
         public string Perfil { get; set; }
         public string? CRM { get; set; }
         public string? Especialidade { get; set; }
+        public string? COREN { get; set; }
+        public string? Especializacao { get; set; }
     }
 }
