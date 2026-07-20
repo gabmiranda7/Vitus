@@ -16,10 +16,12 @@ namespace Vitus.Application.UseCases.Auth.Registrar
 
         public RegistrarUsuarioUseCase(
             IUsuarioRepository usuarioRepository,
+            IEnfermeiroRepository enfermeiroRepository,
             IMedicoRepository medicoRepository,
             ITokenService tokenService)
         {
             _usuarioRepository = usuarioRepository;
+            _enfermeiroRepository = enfermeiroRepository;
             _medicoRepository = medicoRepository;
             _tokenService = tokenService;
         }
