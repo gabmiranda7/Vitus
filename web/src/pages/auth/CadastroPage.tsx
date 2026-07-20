@@ -41,6 +41,8 @@ export default function CadastroPage() {
   const [perfil, setPerfil] = useState('');
   const [crm, setCrm] = useState('');
   const [especialidade, setEspecialidade] = useState('');
+  const [coren, setCoren] = useState('');
+  const [especializacao, setEspecializacao] = useState('');
   const [erro, setErro] = useState('');
   const [sucesso, setSucesso] = useState('');
   const [loading, setLoading] = useState(false);
@@ -61,6 +63,9 @@ export default function CadastroPage() {
         if (!crm.trim()) return setErro('CRM é obrigatório para médicos');
         if (!especialidade.trim()) return setErro('Especialidade é obrigatória para médicos');
       }
+      if (perfil === 'Enfermeiro') {
+        if (!coren.trim()) return setErro('COREN é obrigatório para enfermeiros');
+      }
     }
     setStep(s => s + 1);
   }
@@ -70,7 +75,8 @@ export default function CadastroPage() {
     try {
       await api.post('/api/auth/registrar', {
         nome, email, senha, perfil,
-        ...(perfil === 'Medico' && { crm, especialidade })
+        ...(perfil === 'Medico' && { crm, especialidade }),
+        ...(perfil === 'Enfermeiro' && { coren, especializacao: especializacao || undefined }),
       });
       setSucesso('Cadastro realizado com sucesso!');
       setTimeout(() => navigate('/login'), 2000);
@@ -232,6 +238,33 @@ export default function CadastroPage() {
                     />
                   </>
                 )}
+                {perfil === 'Enfermeiro' && (
+                  <>
+                    <TextField
+                      label="COREN"
+                      fullWidth
+                      value={coren}
+                      onChange={(e) => setCoren(e.target.value)}
+                      placeholder="Ex: COREN-MG 123456"
+                      sx={inputSx}
+                      InputProps={{
+                        startAdornment: (
+                          <InputAdornment position="start">
+                            <BadgeIcon color="action" fontSize="small" />
+                          </InputAdornment>
+                        ),
+                      }}
+                    />
+                    <TextField
+                      label="Especialização (opcional)"
+                      fullWidth
+                      value={especializacao}
+                      onChange={(e) => setEspecializacao(e.target.value)}
+                      placeholder="Ex: UTI, Obstetrícia..."
+                      sx={inputSx}
+                    />
+                  </>
+                )}
               </Box>
             )}
 
@@ -262,6 +295,11 @@ export default function CadastroPage() {
                       {perfil === 'Medico' && (
                         <Typography variant="caption" color="text.secondary">
                           {crm} · {especialidade}
+                        </Typography>
+                      )}
+                      {perfil === 'Enfermeiro' && (
+                        <Typography variant="caption" color="text.secondary">
+                          {coren}{especializacao ? ` · ${especializacao}` : ''}
                         </Typography>
                       )}
                     </Box>
