@@ -12,6 +12,7 @@ namespace Vitus.Tests.UseCases.Auth
     public class RegistrarUsuarioUseCaseTests
     {
         private readonly Mock<IUsuarioRepository> _usuarioRepoMock;
+        private readonly Mock<IEnfermeiroRepository> _enfermeiroRepoMock;
         private readonly Mock<IMedicoRepository> _medicoRepoMock;
         private readonly Mock<ITokenService> _tokenServiceMock;
         private readonly RegistrarUsuarioUseCase _useCase;
@@ -19,10 +20,12 @@ namespace Vitus.Tests.UseCases.Auth
         public RegistrarUsuarioUseCaseTests()
         {
             _usuarioRepoMock = new Mock<IUsuarioRepository>();
+            _enfermeiroRepoMock = new Mock<IEnfermeiroRepository>();
             _medicoRepoMock = new Mock<IMedicoRepository>();
             _tokenServiceMock = new Mock<ITokenService>();
             _useCase = new RegistrarUsuarioUseCase(
                 _usuarioRepoMock.Object,
+                _enfermeiroRepoMock.Object,
                 _medicoRepoMock.Object,
                 _tokenServiceMock.Object
             );

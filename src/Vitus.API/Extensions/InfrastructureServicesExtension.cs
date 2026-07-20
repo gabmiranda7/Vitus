@@ -20,7 +20,8 @@ namespace Vitus.API.Extensions
                 .Replace("{DB_PASS}", dbPass);
 
             services.AddDbContext<AppDbContext>(options =>
-                options.UseNpgsql(connectionString)
+                options.UseNpgsql(connectionString, npgsqlOptions =>
+                    npgsqlOptions.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery))
                     .UseSnakeCaseNamingConvention());
 
             services.AddHttpContextAccessor();
