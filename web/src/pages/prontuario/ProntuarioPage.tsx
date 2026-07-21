@@ -146,6 +146,7 @@ export default function ProntuarioPage(): React.ReactElement {
   const [form, setForm] = useState(exameVazio());
   const [salvando, setSalvando] = useState(false);
   const [erroForm, setErroForm] = useState('');
+  const [erroExame, setErroExame] = useState('');
   const [uploadingId, setUploadingId] = useState<string | null>(null);
   const theme = useTheme();
 
@@ -206,6 +207,19 @@ export default function ProntuarioPage(): React.ReactElement {
   }
 
   async function handleUpload(exameId: string, arquivo: File) {
+    const extensoesValidas = ['.pdf', '.jpg', '.jpeg', '.png'];
+    const extensao = '.' + arquivo.name.split('.').pop()?.toLowerCase();
+
+    if (!extensoesValidas.includes(extensao)) {
+      setErroExame('Formato inválido. Envie apenas PDF, JPG ou PNG.');
+      return;
+    }
+    if (arquivo.size > 10 * 1024 * 1024) {
+      setErroExame('Arquivo muito grande. Tamanho máximo: 10MB.');
+      return;
+    }
+
+    setErroExame('');
     setUploadingId(exameId);
     try {
       const formData = new FormData();
@@ -215,7 +229,11 @@ export default function ProntuarioPage(): React.ReactElement {
       });
       await carregarExames(prontuario!.id);
     } catch (error: any) {
-      setErro(error.mensagemBack ?? 'Erro ao enviar arquivo');
+      if (!error.response) {
+        setErroExame('Não foi possível enviar o arquivo. Verifique o tamanho (máx. 10MB) e sua conexão.');
+      } else {
+        setErroExame(error.mensagemBack ?? 'Erro ao enviar arquivo');
+      }
     } finally {
       setUploadingId(null);
     }
@@ -230,7 +248,7 @@ export default function ProntuarioPage(): React.ReactElement {
       a.download = exame.nomeArquivoOriginal ?? 'exame';
       a.click();
       URL.revokeObjectURL(url);
-    } catch { setErro('Erro ao baixar arquivo'); }
+    } catch { setErroExame('Erro ao baixar arquivo'); }
   }
 
   if (erro) return <Layout><Alert severity="error">{erro}</Alert></Layout>;
@@ -308,6 +326,11 @@ export default function ProntuarioPage(): React.ReactElement {
       {/* Seção de Exames */}
       <Card sx={{ borderRadius: 3, mb: 3 }}>
         <CardContent sx={{ p: 0 }}>
+          {erroExame && (
+            <Box sx={{ p: 2.5, pb: 0 }}>
+              <Alert severity="error" onClose={() => setErroExame('')}>{erroExame}</Alert>
+            </Box>
+          )}
           <Box
             sx={{ p: 2.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}
             onClick={() => setExamesAberto(v => !v)}

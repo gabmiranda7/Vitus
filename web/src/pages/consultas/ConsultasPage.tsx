@@ -242,7 +242,13 @@ export default function ConsultasPage() {
         });
       }
       fecharExame(); carregar();
-    } catch (e: any) { setErro(e.mensagemBack ?? 'Erro ao registrar exame'); }
+    } catch (e: any) {
+      if (!e.response) {
+        setErro('Não foi possível enviar o arquivo. Verifique o tamanho (máx. 10MB) e sua conexão.');
+      } else {
+        setErro(e.mensagemBack ?? 'Erro ao registrar exame');
+      }
+    }
     finally { setSalvandoExame(false); }
   }
 
@@ -829,7 +835,26 @@ export default function ConsultasPage() {
               <Button variant="outlined" component="label" size="small" startIcon={<AttachFileIcon />}>
                 {arquivoExame ? arquivoExame.name : 'Anexar arquivo (opcional)'}
                 <input type="file" hidden accept=".pdf,.jpg,.jpeg,.png"
-                  onChange={(e) => setArquivoExame(e.target.files?.[0] ?? null)} />
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+
+                    const extensoesValidas = ['.pdf', '.jpg', '.jpeg', '.png'];
+                    const extensao = '.' + file.name.split('.').pop()?.toLowerCase();
+
+                    if (!extensoesValidas.includes(extensao)) {
+                      setErro('Formato inválido. Envie apenas PDF, JPG ou PNG.');
+                      e.target.value = '';
+                      return;
+                    }
+                    if (file.size > 10 * 1024 * 1024) {
+                      setErro('Arquivo muito grande. Tamanho máximo: 10MB.');
+                      e.target.value = '';
+                      return;
+                    }
+                    setErro('');
+                    setArquivoExame(file);
+                  }} />
               </Button>
             </Box>
           </Box>
