@@ -40,6 +40,14 @@ builder.Services.AddControllers()
 
 builder.Services.AddOpenApi();
 
+// Limite de tamanho de requisição um pouco acima do limite de validação da aplicação (10MB),
+// para que a validação de negócio consiga rodar e retornar uma mensagem clara,
+// em vez do Kestrel derrubar a conexão abruptamente em uploads muito grandes (ex: vídeos).
+builder.WebHost.ConfigureKestrel(options =>
+{
+    options.Limits.MaxRequestBodySize = 15 * 1024 * 1024; // 15MB
+});
+
 builder.Services.Configure<ApiBehaviorOptions>(options =>
 {
     options.InvalidModelStateResponseFactory = context =>
