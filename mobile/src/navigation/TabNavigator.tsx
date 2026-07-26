@@ -2,6 +2,7 @@ import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import DashboardScreen from '../screens/DashboardScreen';
+import ConsultasScreen from '../screens/ConsultasScreen';
 import PerfilScreen from '../screens/PerfilScreen';
 
 const Tab = createBottomTabNavigator();
@@ -22,6 +23,15 @@ export default function TabNavigator() {
           title: 'Vitus',
           tabBarIcon: ({ color, size }) => (
             <MaterialCommunityIcons name="view-dashboard" color={color} size={size} />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="Consultas"
+        component={ConsultasScreen}
+        options={{
+          tabBarIcon: ({ color, size }) => (
+            <MaterialCommunityIcons name="calendar-clock" color={color} size={size} />
           ),
         }}
       />
