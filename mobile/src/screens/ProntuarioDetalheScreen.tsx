@@ -1,8 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { View, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, ScrollView, StyleSheet, TouchableOpacity, Platform, Alert } from 'react-native';
 import { Text, Card, Chip, ActivityIndicator, Divider, Avatar } from 'react-native-paper';
 import { useRoute } from '@react-navigation/native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import * as FileSystem from 'expo-file-system/legacy';
+import * as Sharing from 'expo-sharing';
+import * as IntentLauncher from 'expo-intent-launcher';
 import api from '../services/api';
 import { Prontuario, Paciente, Consulta, Triagem, Receita, Exame, statusCores, statusLabels } from '../types';
 
@@ -60,10 +63,49 @@ export default function ProntuarioDetalheScreen() {
 
   const [receitasAbertas, setReceitasAbertas] = useState(false);
   const [examesAbertos, setExamesAbertos] = useState(false);
+  const [baixandoId, setBaixandoId] = useState<string | null>(null);
 
   useEffect(() => {
     carregar();
   }, []);
+
+  async function abrirExame(exame: Exame) {
+    setBaixandoId(exame.id);
+    try {
+      const response = await api.get(`/api/exames/${exame.id}/arquivo`, {
+        responseType: 'arraybuffer',
+      });
+
+      const contentType = response.headers['content-type'] ?? 'application/octet-stream';
+      const extensao = contentType.includes('pdf') ? 'pdf'
+        : contentType.includes('png') ? 'png'
+        : 'jpg';
+
+      const base64 = arrayBufferToBase64(response.data);
+      const nomeArquivo = `exame_${exame.id}.${extensao}`;
+      const caminho = FileSystem.cacheDirectory + nomeArquivo;
+
+      await FileSystem.writeAsStringAsync(caminho, base64, {
+        encoding: 'base64',
+      });
+
+      if (Platform.OS === 'android') {
+        const contentUri = await FileSystem.getContentUriAsync(caminho);
+        await IntentLauncher.startActivityAsync('android.intent.action.VIEW', {
+          data: contentUri,
+          flags: 1, // FLAG_GRANT_READ_URI_PERMISSION
+          type: contentType,
+        });
+      } else if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(caminho);
+      }
+    } catch (error: any) {
+      console.log('Erro ao abrir exame:', error.message, error);
+      Alert.alert('Erro', 'Não foi possível abrir o arquivo do exame.');
+    } finally {
+      setBaixandoId(null);
+    }
+  }
 
   async function carregar() {
     try {
@@ -228,25 +270,40 @@ export default function ProntuarioDetalheScreen() {
           ) : (
             exames.map((e) => {
               const cor = categoriaCor[e.categoria] ?? '#546e7a';
-              return (
-                <Card key={e.id} style={[styles.cardItem, { borderLeftColor: cor, borderLeftWidth: 4 }]}>
-                  <Card.Content>
-                    <View style={styles.exameHeader}>
-                      <Chip compact style={{ backgroundColor: cor + '20' }} textStyle={{ color: cor, fontSize: 11 }}>
-                        {categoriaLabel[e.categoria] ?? e.categoria}
-                      </Chip>
-                      {e.temArquivo && (
-                        <MaterialCommunityIcons name="paperclip" size={16} color="#666" />
-                      )}
-                    </View>
-                    <Text variant="titleSmall" style={styles.exameNome}>{e.nome}</Text>
-                    <Text variant="bodySmall" style={styles.itemData}>
-                      {new Date(e.dataExame + 'T00:00:00').toLocaleDateString('pt-BR')} · Dr(a). {e.medicoSolicitante}
-                    </Text>
-                    {e.observacoes && (
-                      <Text variant="bodySmall" style={styles.exameObs}>{e.observacoes}</Text>
+              const conteudo = (
+                <Card.Content>
+                  <View style={styles.exameHeader}>
+                    <Chip compact style={{ backgroundColor: cor + '20' }} textStyle={{ color: cor, fontSize: 11 }}>
+                      {categoriaLabel[e.categoria] ?? e.categoria}
+                    </Chip>
+                    {e.temArquivo && (
+                      baixandoId === e.id
+                        ? <ActivityIndicator size={16} />
+                        : <MaterialCommunityIcons name="download" size={18} color="#1976d2" />
                     )}
-                  </Card.Content>
+                  </View>
+                  <Text variant="titleSmall" style={styles.exameNome}>{e.nome}</Text>
+                  <Text variant="bodySmall" style={styles.itemData}>
+                    {new Date(e.dataExame + 'T00:00:00').toLocaleDateString('pt-BR')} · Dr(a). {e.medicoSolicitante}
+                  </Text>
+                  {e.observacoes && (
+                    <Text variant="bodySmall" style={styles.exameObs}>{e.observacoes}</Text>
+                  )}
+                  {e.temArquivo && (
+                    <Text variant="bodySmall" style={styles.exameToqueDica}>Toque para visualizar o arquivo</Text>
+                  )}
+                </Card.Content>
+              );
+
+              return e.temArquivo ? (
+                <TouchableOpacity key={e.id} onPress={() => abrirExame(e)} disabled={baixandoId === e.id}>
+                  <Card style={[styles.cardItem, { borderLeftColor: cor, borderLeftWidth: 4 }]}>
+                    {conteudo}
+                  </Card>
+                </TouchableOpacity>
+              ) : (
+                <Card key={e.id} style={[styles.cardItem, { borderLeftColor: cor, borderLeftWidth: 4 }]}>
+                  {conteudo}
                 </Card>
               );
             })
@@ -308,6 +365,15 @@ export default function ProntuarioDetalheScreen() {
   );
 }
 
+function arrayBufferToBase64(buffer: ArrayBuffer): string {
+  let binary = '';
+  const bytes = new Uint8Array(buffer);
+  for (let i = 0; i < bytes.byteLength; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return btoa(binary);
+}
+
 function InfoLinha({ label, valor }: { label: string; valor: string }) {
   return (
     <View style={styles.infoLinha}>
@@ -353,6 +419,7 @@ const styles = StyleSheet.create({
   exameHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 },
   exameNome: { fontWeight: '600', marginBottom: 2 },
   exameObs: { fontStyle: 'italic', color: '#666', marginTop: 4 },
+  exameToqueDica: { color: '#1976d2', marginTop: 6, fontSize: 11 },
 
   tituloTimeline: { fontWeight: 'bold', marginTop: 8, marginBottom: 12 },
   grupoDia: { marginBottom: 20 },
