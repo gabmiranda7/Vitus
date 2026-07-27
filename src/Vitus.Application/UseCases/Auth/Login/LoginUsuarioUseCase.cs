@@ -23,7 +23,8 @@ namespace Vitus.Application.UseCases.Auth.Login
 
         public async Task<AuthResponseJson> Execute(LoginRequestJson request)
         {
-            var usuario = await _usuarioRepository.GetByEmail(request.Email);
+            var emailNormalizado = request.Email.Trim().ToLowerInvariant();
+            var usuario = await _usuarioRepository.GetByEmail(emailNormalizado);
 
             if (usuario == null)
                 throw new DomainException("Email ou senha inválidos");

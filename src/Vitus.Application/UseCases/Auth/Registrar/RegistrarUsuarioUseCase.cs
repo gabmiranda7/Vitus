@@ -28,7 +28,8 @@ namespace Vitus.Application.UseCases.Auth.Registrar
 
         public async Task<AuthResponseJson> Execute(RegisterRequestJson request)
         {
-            var usuarioExistente = await _usuarioRepository.GetByEmail(request.Email);
+            var emailNormalizado = request.Email.Trim().ToLowerInvariant();
+            var usuarioExistente = await _usuarioRepository.GetByEmail(emailNormalizado);
 
             if (usuarioExistente != null)
                 throw new DomainException("Email já cadastrado");
@@ -37,7 +38,7 @@ namespace Vitus.Application.UseCases.Auth.Registrar
                 throw new DomainException("Perfil inválido. Use: Medico, Enfermeiro, Recepcionista ou Paciente");
 
             var senhaHash = BCrypt.Net.BCrypt.HashPassword(request.Senha);
-            var usuario = new Usuario(request.Nome, request.Email, senhaHash, perfil);
+            var usuario = new Usuario(request.Nome, emailNormalizado, senhaHash, perfil);
             await _usuarioRepository.Add(usuario);
 
             if (perfil == PerfilUsuario.Medico)
