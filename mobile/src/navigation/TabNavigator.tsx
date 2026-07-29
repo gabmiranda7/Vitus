@@ -8,6 +8,7 @@ import PacientesScreen from '../screens/PacientesScreen';
 import PerfilScreen from '../screens/PerfilScreen';
 import { useAuth } from '../contexts/AuthContext';
 import MedicosScreen from '../screens/MedicosScreen';
+import ReceitasStack from './ReceitasStack';
 
 const Tab = createBottomTabNavigator();
 
@@ -72,6 +73,18 @@ export default function TabNavigator() {
             title: 'Prontuários',
             tabBarIcon: ({ color, size }) => (
               <MaterialCommunityIcons name="folder-account" color={color} size={size} />
+            ),
+          }}
+        />
+      )}
+      {usuario?.perfil === 'Medico' && (
+        <Tab.Screen
+          name="Receitas"
+          component={ReceitasStack}
+          options={{
+            headerShown: false,
+            tabBarIcon: ({ color, size }) => (
+              <MaterialCommunityIcons name="pill" color={color} size={size} />
             ),
           }}
         />
