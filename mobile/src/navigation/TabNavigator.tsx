@@ -9,6 +9,7 @@ import PerfilScreen from '../screens/PerfilScreen';
 import { useAuth } from '../contexts/AuthContext';
 import MedicosScreen from '../screens/MedicosScreen';
 import ReceitasStack from './ReceitasStack';
+import AuditoriaScreen from '../screens/AuditoriaScreen';
 
 const Tab = createBottomTabNavigator();
 
@@ -33,6 +34,17 @@ export default function TabNavigator() {
           ),
         }}
       />
+      {usuario?.perfil === 'Administrador' && (
+        <Tab.Screen
+          name="Auditoria"
+          component={AuditoriaScreen}
+          options={{
+            tabBarIcon: ({ color, size }) => (
+              <MaterialCommunityIcons name="shield-search" color={color} size={size} />
+            ),
+          }}
+        />
+      )}
       <Tab.Screen
         name="Consultas"
         component={ConsultasScreen}
