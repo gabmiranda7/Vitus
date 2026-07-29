@@ -9,6 +9,13 @@ export interface Consulta {
   anotacoes?: string;
 }
 
+export interface Medico {
+  id: string;
+  nome: string;
+  especialidade: string;
+  crm: string;
+}
+
 export interface Medicamento {
   nome: string;
   dosagem: string;

@@ -7,6 +7,7 @@ import ProntuarioStack from './ProntuarioStack';
 import PacientesScreen from '../screens/PacientesScreen';
 import PerfilScreen from '../screens/PerfilScreen';
 import { useAuth } from '../contexts/AuthContext';
+import MedicosScreen from '../screens/MedicosScreen';
 
 const Tab = createBottomTabNavigator();
 
@@ -47,6 +48,17 @@ export default function TabNavigator() {
           options={{
             tabBarIcon: ({ color, size }) => (
               <MaterialCommunityIcons name="account-multiple" color={color} size={size} />
+            ),
+          }}
+        />
+      )}
+      {usuario?.perfil === 'Recepcionista' && (
+        <Tab.Screen
+          name="Medicos"
+          component={MedicosScreen}
+          options={{
+            tabBarIcon: ({ color, size }) => (
+              <MaterialCommunityIcons name="doctor" color={color} size={size} />
             ),
           }}
         />
