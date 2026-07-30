@@ -4,7 +4,7 @@ import { PaperProvider } from 'react-native-paper';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ActivityIndicator, View } from 'react-native';
 import { AuthProvider, useAuth } from './src/contexts/AuthContext';
-import LoginScreen from './src/screens/LoginScreen';
+import AuthStack from './src/navigation/AuthStack';
 import TabNavigator from './src/navigation/TabNavigator';
 
 function Rotas() {
@@ -19,7 +19,7 @@ function Rotas() {
   }
 
   if (!usuario) {
-    return <LoginScreen />;
+    return <AuthStack />;
   }
 
   return <TabNavigator />;

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
 import { TextInput, Button, Text, Surface } from 'react-native-paper';
+import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../contexts/AuthContext';
 
 export default function LoginScreen() {
@@ -9,6 +10,7 @@ export default function LoginScreen() {
   const [erro, setErro] = useState('');
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
+  const navigation = useNavigation<any>();
 
   async function handleLogin() {
     setErro('');
@@ -64,6 +66,10 @@ export default function LoginScreen() {
         >
           Entrar
         </Button>
+
+        <Button onPress={() => navigation.navigate('Cadastro')} style={styles.linkCadastro}>
+          Não tem conta? Cadastre-se
+        </Button>
       </Surface>
     </KeyboardAvoidingView>
   );
@@ -97,6 +103,9 @@ const styles = StyleSheet.create({
   botao: {
     marginTop: 8,
     paddingVertical: 4,
+  },
+  linkCadastro: {
+    marginTop: 12,
   },
   erro: {
     color: '#d32f2f',
