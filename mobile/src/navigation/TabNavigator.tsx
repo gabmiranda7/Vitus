@@ -9,7 +9,7 @@ import PerfilScreen from '../screens/perfil/PerfilScreen';
 import { useAuth } from '../contexts/AuthContext';
 import MedicosScreen from '../screens//medicos/MedicosScreen';
 import ReceitasStack from './ReceitasStack';
-import AuditoriaScreen from '../screens//auditoria/AuditoriaScreen';
+import AuditoriaScreen from '../screens/auditoria/AuditoriaScreen';
 
 const Tab = createBottomTabNavigator();
 
