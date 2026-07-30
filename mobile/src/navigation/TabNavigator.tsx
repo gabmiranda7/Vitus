@@ -10,6 +10,7 @@ import { useAuth } from '../contexts/AuthContext';
 import MedicosScreen from '../screens//medicos/MedicosScreen';
 import ReceitasStack from './ReceitasStack';
 import AuditoriaScreen from '../screens/auditoria/AuditoriaScreen';
+import TriagemScreen from '../screens/triagem/TriagemScreen'; // NOVO
 
 const Tab = createBottomTabNavigator();
 
@@ -30,52 +31,97 @@ export default function TabNavigator() {
         options={{
           title: 'Vitus',
           tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons name="view-dashboard" color={color} size={size} />
+            <MaterialCommunityIcons
+              name="view-dashboard"
+              color={color}
+              size={size}
+            />
           ),
         }}
       />
+
       {usuario?.perfil === 'Administrador' && (
         <Tab.Screen
           name="Auditoria"
           component={AuditoriaScreen}
           options={{
             tabBarIcon: ({ color, size }) => (
-              <MaterialCommunityIcons name="shield-search" color={color} size={size} />
+              <MaterialCommunityIcons
+                name="shield-search"
+                color={color}
+                size={size}
+              />
             ),
           }}
         />
       )}
-      <Tab.Screen
-        name="Consultas"
-        component={ConsultasScreen}
-        options={{
-          tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons name="calendar-clock" color={color} size={size} />
-          ),
-        }}
-      />
+
+      {/* Consultas não aparece para Administrador */}
+      {usuario?.perfil !== 'Administrador' && (
+        <Tab.Screen
+          name="Consultas"
+          component={ConsultasScreen}
+          options={{
+            tabBarIcon: ({ color, size }) => (
+              <MaterialCommunityIcons
+                name="calendar-clock"
+                color={color}
+                size={size}
+              />
+            ),
+          }}
+        />
+      )}
+
       {usuario?.perfil === 'Recepcionista' && (
         <Tab.Screen
           name="Pacientes"
           component={PacientesScreen}
           options={{
             tabBarIcon: ({ color, size }) => (
-              <MaterialCommunityIcons name="account-multiple" color={color} size={size} />
+              <MaterialCommunityIcons
+                name="account-multiple"
+                color={color}
+                size={size}
+              />
             ),
           }}
         />
       )}
+
       {usuario?.perfil === 'Recepcionista' && (
         <Tab.Screen
           name="Medicos"
           component={MedicosScreen}
           options={{
             tabBarIcon: ({ color, size }) => (
-              <MaterialCommunityIcons name="doctor" color={color} size={size} />
+              <MaterialCommunityIcons
+                name="doctor"
+                color={color}
+                size={size}
+              />
             ),
           }}
         />
       )}
+
+      {/* Apenas Enfermeiro pode acessar Triagem */}
+      {usuario?.perfil === 'Enfermeiro' && (
+        <Tab.Screen
+          name="Triagem"
+          component={TriagemScreen}
+          options={{
+            tabBarIcon: ({ color, size }) => (
+              <MaterialCommunityIcons
+                name="stethoscope"
+                color={color}
+                size={size}
+              />
+            ),
+          }}
+        />
+      )}
+
       {(usuario?.perfil === 'Medico' || usuario?.perfil === 'Enfermeiro') && (
         <Tab.Screen
           name="Prontuarios"
@@ -84,11 +130,16 @@ export default function TabNavigator() {
             headerShown: false,
             title: 'Prontuários',
             tabBarIcon: ({ color, size }) => (
-              <MaterialCommunityIcons name="folder-account" color={color} size={size} />
+              <MaterialCommunityIcons
+                name="folder-account"
+                color={color}
+                size={size}
+              />
             ),
           }}
         />
       )}
+
       {usuario?.perfil === 'Medico' && (
         <Tab.Screen
           name="Receitas"
@@ -96,17 +147,26 @@ export default function TabNavigator() {
           options={{
             headerShown: false,
             tabBarIcon: ({ color, size }) => (
-              <MaterialCommunityIcons name="pill" color={color} size={size} />
+              <MaterialCommunityIcons
+                name="pill"
+                color={color}
+                size={size}
+              />
             ),
           }}
         />
       )}
+
       <Tab.Screen
         name="Perfil"
         component={PerfilScreen}
         options={{
           tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons name="account" color={color} size={size} />
+            <MaterialCommunityIcons
+              name="account"
+              color={color}
+              size={size}
+            />
           ),
         }}
       />

@@ -6,6 +6,7 @@ import { ActivityIndicator, View } from 'react-native';
 import { AuthProvider, useAuth } from './src/contexts/AuthContext';
 import AuthStack from './src/navigation/AuthStack';
 import TabNavigator from './src/navigation/TabNavigator';
+import { theme } from './src/theme';
 
 function Rotas() {
   const { usuario, loading } = useAuth();
@@ -28,7 +29,7 @@ function Rotas() {
 export default function App() {
   return (
     <SafeAreaProvider>
-      <PaperProvider>
+      <PaperProvider theme={theme}>
         <AuthProvider>
           <NavigationContainer>
             <Rotas />

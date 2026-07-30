@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Modal, Portal, Text, TextInput, Button } from 'react-native-paper';
 import api from '../services/api';
+import CabecalhoGradiente from './CabecalhoGradiente';
+import { cores } from '../theme';
 
 interface Props {
   visible: boolean;
@@ -50,7 +52,11 @@ export default function TriagemModal({ visible, consultaId, onClose, onSucesso }
   return (
     <Portal>
       <Modal visible={visible} onDismiss={onClose} contentContainerStyle={styles.modal}>
-        <Text variant="titleLarge" style={styles.titulo}>Triagem</Text>
+        <CabecalhoGradiente
+        icone="stethoscope"
+        titulo="Triagem"
+        cores={cores.gradienteLaranja}
+      />
         {erro ? <Text style={styles.erro}>{erro}</Text> : null}
         <TextInput
           label="Pressão Arterial"
