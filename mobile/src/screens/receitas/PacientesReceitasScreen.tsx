@@ -2,8 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { View, ScrollView, StyleSheet } from 'react-native';
 import { Text, Card, Avatar, Searchbar, ActivityIndicator, Chip } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
-import api from '../services/api';
-import { Paciente } from '../types';
+import api from '../../services/api';
+import { Paciente } from '../../types';
 
 function iniciais(nome: string) {
   return nome.split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase();

@@ -1,15 +1,15 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import DashboardScreen from '../screens/DashboardScreen';
-import ConsultasScreen from '../screens/ConsultasScreen';
+import DashboardScreen from '../screens/dashboard/DashboardScreen';
+import ConsultasScreen from '../screens/consultas/ConsultasScreen';
 import ProntuarioStack from './ProntuarioStack';
-import PacientesScreen from '../screens/PacientesScreen';
-import PerfilScreen from '../screens/PerfilScreen';
+import PacientesScreen from '../screens/pacientes/PacientesScreen';
+import PerfilScreen from '../screens/perfil/PerfilScreen';
 import { useAuth } from '../contexts/AuthContext';
-import MedicosScreen from '../screens/MedicosScreen';
+import MedicosScreen from '../screens//medicos/MedicosScreen';
 import ReceitasStack from './ReceitasStack';
-import AuditoriaScreen from '../screens/AuditoriaScreen';
+import AuditoriaScreen from '../screens//auditoria/AuditoriaScreen';
 
 const Tab = createBottomTabNavigator();
 

@@ -5,7 +5,7 @@ import {
   ProgressBar, Chip, HelperText
 } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
-import api from '../services/api';
+import api from '../../services/api';
 
 const PERFIS = [
   { value: 'Medico', label: 'Médico' },

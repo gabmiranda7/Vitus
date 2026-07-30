@@ -4,8 +4,8 @@ import {
   Text, Card, Avatar, Searchbar, ActivityIndicator, FAB, Portal,
   Modal, TextInput, Button, Chip
 } from 'react-native-paper';
-import api from '../services/api';
-import { Medico } from '../types';
+import api from '../../services/api';
+import { Medico } from '../../types';
 
 function iniciais(nome: string) {
   return nome.replace(/^Dr\.?\s*/i, '').split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase();

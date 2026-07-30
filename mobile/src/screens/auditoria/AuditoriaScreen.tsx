@@ -2,8 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { View, ScrollView, StyleSheet } from 'react-native';
 import { Text, Card, ActivityIndicator, Chip } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import api from '../services/api';
-import { AuditoriaLog } from '../types';
+import api from '../../services/api';
+import { AuditoriaLog } from '../../types';
 
 const acaoIcones: Record<string, string> = {
   CriacaoPaciente: 'account-plus',

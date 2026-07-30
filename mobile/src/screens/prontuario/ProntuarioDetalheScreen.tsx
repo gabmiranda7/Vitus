@@ -6,8 +6,8 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import * as IntentLauncher from 'expo-intent-launcher';
-import api from '../services/api';
-import { Prontuario, Paciente, Consulta, Triagem, Receita, Exame, statusCores, statusLabels } from '../types';
+import api from '../../services/api';
+import { Prontuario, Paciente, Consulta, Triagem, Receita, Exame, statusCores, statusLabels } from '../../types';
 
 interface ConsultaAgrupada {
   consulta: Consulta;

@@ -1,14 +1,14 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { View, ScrollView, StyleSheet, RefreshControl } from 'react-native';
 import { Text, Card, Chip, ActivityIndicator, Avatar, Button, Portal, Modal, SegmentedButtons } from 'react-native-paper';
-import { useAuth } from '../contexts/AuthContext';
-import api from '../services/api';
-import { Consulta, statusCores, statusLabels } from '../types';
-import TriagemModal from '../components/TriagemModal';
-import AnotacaoModal from '../components/AnotacaoModal';
-import ReceitaModal from '../components/ReceitaModal';
-import ExameModal from '../components/ExameModal';
-import ConfirmModal from '../components/ConfirmModal';
+import { useAuth } from '../../contexts/AuthContext';
+import api from '../../services/api';
+import { Consulta, statusCores, statusLabels } from '../../types';
+import TriagemModal from '../../components/TriagemModal';
+import AnotacaoModal from '../../components/AnotacaoModal';
+import ReceitaModal from '../../components/ReceitaModal';
+import ExameModal from '../../components/ExameModal';
+import ConfirmModal from '../../components/ConfirmModal';
 
 const statusAtivos = ['Agendada', 'EmTriagem', 'AguardandoAtendimento', 'EmAtendimento'];
 const statusHistorico = ['Finalizada', 'Cancelada'];

@@ -2,8 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { View, ScrollView, StyleSheet } from 'react-native';
 import { Text, Card, ActivityIndicator, Divider, Chip } from 'react-native-paper';
 import { useRoute } from '@react-navigation/native';
-import api from '../services/api';
-import { Prontuario } from '../types';
+import api from '../../services/api';
+import { Prontuario } from '../../types';
 
 export default function HistoricoReceitasScreen() {
   const route = useRoute<any>();
