@@ -6,6 +6,7 @@ import {
 } from 'react-native-paper';
 import api from '../../services/api';
 import { Medico } from '../../types';
+import { cores } from '../../theme';
 
 function iniciais(nome: string) {
   return nome.replace(/^Dr\.?\s*/i, '').split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase();
@@ -18,7 +19,7 @@ const CORES_ESP: Record<string, string> = {
 };
 
 function corEspecialidade(esp: string) {
-  return CORES_ESP[esp] ?? '#1976d2';
+  return CORES_ESP[esp] ?? cores.primaria;
 }
 
 export default function MedicosScreen() {
@@ -138,19 +139,19 @@ export default function MedicosScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f5f5f5' },
+  container: { flex: 1, backgroundColor: cores.fundo },
   centro: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   busca: { margin: 16, marginBottom: 8 },
   lista: { padding: 16, paddingTop: 8, paddingBottom: 80 },
   card: { marginBottom: 10, borderRadius: 12 },
   cardContent: { flexDirection: 'row', alignItems: 'center' },
   info: { marginLeft: 12, flex: 1 },
-  crm: { color: '#666', marginTop: 4 },
-  textoVazio: { textAlign: 'center', color: '#999', marginTop: 40 },
-  fab: { position: 'absolute', right: 16, bottom: 16, backgroundColor: '#1976d2' },
+  crm: { color: cores.textoSecundario, marginTop: 4 },
+  textoVazio: { textAlign: 'center', color: cores.textoDesabilitado, marginTop: 40 },
+  fab: { position: 'absolute', right: 16, bottom: 16, backgroundColor: cores.primaria },
   modal: { backgroundColor: 'white', margin: 20, padding: 20, borderRadius: 16 },
   tituloModal: { marginBottom: 16, fontWeight: 'bold' },
   input: { marginBottom: 12 },
   botoes: { flexDirection: 'row', justifyContent: 'flex-end', gap: 8, marginTop: 8 },
-  erro: { color: '#d32f2f', marginBottom: 12 },
+  erro: { color: cores.erro, marginBottom: 12 },
 });

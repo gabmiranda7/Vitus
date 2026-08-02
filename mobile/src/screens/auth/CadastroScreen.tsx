@@ -6,6 +6,7 @@ import {
 } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
 import api from '../../services/api';
+import { cores } from '../../theme';
 
 const PERFIS = [
   { value: 'Medico', label: 'Médico' },
@@ -80,9 +81,10 @@ export default function CadastroScreen() {
   return (
     <KeyboardAvoidingView
       style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
     >
-      <ScrollView contentContainerStyle={styles.scroll}>
+      <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
         <Surface style={styles.card} elevation={2}>
           <Text variant="headlineSmall" style={styles.titulo}>Criar conta</Text>
           <ProgressBar progress={(step + 1) / 3} style={styles.progresso} />
@@ -217,16 +219,16 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#e3f2fd' },
   scroll: { flexGrow: 1, justifyContent: 'center', padding: 20 },
   card: { padding: 24, borderRadius: 16 },
-  titulo: { fontWeight: 'bold', color: '#1565c0', marginBottom: 12, textAlign: 'center' },
+  titulo: { fontWeight: 'bold', color: cores.primariaEscura, marginBottom: 12, textAlign: 'center' },
   progresso: { marginBottom: 20, borderRadius: 4 },
   label: { marginBottom: 8 },
   segmented: { marginBottom: 16 },
   input: { marginBottom: 8 },
-  confirmacaoTexto: { marginBottom: 12, color: '#666' },
+  confirmacaoTexto: { marginBottom: 12, color: cores.textoSecundario },
   chipInfo: { marginBottom: 8, alignSelf: 'flex-start' },
   botoes: { flexDirection: 'row', justifyContent: 'flex-end', gap: 8, marginTop: 16 },
   botaoPrincipal: { flex: 1 },
   linkLogin: { marginTop: 12 },
-  erro: { color: '#d32f2f', marginBottom: 12, textAlign: 'center' },
-  sucesso: { color: '#2e7d32', marginBottom: 12, textAlign: 'center' },
+  erro: { color: cores.erro, marginBottom: 12, textAlign: 'center' },
+  sucesso: { color: cores.sucesso, marginBottom: 12, textAlign: 'center' },
 });

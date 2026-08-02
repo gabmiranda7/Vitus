@@ -7,15 +7,12 @@ import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import * as IntentLauncher from 'expo-intent-launcher';
 import api from '../../services/api';
-import { Prontuario, Paciente, Consulta, Triagem, Receita, Exame, statusCores, statusLabels } from '../../types';
+import { Prontuario, Paciente, Consulta, Triagem, Exame, statusCores, statusLabels } from '../../types';
+import { cores, iniciais } from '../../theme';
 
 interface ConsultaAgrupada {
   consulta: Consulta;
   triagem?: Triagem;
-}
-
-function iniciais(nome: string) {
-  return nome.split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase();
 }
 
 function calcularIdade(dataNascimento?: string): string {
@@ -33,8 +30,8 @@ const categoriaLabel: Record<string, string> = {
   Cardiologico: 'Cardiológico', Fisico: 'Físico', Outro: 'Outro',
 };
 const categoriaCor: Record<string, string> = {
-  Sangue: '#c62828', Imagem: '#1565c0', Urina: '#f57c00',
-  Cardiologico: '#ad1457', Fisico: '#2e7d32', Outro: '#546e7a',
+  Sangue: cores.erro, Imagem: cores.primariaEscura, Urina: cores.aviso,
+  Cardiologico: '#ad1457', Fisico: cores.sucesso, Outro: '#546e7a',
 };
 
 function agruparPorDia(consultas: Consulta[], triagens: Triagem[]) {
@@ -99,8 +96,7 @@ export default function ProntuarioDetalheScreen() {
       } else if (await Sharing.isAvailableAsync()) {
         await Sharing.shareAsync(caminho);
       }
-    } catch (error: any) {
-      console.log('Erro ao abrir exame:', error.message, error);
+    } catch {
       Alert.alert('Erro', 'Não foi possível abrir o arquivo do exame.');
     } finally {
       setBaixandoId(null);
@@ -212,11 +208,11 @@ export default function ProntuarioDetalheScreen() {
         <Card style={styles.cardSecao}>
           <Card.Content style={styles.secaoHeader}>
             <View style={styles.secaoHeaderEsquerda}>
-              <MaterialCommunityIcons name="pill" size={20} color="#2e7d32" />
+              <MaterialCommunityIcons name="pill" size={20} color={cores.sucesso} />
               <Text variant="titleMedium" style={styles.secaoHeaderTitulo}>Receitas</Text>
               <Chip compact style={styles.chipContagem}>{prontuario.receitas.length}</Chip>
             </View>
-            <MaterialCommunityIcons name={receitasAbertas ? 'chevron-up' : 'chevron-down'} size={22} color="#666" />
+            <MaterialCommunityIcons name={receitasAbertas ? 'chevron-up' : 'chevron-down'} size={22} color={cores.textoSecundario} />
           </Card.Content>
         </Card>
       </TouchableOpacity>
@@ -254,11 +250,11 @@ export default function ProntuarioDetalheScreen() {
         <Card style={styles.cardSecao}>
           <Card.Content style={styles.secaoHeader}>
             <View style={styles.secaoHeaderEsquerda}>
-              <MaterialCommunityIcons name="flask" size={20} color="#7b1fa2" />
+              <MaterialCommunityIcons name="flask" size={20} color={cores.secundaria} />
               <Text variant="titleMedium" style={styles.secaoHeaderTitulo}>Exames</Text>
               <Chip compact style={styles.chipContagem}>{exames.length}</Chip>
             </View>
-            <MaterialCommunityIcons name={examesAbertos ? 'chevron-up' : 'chevron-down'} size={22} color="#666" />
+            <MaterialCommunityIcons name={examesAbertos ? 'chevron-up' : 'chevron-down'} size={22} color={cores.textoSecundario} />
           </Card.Content>
         </Card>
       </TouchableOpacity>
@@ -279,7 +275,7 @@ export default function ProntuarioDetalheScreen() {
                     {e.temArquivo && (
                       baixandoId === e.id
                         ? <ActivityIndicator size={16} />
-                        : <MaterialCommunityIcons name="download" size={18} color="#1976d2" />
+                        : <MaterialCommunityIcons name="download" size={18} color={cores.primaria} />
                     )}
                   </View>
                   <Text variant="titleSmall" style={styles.exameNome}>{e.nome}</Text>
@@ -322,7 +318,7 @@ export default function ProntuarioDetalheScreen() {
             <Text variant="titleSmall" style={styles.dataGrupo}>{grupo.chave}</Text>
 
             {grupo.itens.map(({ consulta, triagem }) => {
-              const cor = statusCores[consulta.status] ?? '#1976d2';
+              const cor = statusCores[consulta.status] ?? cores.primaria;
               return (
                 <Card key={consulta.id} style={[styles.card, { borderLeftColor: cor, borderLeftWidth: 4 }]}>
                   <Card.Content>
@@ -384,22 +380,22 @@ function InfoLinha({ label, valor }: { label: string; valor: string }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f5f5f5' },
+  container: { flex: 1, backgroundColor: cores.fundo },
   centro: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   conteudo: { padding: 16 },
   cardPaciente: { borderRadius: 16, marginBottom: 16 },
   headerPaciente: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
-  avatar: { backgroundColor: '#1565c0' },
+  avatar: { backgroundColor: cores.primariaEscura },
   infoPrincipal: { marginLeft: 14, flex: 1 },
   nomeGrande: { fontWeight: 'bold' },
-  subInfo: { color: '#666', marginTop: 2 },
+  subInfo: { color: cores.textoSecundario, marginTop: 2 },
   statsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 4 },
   statChip: { backgroundColor: '#e3f2fd' },
   secaoIdentificacao: { marginTop: 4 },
   divider: { marginVertical: 10 },
-  secaoTitulo: { color: '#1976d2', fontWeight: 'bold', marginBottom: 8, fontSize: 11, letterSpacing: 0.5 },
+  secaoTitulo: { color: cores.primaria, fontWeight: 'bold', marginBottom: 8, fontSize: 11, letterSpacing: 0.5 },
   infoLinha: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4 },
-  infoLabel: { color: '#666' },
+  infoLabel: { color: cores.textoSecundario },
   infoValor: { fontWeight: '600' },
   alertaMedico: { marginTop: 4 },
   alertaTitulo: { color: '#e65100', fontWeight: 'bold', marginBottom: 8, fontSize: 11, letterSpacing: 0.5 },
@@ -412,24 +408,24 @@ const styles = StyleSheet.create({
   chipContagem: { backgroundColor: '#e3f2fd', height: 24 },
   listaSecao: { marginBottom: 16, gap: 8 },
   cardItem: { borderRadius: 10 },
-  itemData: { color: '#999', marginBottom: 6 },
+  itemData: { color: cores.textoDesabilitado, marginBottom: 6 },
   itemLinha: { marginBottom: 2 },
-  textoVazioSecao: { textAlign: 'center', color: '#999', paddingVertical: 12 },
+  textoVazioSecao: { textAlign: 'center', color: cores.textoDesabilitado, paddingVertical: 12 },
 
   exameHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 },
   exameNome: { fontWeight: '600', marginBottom: 2 },
-  exameObs: { fontStyle: 'italic', color: '#666', marginTop: 4 },
-  exameToqueDica: { color: '#1976d2', marginTop: 6, fontSize: 11 },
+  exameObs: { fontStyle: 'italic', color: cores.textoSecundario, marginTop: 4 },
+  exameToqueDica: { color: cores.primaria, marginTop: 6, fontSize: 11 },
 
   tituloTimeline: { fontWeight: 'bold', marginTop: 8, marginBottom: 12 },
   grupoDia: { marginBottom: 20 },
-  dataGrupo: { color: '#1976d2', fontWeight: 'bold', marginBottom: 8 },
+  dataGrupo: { color: cores.primaria, fontWeight: 'bold', marginBottom: 8 },
   card: { marginBottom: 10, borderRadius: 12 },
   cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  hora: { color: '#999', marginBottom: 4 },
+  hora: { color: cores.textoDesabilitado, marginBottom: 4 },
   secao: { marginTop: 8 },
   secaoTituloCard: { marginBottom: 4, color: '#555' },
-  observacao: { fontStyle: 'italic', color: '#666', marginTop: 2 },
-  textoVazio: { textAlign: 'center', color: '#999', marginTop: 40 },
-  erro: { color: '#d32f2f' },
+  observacao: { fontStyle: 'italic', color: cores.textoSecundario, marginTop: 2 },
+  textoVazio: { textAlign: 'center', color: cores.textoDesabilitado, marginTop: 40 },
+  erro: { color: cores.erro },
 });

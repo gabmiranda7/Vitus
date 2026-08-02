@@ -4,15 +4,7 @@ import { Text, Card, Avatar, Searchbar, ActivityIndicator } from 'react-native-p
 import { useNavigation } from '@react-navigation/native';
 import api from '../../services/api';
 import { Paciente } from '../../types';
-
-function iniciais(nome: string) {
-  return nome.split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase();
-}
-
-function corAvatar(nome: string) {
-  const cores = ['#1976d2', '#388e3c', '#7b1fa2', '#c62828', '#f57c00', '#0097a7'];
-  return cores[nome.charCodeAt(0) % cores.length];
-}
+import { cores, corAvatar, iniciais } from '../../theme';
 
 export default function PacientesProntuarioScreen() {
   const navigation = useNavigation<any>();
@@ -81,7 +73,7 @@ export default function PacientesProntuarioScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: cores.fundo,
   },
   centro: {
     flex: 1,
@@ -109,11 +101,11 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   textoSecundario: {
-    color: '#666',
+    color: cores.textoSecundario,
   },
   textoVazio: {
     textAlign: 'center',
-    color: '#999',
+    color: cores.textoDesabilitado,
     marginTop: 40,
   },
 });

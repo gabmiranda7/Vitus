@@ -4,6 +4,7 @@ import { Text, Card, Chip, ActivityIndicator, Avatar, Button, Portal, Modal, Seg
 import { useAuth } from '../../contexts/AuthContext';
 import api from '../../services/api';
 import { Consulta, statusCores, statusLabels } from '../../types';
+import { cores, iniciais } from '../../theme';
 import TriagemModal from '../../components/TriagemModal';
 import AnotacaoModal from '../../components/AnotacaoModal';
 import ReceitaModal from '../../components/ReceitaModal';
@@ -12,10 +13,6 @@ import ConfirmModal from '../../components/ConfirmModal';
 
 const statusAtivos = ['Agendada', 'EmTriagem', 'AguardandoAtendimento', 'EmAtendimento'];
 const statusHistorico = ['Finalizada', 'Cancelada'];
-
-function iniciais(nome: string) {
-  return nome.split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase();
-}
 
 export default function ConsultasScreen() {
   const { usuario } = useAuth();
@@ -131,7 +128,7 @@ export default function ConsultasScreen() {
           <Text style={styles.textoVazio}>Nenhuma consulta encontrada</Text>
         ) : (
           listaAtual.map((c) => {
-            const cor = statusCores[c.status] ?? '#1976d2';
+            const cor = statusCores[c.status] ?? cores.primaria;
             return (
               <Card
                 key={c.id}
@@ -170,7 +167,7 @@ export default function ConsultasScreen() {
 
           <View style={styles.acoesLista}>
             {usuario?.perfil === 'Enfermeiro' && consultaSelecionada?.status === 'Agendada' && (
-              <Button mode="contained" buttonColor="#ed6c02" icon="stethoscope" onPress={() => { setModalAcoes(false); setModalTriagem(true); }}>
+              <Button mode="contained" buttonColor={cores.aviso} icon="stethoscope" onPress={() => { setModalAcoes(false); setModalTriagem(true); }}>
                 Iniciar Triagem
               </Button>
             )}
@@ -194,15 +191,16 @@ export default function ConsultasScreen() {
               <Button mode="outlined" icon="flask" onPress={() => { setModalAcoes(false); setModalExame(true); }}>
                 Registrar Exame
               </Button>
-              <Button mode="contained" buttonColor="#2e7d32" icon="check-circle" onPress={() => pedirConfirmacao('finalizar', '#2e7d32', 'Finalizar Consulta')}>
+              <Button mode="contained" buttonColor={cores.sucesso} icon="check-circle" onPress={() => pedirConfirmacao('finalizar', cores.sucesso, 'Finalizar Consulta')}>
                 Finalizar Consulta
               </Button>
             </>)}
-            {consultaSelecionada && !['Finalizada', 'Cancelada'].includes(consultaSelecionada.status) && (
-              <Button mode="outlined" textColor="#d32f2f" icon="close-circle" onPress={() => pedirConfirmacao('cancelar', '#d32f2f', 'Cancelar Consulta')}>
-                Cancelar Consulta
-              </Button>
-            )}
+            {['Recepcionista', 'Medico'].includes(usuario?.perfil ?? '') &&
+              consultaSelecionada && !['Finalizada', 'Cancelada'].includes(consultaSelecionada.status) && (
+                <Button mode="outlined" textColor={cores.erro} icon="close-circle" onPress={() => pedirConfirmacao('cancelar', cores.erro, 'Cancelar Consulta')}>
+                  Cancelar Consulta
+                </Button>
+              )}
           </View>
 
           <Button onPress={() => setModalAcoes(false)} style={styles.fechar}>Fechar</Button>
@@ -238,7 +236,7 @@ export default function ConsultasScreen() {
         visible={modalConfirm}
         titulo={confirmAcao?.titulo ?? ''}
         mensagem={`Tem certeza que deseja ${confirmAcao?.acao === 'cancelar' ? 'cancelar' : 'finalizar'} esta consulta?`}
-        corBotao={confirmAcao?.cor ?? '#1976d2'}
+        corBotao={confirmAcao?.cor ?? cores.primaria}
         onClose={() => setModalConfirm(false)}
         onConfirmar={confirmarAcao}
       />
@@ -249,7 +247,7 @@ export default function ConsultasScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: cores.fundo,
   },
   centro: {
     flex: 1,
@@ -281,15 +279,15 @@ const styles = StyleSheet.create({
     marginLeft: 12,
   },
   textoSecundario: {
-    color: '#666',
+    color: cores.textoSecundario,
   },
   data: {
-    color: '#999',
+    color: cores.textoDesabilitado,
     marginTop: 8,
   },
   textoVazio: {
     textAlign: 'center',
-    color: '#999',
+    color: cores.textoDesabilitado,
     marginTop: 40,
   },
   modalAcoes: {
@@ -302,7 +300,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   subtituloModal: {
-    color: '#666',
+    color: cores.textoSecundario,
     marginBottom: 16,
   },
   acoesLista: {

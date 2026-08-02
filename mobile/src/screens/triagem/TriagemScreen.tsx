@@ -114,7 +114,7 @@ export default function TriagemScreen() {
 
         {ordenadas.length === 0 ? (
           <View style={styles.vazioContainer}>
-            <MaterialCommunityIcons name="stethoscope" size={64} color="#ccc" />
+            <MaterialCommunityIcons name="stethoscope" size={64} color={cores.textoDesabilitado} />
             <Text style={styles.textoVazio}>Nenhum paciente na fila</Text>
           </View>
         ) : (
@@ -201,21 +201,21 @@ export default function TriagemScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f5f5f5' },
+  container: { flex: 1, backgroundColor: cores.fundo },
   centro: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   conteudo: { padding: 16 },
   statsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 },
   statChip: {},
   card: { marginBottom: 12, borderRadius: 12 },
   cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
-  hora: { color: '#999' },
+  hora: { color: cores.textoDesabilitado },
   pacienteRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
   pacienteInfo: { marginLeft: 12, flex: 1 },
-  textoSecundario: { color: '#666' },
+  textoSecundario: { color: cores.textoSecundario },
   esperaRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 6 },
   barra: { height: 6, borderRadius: 3, marginBottom: 12 },
   botao: { borderRadius: 8 },
   aguardandoBox: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#e1f5fe', padding: 10, borderRadius: 8 },
   vazioContainer: { alignItems: 'center', marginTop: 60 },
-  textoVazio: { color: '#999', marginTop: 12, fontSize: 16 },
+  textoVazio: { color: cores.textoDesabilitado, marginTop: 12, fontSize: 16 },
 });

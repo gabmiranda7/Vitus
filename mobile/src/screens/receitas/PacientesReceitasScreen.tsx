@@ -4,15 +4,7 @@ import { Text, Card, Avatar, Searchbar, ActivityIndicator, Chip } from 'react-na
 import { useNavigation } from '@react-navigation/native';
 import api from '../../services/api';
 import { Paciente } from '../../types';
-
-function iniciais(nome: string) {
-  return nome.split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase();
-}
-
-function corAvatar(nome: string) {
-  const cores = ['#1976d2', '#388e3c', '#7b1fa2', '#c62828', '#f57c00', '#0097a7'];
-  return cores[nome.charCodeAt(0) % cores.length];
-}
+import { cores, corAvatar, iniciais } from '../../theme';
 
 export default function PacientesReceitasScreen() {
   const navigation = useNavigation<any>();
@@ -79,12 +71,12 @@ export default function PacientesReceitasScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f5f5f5' },
+  container: { flex: 1, backgroundColor: cores.fundo },
   centro: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   busca: { margin: 16, marginBottom: 8 },
   lista: { padding: 16, paddingTop: 8 },
   card: { marginBottom: 10, borderRadius: 12 },
   cardContent: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   info: { marginLeft: 4, flex: 1 },
-  textoVazio: { textAlign: 'center', color: '#999', marginTop: 40 },
+  textoVazio: { textAlign: 'center', color: cores.textoDesabilitado, marginTop: 40 },
 });

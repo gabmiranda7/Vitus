@@ -2,6 +2,7 @@ import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Text, Avatar, Button, Card, Chip } from 'react-native-paper';
 import { useAuth } from '../../contexts/AuthContext';
+import { cores, iniciais } from '../../theme';
 
 export default function PerfilScreen() {
   const { usuario, logout } = useAuth();
@@ -12,7 +13,7 @@ export default function PerfilScreen() {
         <Card.Content style={styles.cardContent}>
           <Avatar.Text
             size={72}
-            label={usuario?.nome?.split(' ').slice(0, 2).map(n => n[0]).join('') ?? '?'}
+            label={usuario?.nome ? iniciais(usuario.nome) : '?'}
           />
           <Text variant="headlineSmall" style={styles.nome}>{usuario?.nome}</Text>
           <Text variant="bodyMedium" style={styles.email}>{usuario?.email}</Text>
@@ -24,7 +25,7 @@ export default function PerfilScreen() {
         mode="outlined"
         onPress={logout}
         style={styles.botaoSair}
-        textColor="#d32f2f"
+        textColor={cores.erro}
       >
         Sair da conta
       </Button>
@@ -36,7 +37,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: cores.fundo,
   },
   card: {
     borderRadius: 12,
@@ -51,13 +52,13 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   email: {
-    color: '#666',
+    color: cores.textoSecundario,
     marginTop: 4,
   },
   chip: {
     marginTop: 12,
   },
   botaoSair: {
-    borderColor: '#d32f2f',
+    borderColor: cores.erro,
   },
 });

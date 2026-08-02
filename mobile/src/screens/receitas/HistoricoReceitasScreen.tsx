@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { View, ScrollView, StyleSheet } from 'react-native';
-import { Text, Card, ActivityIndicator, Divider, Chip } from 'react-native-paper';
+import { Text, Card, ActivityIndicator, Divider } from 'react-native-paper';
 import { useRoute } from '@react-navigation/native';
 import api from '../../services/api';
 import { Prontuario } from '../../types';
+import { cores } from '../../theme';
 
 export default function HistoricoReceitasScreen() {
   const route = useRoute<any>();
@@ -77,14 +78,14 @@ export default function HistoricoReceitasScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f5f5f5' },
+  container: { flex: 1, backgroundColor: cores.fundo },
   centro: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   conteudo: { padding: 16 },
   card: { marginBottom: 12, borderRadius: 12 },
-  dataConsulta: { color: '#666', marginBottom: 4 },
+  dataConsulta: { color: cores.textoSecundario, marginBottom: 4 },
   divider: { marginBottom: 10 },
   medicamento: { marginBottom: 8 },
-  detalheMed: { color: '#666' },
-  textoVazio: { textAlign: 'center', color: '#999', marginTop: 40 },
-  erro: { color: '#d32f2f' },
+  detalheMed: { color: cores.textoSecundario },
+  textoVazio: { textAlign: 'center', color: cores.textoDesabilitado, marginTop: 40 },
+  erro: { color: cores.erro },
 });

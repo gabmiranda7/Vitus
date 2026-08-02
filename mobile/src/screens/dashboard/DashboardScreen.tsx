@@ -4,33 +4,8 @@ import { Text, Card, Chip, ActivityIndicator, Avatar } from 'react-native-paper'
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAuth } from '../../contexts/AuthContext';
 import api from '../../services/api';
-
-interface Consulta {
-  id: string;
-  nomePaciente: string;
-  nomeMedico: string;
-  dataConsulta: string;
-  status: string;
-}
-
-interface AuditoriaLog {
-  id: string;
-  acao: string;
-  entidadeAfetada: string;
-  usuarioNome: string;
-  dataHora: string;
-}
-
-const statusCores: Record<string, string> = {
-  Agendada: '#1976d2', EmTriagem: '#ed6c02', AguardandoAtendimento: '#0288d1',
-  EmAtendimento: '#7b1fa2', Finalizada: '#2e7d32', Cancelada: '#d32f2f',
-};
-
-const statusLabels: Record<string, string> = {
-  Agendada: 'Agendada', EmTriagem: 'Em Triagem',
-  AguardandoAtendimento: 'Aguardando', EmAtendimento: 'Em Atendimento',
-  Finalizada: 'Finalizada', Cancelada: 'Cancelada',
-};
+import { Consulta, AuditoriaLog, statusCores, statusLabels } from '../../types';
+import { cores, iniciais } from '../../theme';
 
 const acaoIcones: Record<string, string> = {
   CriacaoPaciente: 'account-plus',
@@ -45,15 +20,15 @@ const acaoIcones: Record<string, string> = {
 };
 
 const acaoCores: Record<string, string> = {
-  CriacaoPaciente: '#2e7d32',
-  EdicaoPaciente: '#1976d2',
-  ExclusaoPaciente: '#d32f2f',
-  CriacaoConsulta: '#1976d2',
-  CancelamentoConsulta: '#d32f2f',
-  EmissaoReceita: '#2e7d32',
-  AcessoProntuario: '#7b1fa2',
-  RegistroTriagem: '#ed6c02',
-  RegistroExame: '#7b1fa2',
+  CriacaoPaciente: cores.sucesso,
+  EdicaoPaciente: cores.primaria,
+  ExclusaoPaciente: cores.erro,
+  CriacaoConsulta: cores.primaria,
+  CancelamentoConsulta: cores.erro,
+  EmissaoReceita: cores.sucesso,
+  AcessoProntuario: cores.secundaria,
+  RegistroTriagem: cores.aviso,
+  RegistroExame: cores.secundaria,
 };
 
 export default function DashboardScreen() {
@@ -137,8 +112,8 @@ export default function DashboardScreen() {
                 key={acao}
                 icon={acaoIcones[acao] ?? 'information'}
                 compact
-                style={[styles.statChip, { backgroundColor: (acaoCores[acao] ?? '#666') + '20' }]}
-                textStyle={{ color: acaoCores[acao] ?? '#666' }}
+                style={[styles.statChip, { backgroundColor: (acaoCores[acao] ?? cores.textoSecundario) + '20' }]}
+                textStyle={{ color: acaoCores[acao] ?? cores.textoSecundario }}
               >
                 {count}
               </Chip>
@@ -155,7 +130,7 @@ export default function DashboardScreen() {
             </Card>
           ) : (
             logsRecentes.map((log) => {
-              const cor = acaoCores[log.acao] ?? '#666';
+              const cor = acaoCores[log.acao] ?? cores.textoSecundario;
               const icone = acaoIcones[log.acao] ?? 'information';
               return (
                 <Card key={log.id} style={[styles.card, { borderLeftColor: cor, borderLeftWidth: 4 }]}>
@@ -185,14 +160,14 @@ export default function DashboardScreen() {
           </Card>
         ) : (
           minhasConsultas.map((c) => {
-            const cor = statusCores[c.status] ?? '#1976d2';
+            const cor = statusCores[c.status] ?? cores.primaria;
             return (
               <Card key={c.id} style={[styles.card, { borderLeftColor: cor, borderLeftWidth: 4 }]}>
                 <Card.Content style={styles.cardContent}>
                   <View style={styles.cardHeader}>
                     <Avatar.Text
                       size={40}
-                      label={c.nomePaciente.split(' ').slice(0, 2).map(n => n[0]).join('')}
+                      label={iniciais(c.nomePaciente)}
                       style={{ backgroundColor: cor }}
                     />
                     <View style={styles.cardInfo}>
@@ -219,11 +194,11 @@ export default function DashboardScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f5f5f5' },
+  container: { flex: 1, backgroundColor: cores.fundo },
   conteudo: { padding: 16 },
   centro: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   saudacao: { fontWeight: 'bold', marginBottom: 4 },
-  subtitulo: { color: '#666', marginBottom: 16 },
+  subtitulo: { color: cores.textoSecundario, marginBottom: 16 },
   statsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 20 },
   statChip: {},
   tituloSecao: { fontWeight: 'bold', marginBottom: 12 },
@@ -234,8 +209,8 @@ const styles = StyleSheet.create({
   logContent: { flexDirection: 'row', alignItems: 'flex-start' },
   logIcone: { marginRight: 10, marginTop: 2 },
   logInfo: { flex: 1 },
-  dataLog: { color: '#999', marginTop: 2, fontSize: 11 },
-  textoSecundario: { color: '#666' },
+  dataLog: { color: cores.textoDesabilitado, marginTop: 2, fontSize: 11 },
+  textoSecundario: { color: cores.textoSecundario },
   cardVazio: { borderRadius: 12 },
-  textoVazio: { textAlign: 'center', color: '#999', paddingVertical: 20 },
+  textoVazio: { textAlign: 'center', color: cores.textoDesabilitado, paddingVertical: 20 },
 });

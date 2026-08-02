@@ -3,6 +3,7 @@ import { View, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
 import { TextInput, Button, Text, Surface } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../../contexts/AuthContext';
+import { cores } from '../../theme';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
@@ -31,7 +32,8 @@ export default function LoginScreen() {
   return (
     <KeyboardAvoidingView
       style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
     >
       <Surface style={styles.card} elevation={2}>
         <Text variant="headlineMedium" style={styles.titulo}>Vitus</Text>
@@ -80,7 +82,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     padding: 20,
-    backgroundColor: '#e3f2fd',
+    backgroundColor: cores.fundo === '#f5f5f5' ? '#e3f2fd' : cores.fundo,
   },
   card: {
     padding: 24,
@@ -89,13 +91,13 @@ const styles = StyleSheet.create({
   titulo: {
     textAlign: 'center',
     fontWeight: 'bold',
-    color: '#1565c0',
+    color: cores.primariaEscura,
     marginBottom: 4,
   },
   subtitulo: {
     textAlign: 'center',
     marginBottom: 24,
-    color: '#666',
+    color: cores.textoSecundario,
   },
   input: {
     marginBottom: 16,
@@ -108,7 +110,7 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   erro: {
-    color: '#d32f2f',
+    color: cores.erro,
     textAlign: 'center',
     marginBottom: 16,
   },
