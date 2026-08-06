@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react';
 import {
   Box, Card, CardContent, Chip, Typography, Avatar, Button,
-  LinearProgress, Alert, Paper, useTheme, alpha, Divider
+  LinearProgress, Alert, Paper, useTheme, alpha, Divider,
+  Dialog, DialogActions, DialogContent, TextField, InputAdornment
 } from '@mui/material';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import MedicalServicesIcon from '@mui/icons-material/MedicalServices';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import FavoriteIcon from '@mui/icons-material/Favorite';
+import ThermostatIcon from '@mui/icons-material/Thermostat';
 import LocalHospitalIcon from '@mui/icons-material/LocalHospital';
 import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
@@ -50,6 +51,15 @@ export default function TriagemPage() {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
 
+  // Modal de sinais vitais
+  const [modalTriagem, setModalTriagem] = useState(false);
+  const [consultaSelecionada, setConsultaSelecionada] = useState<Consulta | null>(null);
+  const [pressaoArterial, setPressaoArterial] = useState('');
+  const [temperatura, setTemperatura] = useState('');
+  const [observacoes, setObservacoes] = useState('');
+  const [erroModal, setErroModal] = useState('');
+  const [salvando, setSalvando] = useState(false);
+
   useEffect(() => {
     carregar();
     const reload = setInterval(carregar, 60000);
@@ -66,22 +76,44 @@ export default function TriagemPage() {
     } catch (error: any) { setErro(error.mensagemBack ?? 'Erro ao carregar'); }
   }
 
-  async function handleIniciarTriagem(id: string) {
-    setLoadingId(id);
-    try {
-      await api.patch(`/api/consultas/${id}/iniciar-triagem`);
-      carregar();
-    } catch (error: any) { setErro(error.mensagemBack ?? 'Erro ao iniciar triagem'); }
-    finally { setLoadingId(null); }
+  function abrirModalTriagem(c: Consulta) {
+    setConsultaSelecionada(c);
+    setPressaoArterial('');
+    setTemperatura('');
+    setObservacoes('');
+    setErroModal('');
+    setModalTriagem(true);
   }
 
-  async function handleAguardar(id: string) {
-    setLoadingId(id);
+  function fecharModalTriagem() {
+    setModalTriagem(false);
+    setConsultaSelecionada(null);
+  }
+
+  async function handleSalvarTriagem() {
+    if (!consultaSelecionada) return;
+    setErroModal('');
+    if (!pressaoArterial.trim() || !temperatura.trim()) {
+      setErroModal('Preencha pressão arterial e temperatura');
+      return;
+    }
+    setSalvando(true);
     try {
-      await api.patch(`/api/consultas/${id}/aguardar-atendimento`);
+      await api.patch(`/api/consultas/${consultaSelecionada.id}/iniciar-triagem`);
+      await api.post('/api/triagens', {
+        consultaId: consultaSelecionada.id,
+        pressaoArterial,
+        temperatura: parseFloat(temperatura),
+        observacoes,
+      });
+      await api.patch(`/api/consultas/${consultaSelecionada.id}/aguardar-atendimento`);
+      fecharModalTriagem();
       carregar();
-    } catch (error: any) { setErro(error.mensagemBack ?? 'Erro ao enviar para atendimento'); }
-    finally { setLoadingId(null); }
+    } catch (error: any) {
+      setErroModal(error.mensagemBack ?? 'Erro ao registrar triagem');
+    } finally {
+      setSalvando(false);
+    }
   }
 
   const agendadas = consultas.filter(c => c.status === 'Agendada');
@@ -201,8 +233,7 @@ export default function TriagemPage() {
                       {c.status === 'Agendada' && (
                         <Button fullWidth size="small" variant="contained" color="warning"
                           startIcon={<MedicalServicesIcon />}
-                          disabled={loadingId === c.id}
-                          onClick={() => handleIniciarTriagem(c.id)}
+                          onClick={() => abrirModalTriagem(c)}
                           sx={{ borderRadius: 2 }}>
                           Iniciar Triagem
                         </Button>
@@ -211,9 +242,9 @@ export default function TriagemPage() {
                         <Button fullWidth size="small" variant="contained" color="info"
                           startIcon={<FavoriteIcon />}
                           disabled={loadingId === c.id}
-                          onClick={() => handleAguardar(c.id)}
+                          onClick={() => abrirModalTriagem(c)}
                           sx={{ borderRadius: 2 }}>
-                          Enviar para Atendimento
+                          Registrar Sinais Vitais
                         </Button>
                       )}
                       {c.status === 'AguardandoAtendimento' && (
@@ -235,6 +266,46 @@ export default function TriagemPage() {
             })}
         </Box>
       )}
+
+      {/* Modal de registro de sinais vitais */}
+      <Dialog open={modalTriagem} onClose={fecharModalTriagem} fullWidth maxWidth="sm">
+        <Box sx={{ background: 'linear-gradient(135deg, #e65100 0%, #f57c00 100%)', p: 3 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Avatar sx={{ bgcolor: 'rgba(255,255,255,0.2)', width: 52, height: 52, border: '2px solid rgba(255,255,255,0.4)' }}>
+              <MedicalServicesIcon sx={{ color: 'white', fontSize: 28 }} />
+            </Avatar>
+            <Box>
+              <Typography variant="h6" sx={{ color: 'white', fontWeight: 'bold' }}>Triagem</Typography>
+              <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.8)' }}>{consultaSelecionada?.nomePaciente}</Typography>
+            </Box>
+          </Box>
+        </Box>
+        <DialogContent sx={{ pt: 3 }}>
+          {erroModal && <Alert severity="error" sx={{ mb: 2 }}>{erroModal}</Alert>}
+          <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 2, textTransform: 'uppercase', letterSpacing: 0.5, fontSize: 11 }}>
+            Sinais Vitais
+          </Typography>
+          <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
+            <TextField label="Pressão Arterial" fullWidth value={pressaoArterial}
+              onChange={(e) => setPressaoArterial(e.target.value)} placeholder="ex: 120/80"
+              slotProps={{ input: { startAdornment: <InputAdornment position="start"><FavoriteIcon sx={{ fontSize: 18, color: 'error.main' }} /></InputAdornment> } }} />
+            <TextField label="Temperatura (°C)" type="number" fullWidth value={temperatura}
+              onChange={(e) => setTemperatura(e.target.value)} placeholder="ex: 36.5"
+              slotProps={{ input: { startAdornment: <InputAdornment position="start"><ThermostatIcon sx={{ fontSize: 18, color: 'warning.main' }} /></InputAdornment> } }} />
+          </Box>
+          <Divider sx={{ mb: 2 }} />
+          <TextField label="Queixa principal / observações" fullWidth multiline rows={4}
+            value={observacoes} onChange={(e) => setObservacoes(e.target.value)}
+            placeholder="Descreva a queixa principal do paciente, sintomas relatados, etc." />
+        </DialogContent>
+        <DialogActions sx={{ p: 2, gap: 1 }}>
+          <Button onClick={fecharModalTriagem} variant="outlined" fullWidth disabled={salvando}>Cancelar</Button>
+          <Button onClick={handleSalvarTriagem} variant="contained" color="warning" fullWidth
+            startIcon={<MedicalServicesIcon />} disabled={salvando}>
+            {salvando ? 'Registrando...' : 'Registrar Triagem'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Layout>
   );
 }
