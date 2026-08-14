@@ -22,15 +22,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    carregarUsuarioSalvo();
+    validarSessao();
   }, []);
 
-  async function carregarUsuarioSalvo() {
+  async function validarSessao() {
     try {
       const usuarioSalvo = await SecureStore.getItemAsync('vitus_usuario');
-      if (usuarioSalvo) {
-        setUsuario(JSON.parse(usuarioSalvo));
+      const token = await SecureStore.getItemAsync('vitus_token');
+
+      if (!usuarioSalvo || !token) {
+        setLoading(false);
+        return;
       }
+
+      const response = await api.get('/api/auth/me');
+      const usuarioValidado: Usuario = {
+        nome: response.data.nome,
+        email: response.data.email,
+        perfil: response.data.perfil,
+      };
+
+      await SecureStore.setItemAsync('vitus_usuario', JSON.stringify(usuarioValidado));
+      setUsuario(usuarioValidado);
+    } catch {
+      await SecureStore.deleteItemAsync('vitus_token');
+      await SecureStore.deleteItemAsync('vitus_usuario');
+      setUsuario(null);
     } finally {
       setLoading(false);
     }
