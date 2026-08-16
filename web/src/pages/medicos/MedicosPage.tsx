@@ -93,9 +93,6 @@ export default function MedicosPage() {
           <Typography variant="h5" sx={{ fontWeight: 'bold' }}>Médicos</Typography>
           <Chip label={medicos.length} size="small" color="primary" />
         </Box>
-        <Button variant="contained" startIcon={<AddIcon />} onClick={() => setModalAberto(true)} sx={{ borderRadius: 2 }}>
-          Novo Médico
-        </Button>
       </Box>
 
       {/* Cards de especialidade */}
@@ -232,38 +229,6 @@ export default function MedicosPage() {
           )}
         </>
       )}
-
-      {/* Modal Novo Médico */}
-      <Dialog open={modalAberto} onClose={fechar} fullWidth maxWidth="sm">
-        <Box sx={{ background: 'linear-gradient(135deg, #1565c0 0%, #1976d2 100%)', p: 3 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Avatar sx={{ bgcolor: 'rgba(255,255,255,0.2)', width: 52, height: 52, border: '2px solid rgba(255,255,255,0.4)' }}>
-              <MedicalServicesIcon sx={{ color: 'white', fontSize: 28 }} />
-            </Avatar>
-            <Box>
-              <Typography variant="h6" sx={{ color: 'white', fontWeight: 'bold' }}>Novo Médico</Typography>
-              <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.8)' }}>Preencha os dados do profissional</Typography>
-            </Box>
-          </Box>
-        </Box>
-        <DialogContent sx={{ pt: 3 }}>
-          {erro && <Alert severity="error" sx={{ mb: 2 }}>{erro}</Alert>}
-          <TextField label="Nome completo" fullWidth value={nome}
-            onChange={(e) => setNome(e.target.value)} sx={{ mt: 1, mb: 2 }} />
-          <TextField label="Especialidade" fullWidth value={especialidade}
-            onChange={(e) => setEspecialidade(e.target.value)} sx={{ mb: 2 }}
-            placeholder="ex: Clínico Geral, Cardiologia..." />
-          <TextField label="CRM" fullWidth value={crm}
-            onChange={(e) => setCrm(e.target.value)}
-            placeholder="ex: CRM/MG 123456" />
-        </DialogContent>
-        <DialogActions sx={{ p: 2, gap: 1 }}>
-          <Button onClick={fechar} variant="outlined">Cancelar</Button>
-          <Button onClick={handleSalvar} variant="contained" startIcon={<LocalHospitalIcon />}>
-            Cadastrar Médico
-          </Button>
-        </DialogActions>
-      </Dialog>
     </Layout>
   );
 }

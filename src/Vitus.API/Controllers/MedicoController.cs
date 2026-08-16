@@ -1,9 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Vitus.Application.UseCases.Medicos.CreateMedico;
 using Vitus.Application.UseCases.Medicos.GetAllMedicos;
 using Vitus.Application.UseCases.Medicos.GetMedicoById;
-using Vitus.Communication.Medico.Requests;
 
 namespace Vitus.API.Controllers
 {
@@ -12,15 +10,6 @@ namespace Vitus.API.Controllers
     [Authorize(Roles = "Recepcionista")]
     public class MedicoController : ControllerBase
     {
-        [HttpPost]
-        public async Task<IActionResult> Create(
-            [FromServices] CreateMedicoUseCase useCase,
-            [FromBody] CreateMedicoRequestJson request)
-        {
-            await useCase.Execute(request);
-            return Created(string.Empty, null);
-        }
-
         [HttpGet]
         public async Task<IActionResult> GetAll(
             [FromServices] GetAllMedicosUseCase useCase)
