@@ -52,6 +52,7 @@ namespace Vitus.Tests.UseCases.Receitas
 
             _consultaRepoMock.Setup(r => r.GetById(consulta.Id)).ReturnsAsync(consulta);
             _pacienteRepoMock.Setup(r => r.GetById(paciente.Id)).ReturnsAsync(paciente);
+            _prontuarioRepoMock.Setup(r => r.GetByPacienteId(paciente.Id)).ReturnsAsync(paciente.Prontuario);
             _receitaRepoMock.Setup(r => r.Add(It.IsAny<Receita>())).Returns(Task.CompletedTask);
 
             var resultado = await _useCase.Execute(RequestValido(consulta.Id));
@@ -72,15 +73,16 @@ namespace Vitus.Tests.UseCases.Receitas
 
             _consultaRepoMock.Setup(r => r.GetById(consulta.Id)).ReturnsAsync(consulta);
             _pacienteRepoMock.Setup(r => r.GetById(paciente.Id)).ReturnsAsync(paciente);
+            _prontuarioRepoMock.Setup(r => r.GetByPacienteId(paciente.Id)).ReturnsAsync(paciente.Prontuario);
             _receitaRepoMock.Setup(r => r.Add(It.IsAny<Receita>())).Returns(Task.CompletedTask);
 
             var request = new CreateReceitaRequestJson
             {
                 ConsultaId = consulta.Id,
                 Medicamentos = new List<CreateMedicamentoRequestJson>
-                {
-                    new() { Nome = "Amoxicilina", Dosagem = "875mg", Posologia = "1 cp de 12/12h por 7 dias" }
-                }
+        {
+            new() { Nome = "Amoxicilina", Dosagem = "875mg", Posologia = "1 cp de 12/12h por 7 dias" }
+        }
             };
 
             var resultado = await _useCase.Execute(request);
