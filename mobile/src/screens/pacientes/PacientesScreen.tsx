@@ -1,12 +1,13 @@
-import React, { useEffect, useState, useRef } from 'react';
-import { View, ScrollView, StyleSheet, Dimensions, Keyboard } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, ScrollView, StyleSheet } from 'react-native';
 import {
-  Text, Card, Avatar, Searchbar, ActivityIndicator, FAB, Portal,
-  Modal, TextInput, Button, IconButton, SegmentedButtons
+  Text, Card, Avatar, Searchbar, ActivityIndicator, FAB,
+  TextInput, Button, IconButton, SegmentedButtons
 } from 'react-native-paper';
 import api from '../../services/api';
 import { Paciente } from '../../types';
 import { cores, corAvatar, iniciais } from '../../theme';
+import ModalComTeclado from '../../components/ModalComTeclado';
 
 function calcularIdade(dataNascimento?: string): string {
   if (!dataNascimento) return '';
@@ -16,6 +17,44 @@ function calcularIdade(dataNascimento?: string): string {
   const m = hoje.getMonth() - nasc.getMonth();
   if (m < 0 || (m === 0 && hoje.getDate() < nasc.getDate())) idade--;
   return `${idade} anos`;
+}
+
+function formatarCpf(valor: string): string {
+  const s = valor.replace(/\D/g, '').slice(0, 11);
+  if (s.length <= 3) return s;
+  if (s.length <= 6) return `${s.slice(0, 3)}.${s.slice(3)}`;
+  if (s.length <= 9) return `${s.slice(0, 3)}.${s.slice(3, 6)}.${s.slice(6)}`;
+  return `${s.slice(0, 3)}.${s.slice(3, 6)}.${s.slice(6, 9)}-${s.slice(9, 11)}`;
+}
+
+function formatarCartaoSus(valor: string): string {
+  const s = valor.replace(/\D/g, '').slice(0, 15);
+  if (s.length <= 3) return s;
+  if (s.length <= 7) return `${s.slice(0, 3)}.${s.slice(3)}`;
+  if (s.length <= 11) return `${s.slice(0, 3)}.${s.slice(3, 7)}.${s.slice(7)}`;
+  return `${s.slice(0, 3)}.${s.slice(3, 7)}.${s.slice(7, 11)}.${s.slice(11, 15)}`;
+}
+
+function formatarDataBr(valor: string): string {
+  const s = valor.replace(/\D/g, '').slice(0, 8);
+  if (s.length <= 2) return s;
+  if (s.length <= 4) return `${s.slice(0, 2)}/${s.slice(2)}`;
+  return `${s.slice(0, 2)}/${s.slice(2, 4)}/${s.slice(4, 8)}`;
+}
+
+function dataBrParaIso(dataBr: string): string {
+  const partes = dataBr.split('/');
+  if (partes.length !== 3) return '';
+  const [dia, mes, ano] = partes;
+  if (dia.length !== 2 || mes.length !== 2 || ano.length !== 4) return '';
+  return `${ano}-${mes}-${dia}`;
+}
+
+function dataIsoParaBr(dataIso: string): string {
+  const partes = dataIso.substring(0, 10).split('-');
+  if (partes.length !== 3) return '';
+  const [ano, mes, dia] = partes;
+  return `${dia}/${mes}/${ano}`;
 }
 
 const formVazio = () => ({
@@ -35,24 +74,8 @@ export default function PacientesScreen() {
   const [erro, setErro] = useState('');
   const [salvando, setSalvando] = useState(false);
 
-  const scrollRef = useRef<ScrollView>(null);
-  const posicoes = useRef<Record<string, number>>({});
-  const [alturaTeclado, setAlturaTeclado] = useState(0);
-
   useEffect(() => {
     carregar();
-
-    const showSub = Keyboard.addListener('keyboardDidShow', (e) => {
-      setAlturaTeclado(e.endCoordinates.height);
-    });
-    const hideSub = Keyboard.addListener('keyboardDidHide', () => {
-      setAlturaTeclado(0);
-    });
-
-    return () => {
-      showSub.remove();
-      hideSub.remove();
-    };
   }, []);
 
   async function carregar() {
@@ -79,7 +102,7 @@ export default function PacientesScreen() {
     setEditando(p);
     setForm({
       nome: p.nome, cpf: p.cpf ?? '', cartaoSus: p.cartaoSus ?? '',
-      dataNascimento: p.dataNascimento?.substring(0, 10) ?? '',
+      dataNascimento: p.dataNascimento ? dataIsoParaBr(p.dataNascimento) : '',
       sexo: p.sexo ?? '', nomePai: p.nomePai ?? '', nomeMae: p.nomeMae ?? '',
       endereco: p.endereco ?? '', profissao: p.profissao ?? '',
       estadoCivil: p.estadoCivil ?? '',
@@ -108,7 +131,7 @@ export default function PacientesScreen() {
         nome: form.nome,
         cpf: form.cpf || null,
         cartaoSus: form.cartaoSus || null,
-        dataNascimento: form.dataNascimento || null,
+        dataNascimento: form.dataNascimento ? dataBrParaIso(form.dataNascimento) : null,
         sexo: form.sexo || null,
         nomePai: form.nomePai || null,
         nomeMae: form.nomeMae || null,
@@ -132,22 +155,6 @@ export default function PacientesScreen() {
     }
   }
 
-  function registrarPosicao(campo: string) {
-    return (event: any) => {
-      posicoes.current[campo] = event.nativeEvent.layout.y;
-    };
-  }
-
-  function rolarPara(campo: string) {
-    const y = posicoes.current[campo];
-    if (y !== undefined && scrollRef.current) {
-      setTimeout(() => {
-        const offsetExtra = alturaTeclado > 0 ? 150 : 20;
-        scrollRef.current?.scrollTo({ y: Math.max(0, y - offsetExtra), animated: true });
-      }, 150);
-    }
-  }
-
   const filtrados = pacientes.filter(p =>
     p.nome.toLowerCase().includes(busca.toLowerCase())
   );
@@ -159,8 +166,6 @@ export default function PacientesScreen() {
       </View>
     );
   }
-
-  const alturaModal = Dimensions.get('window').height - alturaTeclado - 100;
 
   return (
     <View style={styles.container}>
@@ -194,93 +199,62 @@ export default function PacientesScreen() {
 
       <FAB icon="plus" style={styles.fab} onPress={abrirCadastro} />
 
-      <Portal>
-        <Modal
-          visible={modalAberto}
-          onDismiss={fechar}
-          contentContainerStyle={[styles.modal, { maxHeight: alturaModal }]}
-        >
-          <ScrollView
-            ref={scrollRef}
-            keyboardShouldPersistTaps="handled"
-            style={styles.scrollModal}
-          >
-            <Text variant="titleLarge" style={styles.tituloModal}>
-              {editando ? 'Editar Paciente' : 'Novo Paciente'}
-            </Text>
-            {erro ? <Text style={styles.erro}>{erro}</Text> : null}
+      <ModalComTeclado visible={modalAberto} onDismiss={fechar}>
+        <Text variant="titleLarge" style={styles.tituloModal}>
+          {editando ? 'Editar Paciente' : 'Novo Paciente'}
+        </Text>
+        {erro ? <Text style={styles.erro}>{erro}</Text> : null}
 
-            <View onLayout={registrarPosicao('nome')}>
-              <TextInput label="Nome completo *" value={form.nome} onChangeText={(v) => setField('nome', v)}
-                onFocus={() => rolarPara('nome')} mode="outlined" style={styles.input} />
-            </View>
-            <View onLayout={registrarPosicao('cpf')}>
-              <TextInput label="CPF" value={form.cpf} onChangeText={(v) => setField('cpf', v)}
-                onFocus={() => rolarPara('cpf')} mode="outlined" style={styles.input} placeholder="000.000.000-00" />
-            </View>
-            <View onLayout={registrarPosicao('cartaoSus')}>
-              <TextInput label="Cartão SUS" value={form.cartaoSus} onChangeText={(v) => setField('cartaoSus', v)}
-                onFocus={() => rolarPara('cartaoSus')} mode="outlined" style={styles.input} />
-            </View>
-            <View onLayout={registrarPosicao('dataNascimento')}>
-              <TextInput label="Data de Nascimento" value={form.dataNascimento} onChangeText={(v) => setField('dataNascimento', v)}
-                onFocus={() => rolarPara('dataNascimento')} mode="outlined" style={styles.input} placeholder="AAAA-MM-DD" />
-            </View>
+        <TextInput label="Nome completo *" value={form.nome} onChangeText={(v) => setField('nome', v)}
+          mode="outlined" style={styles.input} />
+        <TextInput label="CPF" value={form.cpf} onChangeText={(v) => setField('cpf', formatarCpf(v))}
+          mode="outlined" style={styles.input} placeholder="000.000.000-00"
+          keyboardType="numeric" maxLength={14} />
+        <TextInput label="Cartão SUS" value={form.cartaoSus} onChangeText={(v) => setField('cartaoSus', formatarCartaoSus(v))}
+          mode="outlined" style={styles.input} placeholder="000.0000.0000.0000"
+          keyboardType="numeric" maxLength={18} />
+        <TextInput label="Data de Nascimento" value={form.dataNascimento} onChangeText={(v) => setField('dataNascimento', formatarDataBr(v))}
+          mode="outlined" style={styles.input} placeholder="DD/MM/AAAA"
+          keyboardType="numeric" maxLength={10} />
 
-            <Text variant="labelLarge" style={styles.label}>Sexo</Text>
-            <SegmentedButtons
-              value={form.sexo}
-              onValueChange={(v) => setField('sexo', v)}
-              buttons={[
-                { value: 'Masculino', label: 'M' },
-                { value: 'Feminino', label: 'F' },
-                { value: 'Outro', label: 'Outro' },
-              ]}
-              style={styles.segmented}
-            />
+        <Text variant="labelLarge" style={styles.label}>Sexo</Text>
+        <SegmentedButtons
+          value={form.sexo}
+          onValueChange={(v) => setField('sexo', v)}
+          buttons={[
+            { value: 'Masculino', label: 'M' },
+            { value: 'Feminino', label: 'F' },
+            { value: 'Outro', label: 'Outro' },
+          ]}
+          style={styles.segmented}
+        />
 
-            <View onLayout={registrarPosicao('nomePai')}>
-              <TextInput label="Nome do Pai" value={form.nomePai} onChangeText={(v) => setField('nomePai', v)}
-                onFocus={() => rolarPara('nomePai')} mode="outlined" style={styles.input} />
-            </View>
-            <View onLayout={registrarPosicao('nomeMae')}>
-              <TextInput label="Nome da Mãe" value={form.nomeMae} onChangeText={(v) => setField('nomeMae', v)}
-                onFocus={() => rolarPara('nomeMae')} mode="outlined" style={styles.input} />
-            </View>
-            <View onLayout={registrarPosicao('profissao')}>
-              <TextInput label="Profissão" value={form.profissao} onChangeText={(v) => setField('profissao', v)}
-                onFocus={() => rolarPara('profissao')} mode="outlined" style={styles.input} />
-            </View>
-            <View onLayout={registrarPosicao('endereco')}>
-              <TextInput label="Endereço" value={form.endereco} onChangeText={(v) => setField('endereco', v)}
-                onFocus={() => rolarPara('endereco')} mode="outlined" style={styles.input} multiline />
-            </View>
-            <View onLayout={registrarPosicao('informacoesAdicionais')}>
-              <TextInput
-                label="Informações médicas adicionais"
-                value={form.informacoesAdicionais}
-                onChangeText={(v) => setField('informacoesAdicionais', v)}
-                onFocus={() => rolarPara('informacoesAdicionais')}
-                mode="outlined"
-                style={styles.input}
-                multiline
-                numberOfLines={3}
-                placeholder="Alergias, condições especiais..."
-              />
-            </View>
+        <TextInput label="Nome do Pai" value={form.nomePai} onChangeText={(v) => setField('nomePai', v)}
+          mode="outlined" style={styles.input} />
+        <TextInput label="Nome da Mãe" value={form.nomeMae} onChangeText={(v) => setField('nomeMae', v)}
+          mode="outlined" style={styles.input} />
+        <TextInput label="Profissão" value={form.profissao} onChangeText={(v) => setField('profissao', v)}
+          mode="outlined" style={styles.input} />
+        <TextInput label="Endereço" value={form.endereco} onChangeText={(v) => setField('endereco', v)}
+          mode="outlined" style={styles.input} multiline />
+        <TextInput
+          label="Informações médicas adicionais"
+          value={form.informacoesAdicionais}
+          onChangeText={(v) => setField('informacoesAdicionais', v)}
+          mode="outlined"
+          style={styles.input}
+          multiline
+          numberOfLines={3}
+          placeholder="Alergias, condições especiais..."
+        />
 
-            <View style={styles.botoes}>
-              <Button onPress={fechar} disabled={salvando}>Cancelar</Button>
-              <Button mode="contained" onPress={salvar} loading={salvando} disabled={salvando}>
-                {editando ? 'Salvar' : 'Cadastrar'}
-              </Button>
-            </View>
-
-            {/* Espaço extra no final para garantir que o último campo consiga subir o suficiente */}
-            <View style={{ height: alturaTeclado > 0 ? 100 : 0 }} />
-          </ScrollView>
-        </Modal>
-      </Portal>
+        <View style={styles.botoes}>
+          <Button onPress={fechar} disabled={salvando}>Cancelar</Button>
+          <Button mode="contained" onPress={salvar} loading={salvando} disabled={salvando}>
+            {editando ? 'Salvar' : 'Cadastrar'}
+          </Button>
+        </View>
+      </ModalComTeclado>
     </View>
   );
 }
@@ -296,8 +270,6 @@ const styles = StyleSheet.create({
   textoSecundario: { color: cores.textoSecundario },
   textoVazio: { textAlign: 'center', color: cores.textoDesabilitado, marginTop: 40 },
   fab: { position: 'absolute', right: 16, bottom: 16, backgroundColor: cores.primaria },
-  modal: { backgroundColor: 'white', margin: 20, padding: 20, borderRadius: 16 },
-  scrollModal: { maxHeight: '100%' },
   tituloModal: { marginBottom: 16, fontWeight: 'bold' },
   label: { marginBottom: 8, marginTop: 4 },
   segmented: { marginBottom: 12 },
