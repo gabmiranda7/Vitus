@@ -434,6 +434,10 @@ namespace Vitus.Infrastructure.Migrations
                         .HasColumnType("text")
                         .HasColumnName("senha_hash");
 
+                    b.Property<int>("Status")
+                        .HasColumnType("integer")
+                        .HasColumnName("status");
+
                     b.HasKey("Id")
                         .HasName("pk_usuarios");
 

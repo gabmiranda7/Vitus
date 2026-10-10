@@ -1,8 +1,11 @@
 ﻿using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Vitus.Application.UseCases.Auth.AprovarUsuario;
+using Vitus.Application.UseCases.Auth.GetUsuariosPendentes;
 using Vitus.Application.UseCases.Auth.Login;
 using Vitus.Application.UseCases.Auth.ObterUsuarioLogado;
+using Vitus.Application.UseCases.Auth.RecusarUsuario;
 using Vitus.Application.UseCases.Auth.Registrar;
 using Vitus.Communication.Auth.Requests;
 
@@ -42,6 +45,35 @@ namespace Vitus.API.Controllers
 
             var response = await useCase.Execute(email);
             return Ok(response);
+        }
+
+        [HttpGet("pendentes")]
+        [Authorize(Roles = "Administrador")]
+        public async Task<IActionResult> Pendentes(
+            [FromServices] GetUsuariosPendentesUseCase useCase)
+        {
+            var response = await useCase.Execute();
+            return Ok(response);
+        }
+
+        [HttpPatch("{id}/aprovar")]
+        [Authorize(Roles = "Administrador")]
+        public async Task<IActionResult> Aprovar(
+            [FromServices] AprovarUsuarioUseCase useCase,
+            Guid id)
+        {
+            await useCase.Execute(id);
+            return NoContent();
+        }
+
+        [HttpPatch("{id}/recusar")]
+        [Authorize(Roles = "Administrador")]
+        public async Task<IActionResult> Recusar(
+            [FromServices] RecusarUsuarioUseCase useCase,
+            Guid id)
+        {
+            await useCase.Execute(id);
+            return NoContent();
         }
     }
 }

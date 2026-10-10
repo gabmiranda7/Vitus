@@ -1,5 +1,6 @@
 ﻿using Vitus.Communication.Auth.Requests;
 using Vitus.Communication.Auth.Responses;
+using Vitus.Domain.Enums;
 using Vitus.Domain.Exceptions;
 using Vitus.Domain.Interfaces;
 
@@ -33,6 +34,12 @@ namespace Vitus.Application.UseCases.Auth.Login
 
             if (!senhaValida)
                 throw new DomainException("Email ou senha inválidos");
+
+            if (usuario.Status == StatusUsuario.Pendente)
+                throw new DomainException("Seu cadastro ainda aguarda aprovação de um administrador");
+
+            if (usuario.Status == StatusUsuario.Recusado)
+                throw new DomainException("Seu cadastro não foi aprovado. Entre em contato com um administrador");
 
             var token = _tokenService.Generate(usuario);
 

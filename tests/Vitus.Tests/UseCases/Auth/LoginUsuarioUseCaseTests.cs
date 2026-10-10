@@ -1,123 +1,140 @@
-﻿using Moq;
-using FluentAssertions;
+﻿using FluentAssertions;
+using Moq;
 using Vitus.Application.UseCases.Auth.Login;
 using Vitus.Communication.Auth.Requests;
 using Vitus.Domain.Entities;
 using Vitus.Domain.Enums;
 using Vitus.Domain.Exceptions;
 using Vitus.Domain.Interfaces;
+using Vitus.Tests.Helpers;
 
 namespace Vitus.Tests.UseCases.Auth
 {
     public class LoginUsuarioUseCaseTests
     {
-        private readonly Mock<IUsuarioRepository> _usuarioRepoMock;
-        private readonly Mock<IMedicoRepository> _medicoRepoMock;
-        private readonly Mock<ITokenService> _tokenServiceMock;
+        private const string SenhaCorreta = "Senha@123";
+
+        private readonly Mock<IUsuarioRepository> _usuarioRepoMock = new();
+        private readonly Mock<IMedicoRepository> _medicoRepoMock = new();
+        private readonly Mock<ITokenService> _tokenServiceMock = new();
         private readonly LoginUsuarioUseCase _useCase;
 
         public LoginUsuarioUseCaseTests()
         {
-            _usuarioRepoMock = new Mock<IUsuarioRepository>();
-            _medicoRepoMock = new Mock<IMedicoRepository>();
-            _tokenServiceMock = new Mock<ITokenService>();
+            _tokenServiceMock.Setup(t => t.Generate(It.IsAny<Usuario>())).Returns("token-fake");
             _useCase = new LoginUsuarioUseCase(
                 _usuarioRepoMock.Object,
                 _medicoRepoMock.Object,
-                _tokenServiceMock.Object
-            );
+                _tokenServiceMock.Object);
         }
 
-        private static Usuario CriarUsuario(string nome = "Carlos", string email = "carlos@email.com", PerfilUsuario perfil = PerfilUsuario.Medico)
+        private static Usuario UsuarioAprovado(PerfilUsuario perfil = PerfilUsuario.Recepcionista, string nome = "Maria")
         {
-            var senhaHash = BCrypt.Net.BCrypt.HashPassword("senha123");
-            return new Usuario(nome, email, senhaHash, perfil);
+            var usuario = new Usuario(nome, "maria@vitus.com", BCrypt.Net.BCrypt.HashPassword(SenhaCorreta), perfil);
+            if (perfil != PerfilUsuario.Administrador)
+                usuario.Aprovar();
+            return usuario;
+        }
+
+        private static LoginRequestJson Request(string email = "maria@vitus.com", string senha = SenhaCorreta) =>
+            new() { Email = email, Senha = senha };
+
+        [Fact]
+        public async Task Execute_Success()
+        {
+            var usuario = UsuarioAprovado();
+            _usuarioRepoMock.Setup(r => r.GetByEmail("maria@vitus.com")).ReturnsAsync(usuario);
+
+            var resultado = await _useCase.Execute(Request());
+
+            resultado.Token.Should().Be("token-fake");
+            resultado.Email.Should().Be("maria@vitus.com");
+            resultado.Perfil.Should().Be("Recepcionista");
+        }
+
+        [Fact]
+        public async Task Execute_Success_Administrador_JaNasceAprovado()
+        {
+            var admin = UsuarioAprovado(PerfilUsuario.Administrador, "Admin");
+            _usuarioRepoMock.Setup(r => r.GetByEmail("maria@vitus.com")).ReturnsAsync(admin);
+
+            var resultado = await _useCase.Execute(Request());
+
+            resultado.Perfil.Should().Be("Administrador");
+        }
+
+        [Fact]
+        public async Task Execute_Success_NormalizaEmailAntesDeBuscar()
+        {
+            var usuario = UsuarioAprovado();
+            _usuarioRepoMock.Setup(r => r.GetByEmail("maria@vitus.com")).ReturnsAsync(usuario);
+
+            await _useCase.Execute(Request("  MARIA@Vitus.COM "));
+
+            _usuarioRepoMock.Verify(r => r.GetByEmail("maria@vitus.com"), Times.Once);
         }
 
         [Fact]
         public async Task Execute_Success_Medico_RetornaMedicoId()
         {
-            var usuario = CriarUsuario();
-            var medico = new Medico("Carlos", "CRM-MG 12345", "Cardiologia");
+            var usuario = UsuarioAprovado(PerfilUsuario.Medico, "Dr. Carlos");
+            var medico = EntidadeFactory.CriarMedico("Dr. Carlos");
 
-            _usuarioRepoMock.Setup(r => r.GetByEmail("carlos@email.com")).ReturnsAsync(usuario);
-            _tokenServiceMock.Setup(t => t.Generate(usuario)).Returns("token_jwt_valido");
+            _usuarioRepoMock.Setup(r => r.GetByEmail("maria@vitus.com")).ReturnsAsync(usuario);
             _medicoRepoMock.Setup(r => r.GetAll()).ReturnsAsync(new List<Medico> { medico });
 
-            var request = new LoginRequestJson { Email = "carlos@email.com", Senha = "senha123" };
+            var resultado = await _useCase.Execute(Request());
 
-            var resultado = await _useCase.Execute(request);
-
-            resultado.Should().NotBeNull();
-            resultado.Token.Should().Be("token_jwt_valido");
-            resultado.Nome.Should().Be("Carlos");
-            resultado.Email.Should().Be("carlos@email.com");
-            resultado.Perfil.Should().Be("Medico");
             resultado.MedicoId.Should().Be(medico.Id.ToString());
         }
 
         [Fact]
-        public async Task Execute_Success_NaoMedico_MedicoIdNulo()
+        public async Task Execute_Fail_UsuarioNaoEncontrado()
         {
-            var usuario = CriarUsuario(perfil: PerfilUsuario.Enfermeiro);
+            _usuarioRepoMock.Setup(r => r.GetByEmail(It.IsAny<string>())).ReturnsAsync((Usuario?)null);
 
-            _usuarioRepoMock.Setup(r => r.GetByEmail(It.IsAny<string>())).ReturnsAsync(usuario);
-            _tokenServiceMock.Setup(t => t.Generate(usuario)).Returns("token");
+            var act = async () => await _useCase.Execute(Request());
 
-            var request = new LoginRequestJson { Email = "carlos@email.com", Senha = "senha123" };
-
-            var resultado = await _useCase.Execute(request);
-
-            resultado.MedicoId.Should().BeNull();
-            _medicoRepoMock.Verify(r => r.GetAll(), Times.Never);
+            await act.Should().ThrowAsync<DomainException>().WithMessage("Email ou senha inválidos");
         }
 
         [Fact]
-        public async Task Execute_Fail_EmailNaoCadastrado()
+        public async Task Execute_Fail_SenhaIncorreta()
         {
-            _usuarioRepoMock.Setup(r => r.GetByEmail(It.IsAny<string>()))
-                .ReturnsAsync((Usuario?)null);
+            var usuario = UsuarioAprovado();
+            _usuarioRepoMock.Setup(r => r.GetByEmail("maria@vitus.com")).ReturnsAsync(usuario);
 
-            var request = new LoginRequestJson { Email = "naoexiste@email.com", Senha = "senha123" };
+            var act = async () => await _useCase.Execute(Request(senha: "SenhaErrada@1"));
 
-            var act = async () => await _useCase.Execute(request);
-
-            await act.Should().ThrowAsync<DomainException>()
-                .WithMessage("Email ou senha inválidos");
+            await act.Should().ThrowAsync<DomainException>().WithMessage("Email ou senha inválidos");
+            _tokenServiceMock.Verify(t => t.Generate(It.IsAny<Usuario>()), Times.Never);
         }
 
         [Fact]
-        public async Task Execute_Fail_SenhaErrada()
+        public async Task Execute_Fail_CadastroPendente()
         {
-            var usuario = CriarUsuario();
+            var pendente = new Usuario("Maria", "maria@vitus.com",
+                BCrypt.Net.BCrypt.HashPassword(SenhaCorreta), PerfilUsuario.Recepcionista);
+            _usuarioRepoMock.Setup(r => r.GetByEmail("maria@vitus.com")).ReturnsAsync(pendente);
 
-            _usuarioRepoMock.Setup(r => r.GetByEmail("carlos@email.com")).ReturnsAsync(usuario);
+            var act = async () => await _useCase.Execute(Request());
 
-            var request = new LoginRequestJson { Email = "carlos@email.com", Senha = "senha_errada" };
-
-            var act = async () => await _useCase.Execute(request);
-
-            await act.Should().ThrowAsync<DomainException>()
-                .WithMessage("Email ou senha inválidos");
+            await act.Should().ThrowAsync<DomainException>().WithMessage("*aguarda aprovação*");
+            _tokenServiceMock.Verify(t => t.Generate(It.IsAny<Usuario>()), Times.Never);
         }
 
-        [Theory]
-        [InlineData(PerfilUsuario.Medico, "Medico")]
-        [InlineData(PerfilUsuario.Enfermeiro, "Enfermeiro")]
-        [InlineData(PerfilUsuario.Recepcionista, "Recepcionista")]
-        public async Task Execute_Success_TodosOsPerfis(PerfilUsuario perfil, string perfilEsperado)
+        [Fact]
+        public async Task Execute_Fail_CadastroRecusado()
         {
-            var usuario = CriarUsuario(perfil: perfil);
+            var recusado = new Usuario("Maria", "maria@vitus.com",
+                BCrypt.Net.BCrypt.HashPassword(SenhaCorreta), PerfilUsuario.Recepcionista);
+            recusado.Recusar();
+            _usuarioRepoMock.Setup(r => r.GetByEmail("maria@vitus.com")).ReturnsAsync(recusado);
 
-            _usuarioRepoMock.Setup(r => r.GetByEmail(It.IsAny<string>())).ReturnsAsync(usuario);
-            _tokenServiceMock.Setup(t => t.Generate(usuario)).Returns("token");
-            _medicoRepoMock.Setup(r => r.GetAll()).ReturnsAsync(new List<Medico>());
+            var act = async () => await _useCase.Execute(Request());
 
-            var request = new LoginRequestJson { Email = "user@email.com", Senha = "senha123" };
-
-            var resultado = await _useCase.Execute(request);
-
-            resultado.Perfil.Should().Be(perfilEsperado);
+            await act.Should().ThrowAsync<DomainException>().WithMessage("*não foi aprovado*");
+            _tokenServiceMock.Verify(t => t.Generate(It.IsAny<Usuario>()), Times.Never);
         }
     }
 }

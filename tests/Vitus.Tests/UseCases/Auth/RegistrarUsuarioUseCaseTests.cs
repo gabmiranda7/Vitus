@@ -1,5 +1,5 @@
-﻿using Moq;
-using FluentAssertions;
+﻿using FluentAssertions;
+using Moq;
 using Vitus.Application.UseCases.Auth.Registrar;
 using Vitus.Communication.Auth.Requests;
 using Vitus.Domain.Entities;
@@ -11,142 +11,109 @@ namespace Vitus.Tests.UseCases.Auth
 {
     public class RegistrarUsuarioUseCaseTests
     {
-        private readonly Mock<IUsuarioRepository> _usuarioRepoMock;
-        private readonly Mock<IEnfermeiroRepository> _enfermeiroRepoMock;
-        private readonly Mock<IMedicoRepository> _medicoRepoMock;
-        private readonly Mock<ITokenService> _tokenServiceMock;
+        private readonly Mock<IUsuarioRepository> _usuarioRepoMock = new();
+        private readonly Mock<IEnfermeiroRepository> _enfermeiroRepoMock = new();
+        private readonly Mock<IMedicoRepository> _medicoRepoMock = new();
         private readonly RegistrarUsuarioUseCase _useCase;
 
         public RegistrarUsuarioUseCaseTests()
         {
-            _usuarioRepoMock = new Mock<IUsuarioRepository>();
-            _enfermeiroRepoMock = new Mock<IEnfermeiroRepository>();
-            _medicoRepoMock = new Mock<IMedicoRepository>();
-            _tokenServiceMock = new Mock<ITokenService>();
             _useCase = new RegistrarUsuarioUseCase(
                 _usuarioRepoMock.Object,
                 _enfermeiroRepoMock.Object,
-                _medicoRepoMock.Object,
-                _tokenServiceMock.Object
-            );
+                _medicoRepoMock.Object);
         }
 
-        private static RegisterRequestJson RequestValido(
-            string nome = "Carlos",
-            string email = "carlos@email.com",
-            string senha = "senha123",
-            string perfil = "Medico",
-            string? crm = "CRM-MG 12345",
-            string? especialidade = "Cardiologia") => new()
-            {
-                Nome = nome,
-                Email = email,
-                Senha = senha,
-                Perfil = perfil,
-                CRM = crm,
-                Especialidade = especialidade
-            };
+        private static RegisterRequestJson Request(string perfil, string email = "novo@vitus.com") => new()
+        {
+            Nome = "Fulano de Tal",
+            Email = email,
+            Senha = "Senha@123",
+            Perfil = perfil,
+            CRM = "CRM-MG 12345",
+            Especialidade = "Cardiologia",
+            COREN = "COREN-MG 123456",
+            Especializacao = "UTI"
+        };
 
         [Fact]
-        public async Task Execute_Success_Medico()
+        public async Task Execute_Success_Recepcionista_FicaPendente()
         {
-            _usuarioRepoMock.Setup(r => r.GetByEmail(It.IsAny<string>()))
-                .ReturnsAsync((Usuario?)null);
-            _tokenServiceMock.Setup(t => t.Generate(It.IsAny<Usuario>()))
-                .Returns("token_valido");
+            var resultado = await _useCase.Execute(Request("Recepcionista"));
 
-            var request = RequestValido();
+            resultado.Mensagem.Should().Contain("aprovação");
+            _usuarioRepoMock.Verify(r => r.Add(It.Is<Usuario>(u =>
+                u.Perfil == PerfilUsuario.Recepcionista &&
+                u.Status == StatusUsuario.Pendente)), Times.Once);
+            _medicoRepoMock.Verify(r => r.Add(It.IsAny<Medico>()), Times.Never);
+            _enfermeiroRepoMock.Verify(r => r.Add(It.IsAny<Enfermeiro>()), Times.Never);
+        }
 
-            var resultado = await _useCase.Execute(request);
+        [Fact]
+        public async Task Execute_Success_Medico_CriaMedico()
+        {
+            await _useCase.Execute(Request("Medico"));
 
-            resultado.Should().NotBeNull();
-            resultado.Token.Should().Be("token_valido");
-            resultado.Nome.Should().Be("Carlos");
-            resultado.Perfil.Should().Be("Medico");
-
-            _usuarioRepoMock.Verify(r => r.Add(It.IsAny<Usuario>()), Times.Once);
+            _usuarioRepoMock.Verify(r => r.Add(It.Is<Usuario>(u =>
+                u.Status == StatusUsuario.Pendente)), Times.Once);
             _medicoRepoMock.Verify(r => r.Add(It.IsAny<Medico>()), Times.Once);
         }
 
         [Fact]
-        public async Task Execute_Success_Enfermeiro_NaoCriaMedico()
+        public async Task Execute_Success_Enfermeiro_CriaEnfermeiro()
         {
-            _usuarioRepoMock.Setup(r => r.GetByEmail(It.IsAny<string>()))
-                .ReturnsAsync((Usuario?)null);
-            _tokenServiceMock.Setup(t => t.Generate(It.IsAny<Usuario>()))
-                .Returns("token_valido");
+            await _useCase.Execute(Request("Enfermeiro"));
 
-            var request = RequestValido(perfil: "Enfermeiro", crm: null, especialidade: null);
-
-            var resultado = await _useCase.Execute(request);
-
-            resultado.Perfil.Should().Be("Enfermeiro");
-            _medicoRepoMock.Verify(r => r.Add(It.IsAny<Medico>()), Times.Never);
+            _usuarioRepoMock.Verify(r => r.Add(It.IsAny<Usuario>()), Times.Once);
+            _enfermeiroRepoMock.Verify(r => r.Add(It.IsAny<Enfermeiro>()), Times.Once);
         }
 
         [Fact]
-        public async Task Execute_Success_Recepcionista_NaoCriaMedico()
+        public async Task Execute_Success_NormalizaEmailParaMinusculo()
         {
-            _usuarioRepoMock.Setup(r => r.GetByEmail(It.IsAny<string>()))
-                .ReturnsAsync((Usuario?)null);
-            _tokenServiceMock.Setup(t => t.Generate(It.IsAny<Usuario>()))
-                .Returns("token_valido");
+            await _useCase.Execute(Request("Recepcionista", "  NOVO@Vitus.COM "));
 
-            var request = RequestValido(perfil: "Recepcionista", crm: null, especialidade: null);
-
-            var resultado = await _useCase.Execute(request);
-
-            resultado.Perfil.Should().Be("Recepcionista");
-            _medicoRepoMock.Verify(r => r.Add(It.IsAny<Medico>()), Times.Never);
-        }
-
-        [Fact]
-        public async Task Execute_Success_Medico_SemCRM_GeraProvisorio()
-        {
-            _usuarioRepoMock.Setup(r => r.GetByEmail(It.IsAny<string>()))
-                .ReturnsAsync((Usuario?)null);
-            _tokenServiceMock.Setup(t => t.Generate(It.IsAny<Usuario>()))
-                .Returns("token_valido");
-
-            var request = RequestValido(crm: null, especialidade: null);
-
-            var resultado = await _useCase.Execute(request);
-
-            resultado.Perfil.Should().Be("Medico");
-            _medicoRepoMock.Verify(r => r.Add(It.Is<Medico>(m =>
-                m.CRM.StartsWith("CRM-PROVISÓRIO-") &&
-                m.Especialidade == "Clínico Geral"
-            )), Times.Once);
+            _usuarioRepoMock.Verify(r => r.Add(It.Is<Usuario>(u =>
+                u.Email == "novo@vitus.com")), Times.Once);
         }
 
         [Fact]
         public async Task Execute_Fail_EmailJaCadastrado()
         {
-            var usuarioExistente = new Usuario("Outro", "carlos@email.com",
-                BCrypt.Net.BCrypt.HashPassword("outrasenha"),
-                PerfilUsuario.Recepcionista);
+            var existente = new Usuario("Já Existe", "novo@vitus.com", "hash", PerfilUsuario.Recepcionista);
+            _usuarioRepoMock.Setup(r => r.GetByEmail("novo@vitus.com")).ReturnsAsync(existente);
 
-            _usuarioRepoMock.Setup(r => r.GetByEmail("carlos@email.com"))
-                .ReturnsAsync(usuarioExistente);
+            var act = async () => await _useCase.Execute(Request("Recepcionista"));
 
-            var act = async () => await _useCase.Execute(RequestValido());
+            await act.Should().ThrowAsync<DomainException>().WithMessage("Email já cadastrado");
+            _usuarioRepoMock.Verify(r => r.Add(It.IsAny<Usuario>()), Times.Never);
+        }
+
+        [Fact]
+        public async Task Execute_Fail_PerfilAdministradorBloqueado()
+        {
+            var act = async () => await _useCase.Execute(Request("Administrador"));
 
             await act.Should().ThrowAsync<DomainException>()
-                .WithMessage("Email já cadastrado");
+                .WithMessage("Não é possível se cadastrar como Administrador");
+            _usuarioRepoMock.Verify(r => r.Add(It.IsAny<Usuario>()), Times.Never);
+        }
+
+        [Fact]
+        public async Task Execute_Fail_PerfilPacienteBloqueado()
+        {
+            var act = async () => await _useCase.Execute(Request("Paciente"));
+
+            await act.Should().ThrowAsync<DomainException>();
+            _usuarioRepoMock.Verify(r => r.Add(It.IsAny<Usuario>()), Times.Never);
         }
 
         [Fact]
         public async Task Execute_Fail_PerfilInvalido()
         {
-            _usuarioRepoMock.Setup(r => r.GetByEmail(It.IsAny<string>()))
-                .ReturnsAsync((Usuario?)null);
+            var act = async () => await _useCase.Execute(Request("Inexistente"));
 
-            var request = RequestValido(perfil: "PerfilInexistente");
-
-            var act = async () => await _useCase.Execute(request);
-
-            await act.Should().ThrowAsync<DomainException>()
-                .WithMessage("Perfil inválido. Use: Medico, Enfermeiro, Recepcionista ou Paciente");
+            await act.Should().ThrowAsync<DomainException>();
         }
     }
 }

@@ -12,21 +12,18 @@ namespace Vitus.Application.UseCases.Auth.Registrar
         private readonly IUsuarioRepository _usuarioRepository;
         private readonly IEnfermeiroRepository _enfermeiroRepository;
         private readonly IMedicoRepository _medicoRepository;
-        private readonly ITokenService _tokenService;
 
         public RegistrarUsuarioUseCase(
             IUsuarioRepository usuarioRepository,
             IEnfermeiroRepository enfermeiroRepository,
-            IMedicoRepository medicoRepository,
-            ITokenService tokenService)
+            IMedicoRepository medicoRepository)
         {
             _usuarioRepository = usuarioRepository;
             _enfermeiroRepository = enfermeiroRepository;
             _medicoRepository = medicoRepository;
-            _tokenService = tokenService;
         }
 
-        public async Task<AuthResponseJson> Execute(RegisterRequestJson request)
+        public async Task<RegistroResponseJson> Execute(RegisterRequestJson request)
         {
             var emailNormalizado = request.Email.Trim().ToLowerInvariant();
             var usuarioExistente = await _usuarioRepository.GetByEmail(emailNormalizado);
@@ -35,7 +32,13 @@ namespace Vitus.Application.UseCases.Auth.Registrar
                 throw new DomainException("Email já cadastrado");
 
             if (!Enum.TryParse<PerfilUsuario>(request.Perfil, ignoreCase: true, out var perfil))
-                throw new DomainException("Perfil inválido. Use: Medico, Enfermeiro, Recepcionista ou Paciente");
+                throw new DomainException("Perfil inválido. Use: Medico, Enfermeiro ou Recepcionista");
+
+            if (perfil == PerfilUsuario.Administrador)
+                throw new DomainException("Não é possível se cadastrar como Administrador");
+
+            if (perfil == PerfilUsuario.Paciente)
+                throw new DomainException("Perfil inválido. Use: Medico, Enfermeiro ou Recepcionista");
 
             var senhaHash = BCrypt.Net.BCrypt.HashPassword(request.Senha);
             var usuario = new Usuario(request.Nome, emailNormalizado, senhaHash, perfil);
@@ -56,14 +59,9 @@ namespace Vitus.Application.UseCases.Auth.Registrar
                 await _enfermeiroRepository.Add(enfermeiro);
             }
 
-            var token = _tokenService.Generate(usuario);
-
-            return new AuthResponseJson
+            return new RegistroResponseJson
             {
-                Token = token,
-                Nome = usuario.Nome,
-                Email = usuario.Email,
-                Perfil = usuario.Perfil.ToString()
+                Mensagem = "Cadastro realizado com sucesso. Aguarde a aprovação de um administrador para acessar o sistema."
             };
         }
     }

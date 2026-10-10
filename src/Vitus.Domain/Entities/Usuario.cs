@@ -10,6 +10,7 @@ namespace Vitus.Domain.Entities
         public string Email { get; private set; }
         public string SenhaHash { get; private set; }
         public PerfilUsuario Perfil { get; private set; }
+        public StatusUsuario Status { get; private set; }
 
         protected Usuario() { }
 
@@ -29,6 +30,25 @@ namespace Vitus.Domain.Entities
             Email = email;
             SenhaHash = senhaHash;
             Perfil = perfil;
+            Status = perfil == PerfilUsuario.Administrador
+                ? StatusUsuario.Aprovado
+                : StatusUsuario.Pendente;
+        }
+
+        public void Aprovar()
+        {
+            if (Status != StatusUsuario.Pendente)
+                throw new DomainException("Apenas cadastros pendentes podem ser aprovados");
+
+            Status = StatusUsuario.Aprovado;
+        }
+
+        public void Recusar()
+        {
+            if (Status != StatusUsuario.Recusado)
+                throw new DomainException("Apenas cadastros pendentes podem ser recusados");
+
+            Status = StatusUsuario.Recusado;
         }
     }
 }

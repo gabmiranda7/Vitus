@@ -1,6 +1,9 @@
 ﻿using Vitus.Application.UseCases.Auditoria.GetAuditoriaLogs;
+using Vitus.Application.UseCases.Auth.AprovarUsuario;
+using Vitus.Application.UseCases.Auth.GetUsuariosPendentes;
 using Vitus.Application.UseCases.Auth.Login;
 using Vitus.Application.UseCases.Auth.ObterUsuarioLogado;
+using Vitus.Application.UseCases.Auth.RecusarUsuario;
 using Vitus.Application.UseCases.Auth.Registrar;
 using Vitus.Application.UseCases.Consultas.AguardarAtendimento;
 using Vitus.Application.UseCases.Consultas.AnotarConsulta;
@@ -40,8 +43,11 @@ namespace Vitus.API.Extensions
             services.AddScoped<GetAuditoriaLogsUseCase>();
             services.AddScoped<IAuditoriaService, AuditoriaService>();
 
+            services.AddScoped<AprovarUsuarioUseCase>();
+            services.AddScoped<GetUsuariosPendentesUseCase>();
             services.AddScoped<LoginUsuarioUseCase>();
             services.AddScoped<ObterUsuarioLogadoUseCase>();
+            services.AddScoped<RecusarUsuarioUseCase>();
             services.AddScoped<RegistrarUsuarioUseCase>();
 
             services.AddScoped<AguardarAtendimentoUseCase>();
