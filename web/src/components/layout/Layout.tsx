@@ -10,6 +10,7 @@ import PeopleIcon from '@mui/icons-material/People';
 import LocalHospitalIcon from '@mui/icons-material/LocalHospital';
 import EventNoteIcon from '@mui/icons-material/EventNote';
 import HistoryIcon from '@mui/icons-material/History';
+import FactCheckIcon from '@mui/icons-material/FactCheck';
 import MedicalServicesIcon from '@mui/icons-material/MedicalServices';
 import MedicationIcon from '@mui/icons-material/Medication';
 import LogoutIcon from '@mui/icons-material/Logout';
@@ -23,6 +24,7 @@ const DRAWER_WIDTH = 256;
 
 const menuItems = [
   { label: 'Auditoria', path: '/auditoria', icon: <HistoryIcon />, perfis: ['Administrador'] },
+  { label: 'Aprovações', path: '/aprovacoes', icon: <FactCheckIcon />, perfis: ['Administrador'] },
   { label: 'Minha Agenda', path: '/agenda', icon: <CalendarTodayIcon />, perfis: ['Medico'] },
   { label: 'Dashboard',  path: '/dashboard',  icon: <DashboardIcon />,       perfis: ['Recepcionista', 'Enfermeiro', 'Medico'] },
   { label: 'Consultas',  path: '/consultas',  icon: <EventNoteIcon />,        perfis: ['Recepcionista', 'Enfermeiro', 'Medico'] },

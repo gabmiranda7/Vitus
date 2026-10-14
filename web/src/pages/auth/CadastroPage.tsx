@@ -78,8 +78,8 @@ export default function CadastroPage() {
         ...(perfil === 'Medico' && { crm, especialidade }),
         ...(perfil === 'Enfermeiro' && { coren, especializacao: especializacao || undefined }),
       });
-      setSucesso('Cadastro realizado com sucesso!');
-      setTimeout(() => navigate('/login'), 2000);
+      setSucesso('Cadastro enviado! Aguarde a aprovação de um administrador para acessar o sistema.');
+      setTimeout(() => navigate('/login'), 4000);
     } catch (err: unknown) {
       const e = err as { response?: { data?: { messages?: string[] } } };
       setErro(e.response?.data?.messages?.[0] ?? 'Erro ao realizar cadastro');
