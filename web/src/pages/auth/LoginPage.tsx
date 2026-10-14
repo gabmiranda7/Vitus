@@ -37,8 +37,13 @@ export default function LoginPage() {
       else if (perfil === 'Administrador') navigate('/auditoria');
       else navigate('/login');
     } catch (err: unknown) {
-      const e = err as { response?: { data?: { messages?: string[] } } };
-      setErro(e.response?.data?.messages?.[0] ?? 'Email ou senha inválidos');
+      const e = err as {
+        mensagemBack?: string;
+        response?: { data?: { Messages?: string[]; messages?: string[] } };
+      };
+      const mensagem =
+        e.mensagemBack ?? e.response?.data?.Messages?.[0] ?? e.response?.data?.messages?.[0];
+      setErro(mensagem ?? 'Não foi possível entrar. Verifique sua conexão e tente novamente.');
     } finally {
       setLoading(false);
     }

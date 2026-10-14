@@ -15,14 +15,23 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    const mensagem =
-      error.response?.data?.message ||
-      error.response?.data?.Message ||
-      error.response?.data ||
-      error.message ||
-      'Erro inesperado';
+    const data = error.response?.data;
+    let mensagem: string | undefined;
 
-    error.mensagemBack = typeof mensagem === 'string' ? mensagem : 'Erro inesperado';
+    if (typeof data === 'string' && data.trim()) mensagem = data;
+    else if (Array.isArray(data?.Messages) && data.Messages.length) mensagem = data.Messages[0];
+    else if (Array.isArray(data?.messages) && data.messages.length) mensagem = data.messages[0];
+    else if (typeof data?.message === 'string') mensagem = data.message;
+    else if (typeof data?.Message === 'string') mensagem = data.Message;
+
+    if (!mensagem) {
+      if (!error.response) mensagem = 'Não foi possível conectar ao servidor';
+      else if (error.response.status === 401) mensagem = 'Sessão expirada. Faça login novamente';
+      else if (error.response.status === 403) mensagem = 'Você não tem permissão para realizar esta ação';
+      else mensagem = 'Ocorreu um erro inesperado';
+    }
+
+    error.mensagemBack = mensagem;
     return Promise.reject(error);
   }
 );
