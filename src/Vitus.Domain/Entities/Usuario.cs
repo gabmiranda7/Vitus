@@ -45,7 +45,7 @@ namespace Vitus.Domain.Entities
 
         public void Recusar()
         {
-            if (Status != StatusUsuario.Recusado)
+            if (Status != StatusUsuario.Pendente)
                 throw new DomainException("Apenas cadastros pendentes podem ser recusados");
 
             Status = StatusUsuario.Recusado;
