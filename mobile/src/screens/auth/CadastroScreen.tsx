@@ -70,7 +70,7 @@ export default function CadastroScreen() {
         ...(perfil === 'Enfermeiro' && { coren, especializacao: especializacao || undefined }),
       });
       setSucesso(true);
-      setTimeout(() => navigation.navigate('Login'), 1500);
+      setTimeout(() => navigation.navigate('Login'), 4000);
     } catch (e: any) {
       setErro(e.mensagemBack ?? 'Erro ao realizar cadastro');
     } finally {
@@ -90,7 +90,7 @@ export default function CadastroScreen() {
           <ProgressBar progress={(step + 1) / 3} style={styles.progresso} />
 
           {erro ? <Text style={styles.erro}>{erro}</Text> : null}
-          {sucesso ? <Text style={styles.sucesso}>Cadastro realizado! Redirecionando...</Text> : null}
+          {sucesso ? <Text style={styles.sucesso}>Cadastro enviado! Aguarde a aprovação de um administrador para acessar o sistema.</Text> : null}
 
           {step === 0 && (
             <View>

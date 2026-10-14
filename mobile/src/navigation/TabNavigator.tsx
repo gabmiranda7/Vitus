@@ -1,6 +1,7 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import AprovacoesScreen from '../screens/aprovacoes/AprovacoesScreen';
 import DashboardScreen from '../screens/dashboard/DashboardScreen';
 import ConsultasScreen from '../screens/consultas/ConsultasScreen';
 import ProntuarioStack from './ProntuarioStack';
@@ -56,7 +57,19 @@ export default function TabNavigator() {
         />
       )}
 
-      {/* Consultas não aparece para Administrador */}
+      {usuario?.perfil === 'Administrador' && (
+        <Tab.Screen
+          name="Aprovacoes"
+          component={AprovacoesScreen}
+          options={{
+            title: 'Aprovações',
+            tabBarIcon: ({ color, size }) => (
+              <MaterialCommunityIcons name="account-check" color={color} size={size} />
+            ),
+          }}
+        />
+      )}
+
       {usuario?.perfil !== 'Administrador' && (
         <Tab.Screen
           name="Consultas"
