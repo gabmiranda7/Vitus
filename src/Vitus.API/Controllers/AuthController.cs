@@ -1,6 +1,7 @@
 ﻿using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Vitus.Application.UseCases.Auth.AprovarUsuario;
 using Vitus.Application.UseCases.Auth.GetUsuariosPendentes;
 using Vitus.Application.UseCases.Auth.Login;
@@ -16,6 +17,7 @@ namespace Vitus.API.Controllers
     public class AuthController : ControllerBase
     {
         [HttpPost("registrar")]
+        [EnableRateLimiting("registro")]
         public async Task<IActionResult> Registrar(
             [FromServices] RegistrarUsuarioUseCase useCase,
             [FromBody] RegisterRequestJson request)
@@ -25,6 +27,7 @@ namespace Vitus.API.Controllers
         }
 
         [HttpPost("login")]
+        [EnableRateLimiting("login")]
         public async Task<IActionResult> Login(
             [FromServices] LoginUsuarioUseCase useCase,
             [FromBody] LoginRequestJson request)

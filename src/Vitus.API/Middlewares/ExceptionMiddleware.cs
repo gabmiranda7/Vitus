@@ -28,6 +28,11 @@ namespace Vitus.API.Middlewares
                 var errors = ex.Errors.Select(e => e.ErrorMessage).ToList();
                 await HandleExceptionAsync(context, HttpStatusCode.BadRequest, errors);
             }
+            catch (TentativasExcedidasException ex)
+            {
+                context.Response.Headers.RetryAfter = ((int)ex.TempoRestante.TotalSeconds).ToString();
+                await HandleExceptionAsync(context, HttpStatusCode.TooManyRequests, new List<string> { ex.Message });
+            }
             catch (DomainException ex)
             {
                 await HandleExceptionAsync(context, HttpStatusCode.BadRequest, new List<string> { ex.Message });

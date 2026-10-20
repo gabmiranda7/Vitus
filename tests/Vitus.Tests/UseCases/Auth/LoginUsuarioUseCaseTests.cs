@@ -17,6 +17,7 @@ namespace Vitus.Tests.UseCases.Auth
         private readonly Mock<IUsuarioRepository> _usuarioRepoMock = new();
         private readonly Mock<IMedicoRepository> _medicoRepoMock = new();
         private readonly Mock<ITokenService> _tokenServiceMock = new();
+        private readonly Mock<ILoginAttemptTracker> _trackerMock = new();
         private readonly LoginUsuarioUseCase _useCase;
 
         public LoginUsuarioUseCaseTests()
@@ -25,7 +26,8 @@ namespace Vitus.Tests.UseCases.Auth
             _useCase = new LoginUsuarioUseCase(
                 _usuarioRepoMock.Object,
                 _medicoRepoMock.Object,
-                _tokenServiceMock.Object);
+                _tokenServiceMock.Object,
+                _trackerMock.Object);
         }
 
         private static Usuario UsuarioAprovado(PerfilUsuario perfil = PerfilUsuario.Recepcionista, string nome = "Maria")
@@ -135,6 +137,50 @@ namespace Vitus.Tests.UseCases.Auth
 
             await act.Should().ThrowAsync<DomainException>().WithMessage("*não foi aprovado*");
             _tokenServiceMock.Verify(t => t.Generate(It.IsAny<Usuario>()), Times.Never);
+        }
+
+        [Fact]
+        public async Task Execute_Fail_ContaBloqueada_NemConsultaOBanco()
+        {
+            _trackerMock.Setup(t => t.TempoRestanteBloqueio("maria@vitus.com"))
+                .Returns(TimeSpan.FromMinutes(10));
+
+            var act = async () => await _useCase.Execute(Request());
+
+            await act.Should().ThrowAsync<TentativasExcedidasException>();
+            _usuarioRepoMock.Verify(r => r.GetByEmail(It.IsAny<string>()), Times.Never);
+        }
+
+        [Fact]
+        public async Task Execute_Fail_SenhaIncorreta_RegistraFalha()
+        {
+            _usuarioRepoMock.Setup(r => r.GetByEmail("maria@vitus.com")).ReturnsAsync(UsuarioAprovado());
+
+            var act = async () => await _useCase.Execute(Request(senha: "Errada@123"));
+
+            await act.Should().ThrowAsync<DomainException>();
+            _trackerMock.Verify(t => t.RegistrarFalha("maria@vitus.com"), Times.Once);
+        }
+
+        [Fact]
+        public async Task Execute_Fail_EmailInexistente_RegistraFalha()
+        {
+            _usuarioRepoMock.Setup(r => r.GetByEmail(It.IsAny<string>())).ReturnsAsync((Usuario?)null);
+
+            var act = async () => await _useCase.Execute(Request());
+
+            await act.Should().ThrowAsync<DomainException>();
+            _trackerMock.Verify(t => t.RegistrarFalha("maria@vitus.com"), Times.Once);
+        }
+
+        [Fact]
+        public async Task Execute_Success_LimpaContadorDeFalhas()
+        {
+            _usuarioRepoMock.Setup(r => r.GetByEmail("maria@vitus.com")).ReturnsAsync(UsuarioAprovado());
+
+            await _useCase.Execute(Request());
+
+            _trackerMock.Verify(t => t.Limpar("maria@vitus.com"), Times.Once);
         }
     }
 }
