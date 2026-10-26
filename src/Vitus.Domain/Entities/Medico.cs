@@ -5,15 +5,20 @@ namespace Vitus.Domain.Entities
     public class Medico
     {
         public Guid Id { get; private set; }
+        public Guid UsuarioId { get; private set; }
         public string Nome { get; private set; }
         public string Especialidade { get; private set; }
         public string CRM { get; private set; }
 
         protected Medico() { }
 
-        public Medico(string nome, string especialidade, string crm)
+        public Medico(string nome, string especialidade, string crm, Guid usuarioId)
         {
+            if (usuarioId == Guid.Empty)
+                throw new DomainException("Usuário do médico é obrigatório");
+
             Id = Guid.NewGuid();
+            UsuarioId = usuarioId;
             DefinirNome(nome);
             DefinirEspecialidade(especialidade);
             DefinirCRM(crm);

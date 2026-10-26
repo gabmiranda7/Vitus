@@ -238,12 +238,20 @@ namespace Vitus.Infrastructure.Migrations
                         .HasColumnType("character varying(200)")
                         .HasColumnName("nome");
 
+                    b.Property<Guid>("UsuarioId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("usuario_id");
+
                     b.HasKey("Id")
                         .HasName("pk_medicos");
 
                     b.HasIndex("CRM")
                         .IsUnique()
                         .HasDatabaseName("ix_medicos_crm");
+
+                    b.HasIndex("UsuarioId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_medicos_usuario_id");
 
                     b.ToTable("medicos", (string)null);
                 });
@@ -482,6 +490,16 @@ namespace Vitus.Infrastructure.Migrations
                         .HasConstraintName("fk_exames_prontuarios_prontuario_id");
 
                     b.Navigation("Prontuario");
+                });
+
+            modelBuilder.Entity("Vitus.Domain.Entities.Medico", b =>
+                {
+                    b.HasOne("Vitus.Domain.Entities.Usuario", null)
+                        .WithMany()
+                        .HasForeignKey("UsuarioId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_medicos_usuarios_usuario_id");
                 });
 
             modelBuilder.Entity("Vitus.Domain.Entities.Prontuario", b =>

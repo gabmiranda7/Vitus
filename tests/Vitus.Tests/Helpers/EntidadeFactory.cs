@@ -15,8 +15,9 @@ namespace Vitus.Tests.Helpers
         public static Paciente CriarPacienteSemProntuario(string nome = "João Silva") =>
             new Paciente(nome, null, null, null, null, null, null, null, null, null, null, true);
 
-        public static Medico CriarMedico(string nome = "Dr. Carlos", string especialidade = "Cardiologia", string crm = "CRM-MG 12345") =>
-            new Medico(nome, especialidade, crm);
+        public static Medico CriarMedico(string nome = "Dr. Carlos", string especialidade = "Cardiologia",
+            string crm = "CRM-MG 12345", Guid? usuarioId = null) =>
+            new Medico(nome, especialidade, crm, usuarioId ?? Guid.NewGuid());
 
         public static Consulta CriarConsulta(Guid? pacienteId = null, Guid? medicoId = null, Guid? prontuarioId = null) =>
             new Consulta(

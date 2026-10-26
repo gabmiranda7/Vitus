@@ -80,10 +80,10 @@ namespace Vitus.Tests.UseCases.Auth
         public async Task Execute_Success_Medico_RetornaMedicoId()
         {
             var usuario = UsuarioAprovado(PerfilUsuario.Medico, "Dr. Carlos");
-            var medico = EntidadeFactory.CriarMedico("Dr. Carlos");
+            var medico = EntidadeFactory.CriarMedico("Dr. Carlos", usuarioId: usuario.Id);
 
             _usuarioRepoMock.Setup(r => r.GetByEmail("maria@vitus.com")).ReturnsAsync(usuario);
-            _medicoRepoMock.Setup(r => r.GetAll()).ReturnsAsync(new List<Medico> { medico });
+            _medicoRepoMock.Setup(r => r.GetByUsuarioId(usuario.Id)).ReturnsAsync(medico);
 
             var resultado = await _useCase.Execute(Request());
 

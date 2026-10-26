@@ -48,7 +48,7 @@ namespace Vitus.Application.UseCases.Auth.Registrar
             {
                 var crm = request.CRM ?? $"CRM-PROVISÓRIO-{Guid.NewGuid().ToString()[..8].ToUpper()}";
                 var especialidade = request.Especialidade ?? "Clínico Geral";
-                var medico = new Medico(request.Nome, especialidade, crm);
+                var medico = new Medico(request.Nome, especialidade, crm, usuario.Id);
                 await _medicoRepository.Add(medico);
             }
 

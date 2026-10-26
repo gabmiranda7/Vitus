@@ -27,6 +27,13 @@ namespace Vitus.Infrastructure.Repositories
                 .FirstOrDefaultAsync(m => m.Id == id);
         }
 
+        public async Task<Medico?> GetByUsuarioId(Guid usuarioId)
+        {
+            return await _context.Medicos
+                .AsNoTracking()
+                .FirstOrDefaultAsync(m => m.UsuarioId == usuarioId);
+        }
+
         public async Task<List<Medico>> GetAll()
         {
             return await _context.Medicos

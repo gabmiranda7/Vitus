@@ -26,6 +26,17 @@ namespace Vitus.Infrastructure.Mappings
 
             builder.HasIndex(m => m.CRM)
                    .IsUnique();
+
+            builder.Property(m => m.UsuarioId)
+                   .IsRequired();
+
+            builder.HasIndex(m => m.UsuarioId)
+                   .IsUnique();
+
+            builder.HasOne<Usuario>()
+                   .WithMany()
+                   .HasForeignKey(m => m.UsuarioId)
+                   .OnDelete(DeleteBehavior.Restrict);
         }
     }
 }

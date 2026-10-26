@@ -60,10 +60,9 @@ namespace Vitus.Application.UseCases.Auth.Login
             var token = _tokenService.Generate(usuario);
 
             string? medicoId = null;
-            if (usuario.Perfil.ToString() == "Medico")
+            if (usuario.Perfil == PerfilUsuario.Medico)
             {
-                var medicos = await _medicoRepository.GetAll();
-                var medico = medicos.FirstOrDefault(m => m.Nome == usuario.Nome);
+                var medico = await _medicoRepository.GetByUsuarioId(usuario.Id);
                 medicoId = medico?.Id.ToString();
             }
 
