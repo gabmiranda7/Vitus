@@ -28,6 +28,7 @@ namespace Vitus.API.Extensions
 
             services.AddScoped<IArquivoService, ArquivoService>();
             services.AddScoped<IAuditoriaRepository, AuditoriaRepository>();
+            services.AddScoped<IConsultaAcessoService, ConsultaAcessoService>();
             services.AddScoped<IConsultaRepository, ConsultaRepository>();
             services.AddScoped<IDocumentoService, DocumentoService>();
             services.AddScoped<IEnfermeiroRepository, EnfermeiroRepository>();

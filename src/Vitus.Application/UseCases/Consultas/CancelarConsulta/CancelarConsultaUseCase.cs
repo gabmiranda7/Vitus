@@ -1,5 +1,6 @@
 ﻿using Vitus.Communication.Consulta.Responses;
 using Vitus.Domain.Enums;
+using Vitus.Domain.Exceptions;
 using Vitus.Domain.Interfaces;
 
 namespace Vitus.Application.UseCases.Consultas.CancelarConsulta
@@ -10,17 +11,20 @@ namespace Vitus.Application.UseCases.Consultas.CancelarConsulta
         private readonly IPacienteRepository _pacienteRepository;
         private readonly IMedicoRepository _medicoRepository;
         private readonly IAuditoriaService _auditoriaService;
+        private readonly IConsultaAcessoService _acessoService;
 
         public CancelarConsultaUseCase(
             IConsultaRepository consultaRepository,
             IPacienteRepository pacienteRepository,
             IMedicoRepository medicoRepository,
-            IAuditoriaService auditoriaService)
+            IAuditoriaService auditoriaService,
+            IConsultaAcessoService acessoService)
         {
             _consultaRepository = consultaRepository;
             _pacienteRepository = pacienteRepository;
             _medicoRepository = medicoRepository;
             _auditoriaService = auditoriaService;
+            _acessoService = acessoService;
         }
 
         public async Task<ConsultaResponseJson> Execute(Guid id)
@@ -28,7 +32,9 @@ namespace Vitus.Application.UseCases.Consultas.CancelarConsulta
             var consulta = await _consultaRepository.GetById(id);
 
             if (consulta == null)
-                throw new Exception("Consulta não encontrada");
+                throw new DomainException("Consulta não encontrada");
+
+            await _acessoService.GarantirResponsavelSeMedico(consulta);
 
             consulta.Cancelar();
 

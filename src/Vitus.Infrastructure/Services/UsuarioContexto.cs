@@ -31,5 +31,16 @@ namespace Vitus.Infrastructure.Services
                     .FindFirst(ClaimTypes.Name)?.Value ?? "Desconhecido";
             }
         }
+
+        public string Perfil
+        {
+            get
+            {
+                var user = _httpContextAccessor.HttpContext?.User;
+                return user?.FindFirst(ClaimTypes.Role)?.Value
+                    ?? user?.FindFirst("role")?.Value
+                    ?? string.Empty;
+            }
+        }
     }
 }

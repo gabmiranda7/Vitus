@@ -9,15 +9,18 @@ namespace Vitus.Application.UseCases.Consultas.FinalizarConsulta
         private readonly IConsultaRepository _consultaRepository;
         private readonly IPacienteRepository _pacienteRepository;
         private readonly IMedicoRepository _medicoRepository;
+        private readonly IConsultaAcessoService _acessoService;
 
         public FinalizarConsultaUseCase(
             IConsultaRepository consultaRepository,
             IPacienteRepository pacienteRepository,
-            IMedicoRepository medicoRepository)
+            IMedicoRepository medicoRepository,
+            IConsultaAcessoService acessoService)
         {
             _consultaRepository = consultaRepository;
             _pacienteRepository = pacienteRepository;
             _medicoRepository = medicoRepository;
+            _acessoService = acessoService;
         }
 
         public async Task<ConsultaResponseJson> Execute(Guid id)
@@ -26,6 +29,8 @@ namespace Vitus.Application.UseCases.Consultas.FinalizarConsulta
 
             if (consulta == null)
                 throw new DomainException("Consulta não encontrada");
+
+            await _acessoService.GarantirMedicoResponsavel(consulta);
 
             consulta.Finalizar();
             await _consultaRepository.Update(consulta);

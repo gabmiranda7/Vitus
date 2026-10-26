@@ -31,6 +31,7 @@
     <ProjectReference Include="..\..\src\Vitus.Application\Vitus.Application.csproj" />
     <ProjectReference Include="..\..\src\Vitus.Domain\Vitus.Domain.csproj" />
     <ProjectReference Include="..\..\src\Vitus.Communication\Vitus.Communication.csproj" />
+	<ProjectReference Include="..\..\src\Vitus.Infrastructure\Vitus.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

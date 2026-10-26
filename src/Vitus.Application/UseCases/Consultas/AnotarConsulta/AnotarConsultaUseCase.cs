@@ -10,15 +10,18 @@ namespace Vitus.Application.UseCases.Consultas.AnotarConsulta
         private readonly IConsultaRepository _consultaRepository;
         private readonly IPacienteRepository _pacienteRepository;
         private readonly IMedicoRepository _medicoRepository;
+        private readonly IConsultaAcessoService _acessoService;
 
         public AnotarConsultaUseCase(
             IConsultaRepository consultaRepository,
             IPacienteRepository pacienteRepository,
-            IMedicoRepository medicoRepository)
+            IMedicoRepository medicoRepository,
+            IConsultaAcessoService acessoService)
         {
             _consultaRepository = consultaRepository;
             _pacienteRepository = pacienteRepository;
             _medicoRepository = medicoRepository;
+            _acessoService = acessoService;
         }
 
         public async Task<ConsultaResponseJson> Execute(Guid id, AnotarConsultaRequestJson request)
@@ -27,6 +30,8 @@ namespace Vitus.Application.UseCases.Consultas.AnotarConsulta
 
             if (consulta == null)
                 throw new DomainException("Consulta não encontrada");
+
+            await _acessoService.GarantirMedicoResponsavel(consulta);
 
             consulta.Anotar(request.Anotacoes);
             await _consultaRepository.Update(consulta);

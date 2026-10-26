@@ -4,5 +4,6 @@
     {
         Guid UsuarioId { get; }
         string UsuarioNome { get; }
+        string Perfil { get; }
     }
 }
