@@ -463,6 +463,10 @@ export default function ConsultasPage() {
         PaperProps={{ sx: { width: { xs: '100%', sm: 400 }, borderRadius: '16px 0 0 16px' } }}>
         {consultaDrawer && (() => {
           const cor = statusCores[consultaDrawer.status] ?? '#1976d2';
+          const ehMinhaConsulta =
+          usuario?.perfil === 'Medico' &&
+          !!usuario.medicoId &&
+          consultaDrawer.medicoId === usuario.medicoId;
           return (
             <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
               <Box sx={{ background: `linear-gradient(135deg, ${cor}dd, ${cor})`, p: 3 }}>
@@ -528,7 +532,7 @@ export default function ConsultasPage() {
                       Mover para Aguardando
                     </Button>
                   )}
-                  {usuario?.perfil === 'Medico' && consultaDrawer.status === 'AguardandoAtendimento' && (
+                  {ehMinhaConsulta && consultaDrawer.status === 'AguardandoAtendimento' && (
                     <Button fullWidth variant="contained" color="primary" size="large"
                       startIcon={<PersonIcon />}
                       onClick={() => api.patch(`/api/consultas/${consultaDrawer.id}/iniciar-atendimento`).then(() => { fecharDrawer(); carregar(); })}
@@ -536,7 +540,7 @@ export default function ConsultasPage() {
                       Iniciar Atendimento
                     </Button>
                   )}
-                  {usuario?.perfil === 'Medico' && consultaDrawer.status === 'EmAtendimento' && (<>
+                  {ehMinhaConsulta && consultaDrawer.status === 'EmAtendimento' && (<>
                     <Button fullWidth variant="outlined" color="info" size="large"
                       startIcon={<EditNoteIcon />}
                       onClick={() => { setAnotacoes(consultaDrawer.anotacoes ?? ''); setModalAnotacao(true); }}
@@ -563,7 +567,7 @@ export default function ConsultasPage() {
                       Finalizar Consulta
                     </Button>
                   </>)}
-                  {['Recepcionista', 'Medico'].includes(usuario?.perfil ?? '') &&
+                  {(usuario?.perfil === 'Recepcionista' || ehMinhaConsulta) &&
                     !['Finalizada', 'Cancelada'].includes(consultaDrawer.status) && (
                       <Button fullWidth variant="outlined" color="error" size="large"
                         startIcon={<CancelIcon />}
@@ -576,6 +580,12 @@ export default function ConsultasPage() {
                     <Box sx={{ textAlign: 'center', py: 4, color: 'text.secondary' }}>
                       <Typography variant="body2" sx={{ opacity: 0.5 }}>Nenhuma ação disponível</Typography>
                     </Box>
+                  )}
+                  {usuario?.perfil === 'Medico' && !ehMinhaConsulta &&
+                  !['Finalizada', 'Cancelada'].includes(consultaDrawer.status) && (
+                    <Alert severity="info" sx={{ mb: 1 }}>
+                      Esta consulta é do(a) {consultaDrawer.nomeMedico}. Só o médico responsável pode atendê-la.
+                    </Alert>
                   )}
                 </Box>
               </Box>

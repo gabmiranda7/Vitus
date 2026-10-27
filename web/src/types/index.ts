@@ -46,6 +46,7 @@ export interface Medico {
     nome: string;
     especialidade: string;
     crm: string;
+    medicoId: string;
 }
 
 export interface Paciente {

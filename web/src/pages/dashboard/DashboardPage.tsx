@@ -112,7 +112,7 @@ export default function DashboardPage() {
 
   // Consultas relevantes por perfil
   const consultasDoMedico = isMedico
-    ? ativas.filter(c => c.nomeMedico === usuario?.nome)
+    ? ativas.filter(c => c.medicoId === usuario?.medicoId)
     : ativas;
 
   const dadosSemana = Array.from({ length: 7 }, (_, i) => {
