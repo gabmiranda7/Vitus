@@ -34,6 +34,8 @@ namespace Vitus.API.Controllers
             [FromServices] GetAllConsultasUseCase useCase)
         {
             var result = await useCase.Execute();
+            if (User.IsInRole("Recepcionista"))
+                foreach (var c in result) c.Anotacoes = null;
             return Ok(result);
         }
 
@@ -44,8 +46,8 @@ namespace Vitus.API.Controllers
             Guid id)
         {
             var result = await useCase.Execute(id);
-            if (result == null)
-                return NotFound();
+            if (result == null) return NotFound();
+            if (User.IsInRole("Recepcionista")) result.Anotacoes = null;
             return Ok(result);
         }
 
