@@ -17,6 +17,7 @@ namespace Vitus.API.Controllers
     public class AuthController : ControllerBase
     {
         [HttpPost("registrar")]
+        [AllowAnonymous]
         [EnableRateLimiting("registro")]
         public async Task<IActionResult> Registrar(
             [FromServices] RegistrarUsuarioUseCase useCase,
@@ -27,6 +28,7 @@ namespace Vitus.API.Controllers
         }
 
         [HttpPost("login")]
+        [AllowAnonymous]
         [EnableRateLimiting("login")]
         public async Task<IActionResult> Login(
             [FromServices] LoginUsuarioUseCase useCase,
