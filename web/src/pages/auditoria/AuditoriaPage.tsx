@@ -25,6 +25,11 @@ const acaoLabels: Record<string, string> = {
   CriacaoPaciente: 'Criação de Paciente',
   EdicaoPaciente: 'Edição de Paciente',
   ExclusaoPaciente: 'Exclusão de Paciente',
+  RegistroExame: 'Registro de Exame',
+  AnexoExame: 'Anexo de Arquivo em Exame',
+  DownloadExame: 'Download de Arquivo de Exame',
+  AprovacaoCadastro: 'Aprovação de Cadastro',
+  RecusaCadastro: 'Recusa de Cadastro',
 };
 
 const acaoCores: Record<string, string> = {
