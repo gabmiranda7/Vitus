@@ -9,6 +9,11 @@
         EmissaoReceita,
         CriacaoPaciente,
         EdicaoPaciente,
-        ExclusaoPaciente
+        ExclusaoPaciente,
+        RegistroExame,
+        AnexoExame,
+        DownloadExame,
+        AprovacaoCadastro,
+        RecusaCadastro
     }
 }

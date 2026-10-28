@@ -11,13 +11,16 @@ namespace Vitus.Application.UseCases.Exames.RegistrarExame
     {
         private readonly IExameRepository _exameRepository;
         private readonly IProntuarioRepository _prontuarioRepository;
+        private readonly IAuditoriaService _auditoriaService;
 
         public RegistrarExameUseCase(
             IExameRepository exameRepository,
-            IProntuarioRepository prontuarioRepository)
+            IProntuarioRepository prontuarioRepository,
+            IAuditoriaService auditoriaService)
         {
             _exameRepository = exameRepository;
             _prontuarioRepository = prontuarioRepository;
+            _auditoriaService = auditoriaService;
         }
 
         public async Task<ExameResponseJson> Execute(CreateExameRequestJson request)
@@ -42,6 +45,8 @@ namespace Vitus.Application.UseCases.Exames.RegistrarExame
             );
 
             await _exameRepository.Add(exame);
+
+            await _auditoriaService.Registrar(AcaoAuditoria.RegistroExame, "Exame", exame.Id, $"Prontuário {exame.ProntuarioId}");
 
             return MapToResponse(exame);
         }

@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Vitus.Communication.Exame.Responses;
+using Vitus.Domain.Enums;
 using Vitus.Domain.Exceptions;
 using Vitus.Domain.Interfaces;
 using Vitus.Application.UseCases.Exames.RegistrarExame;
@@ -10,21 +11,24 @@ namespace Vitus.Application.UseCases.Exames.AnexarArquivo
     {
         private readonly IExameRepository _exameRepository;
         private readonly IArquivoService _arquivoService;
+        private readonly IAuditoriaService _auditoriaService;
 
         private static readonly Dictionary<string, byte[][]> AssinaturasValidas = new()
         {
-            [".pdf"] = new[] { new byte[] { 0x25, 0x50, 0x44, 0x46 } },                    
-            [".png"] = new[] { new byte[] { 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A } }, 
-            [".jpg"] = new[] { new byte[] { 0xFF, 0xD8, 0xFF } },                          
-            [".jpeg"] = new[] { new byte[] { 0xFF, 0xD8, 0xFF } },                          
+            [".pdf"] = new[] { new byte[] { 0x25, 0x50, 0x44, 0x46 } },
+            [".png"] = new[] { new byte[] { 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A } },
+            [".jpg"] = new[] { new byte[] { 0xFF, 0xD8, 0xFF } },
+            [".jpeg"] = new[] { new byte[] { 0xFF, 0xD8, 0xFF } },
         };
 
         public AnexarArquivoExameUseCase(
             IExameRepository exameRepository,
-            IArquivoService arquivoService)
+            IArquivoService arquivoService,
+            IAuditoriaService auditoriaService)
         {
             _exameRepository = exameRepository;
             _arquivoService = arquivoService;
+            _auditoriaService = auditoriaService;
         }
 
         public async Task<ExameResponseJson> Execute(Guid exameId, IFormFile arquivo)
@@ -49,6 +53,8 @@ namespace Vitus.Application.UseCases.Exames.AnexarArquivo
 
             exame.AnexarArquivo(caminho, arquivo.FileName);
             await _exameRepository.Update(exame);
+
+            await _auditoriaService.Registrar(AcaoAuditoria.AnexoExame, "Exame", exame.Id, $"Prontuário {exame.ProntuarioId}");
 
             return RegistrarExameUseCase.MapToResponse(exame);
         }

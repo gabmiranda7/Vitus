@@ -6,6 +6,7 @@ using Vitus.Domain.Entities;
 using Vitus.Domain.Exceptions;
 using Vitus.Domain.Interfaces;
 using Vitus.Tests.Helpers;
+using Vitus.Domain.Enums;
 
 namespace Vitus.Tests.UseCases.Triagens
 {
@@ -14,6 +15,7 @@ namespace Vitus.Tests.UseCases.Triagens
         private readonly Mock<IConsultaRepository> _consultaRepoMock;
         private readonly Mock<ITriagemRepository> _triagemRepoMock;
         private readonly Mock<IPacienteRepository> _pacienteRepoMock;
+        private readonly Mock<IAuditoriaService> _auditoriaMock;
         private readonly RegistrarTriagemUseCase _useCase;
 
         public RegistrarTriagemUseCaseTests()
@@ -21,10 +23,12 @@ namespace Vitus.Tests.UseCases.Triagens
             _consultaRepoMock = new Mock<IConsultaRepository>();
             _triagemRepoMock = new Mock<ITriagemRepository>();
             _pacienteRepoMock = new Mock<IPacienteRepository>();
+            _auditoriaMock = new Mock<IAuditoriaService>();
             _useCase = new RegistrarTriagemUseCase(
                 _consultaRepoMock.Object,
                 _triagemRepoMock.Object,
-                _pacienteRepoMock.Object
+                _pacienteRepoMock.Object,
+                _auditoriaMock.Object
             );
         }
 
@@ -45,6 +49,7 @@ namespace Vitus.Tests.UseCases.Triagens
             _consultaRepoMock.Setup(r => r.GetById(consulta.Id)).ReturnsAsync(consulta);
             _pacienteRepoMock.Setup(r => r.GetById(paciente.Id)).ReturnsAsync(paciente);
             _triagemRepoMock.Setup(r => r.Add(It.IsAny<Triagem>())).Returns(Task.CompletedTask);
+            _auditoriaMock.Setup(a => a.Registrar(AcaoAuditoria.RegistroTriagem, "Triagem", It.IsAny<Guid>(), It.IsAny<string?>())).Returns(Task.CompletedTask);
 
             var resultado = await _useCase.Execute(RequestValido(consulta.Id), "Enf. Maria");
 
@@ -54,6 +59,8 @@ namespace Vitus.Tests.UseCases.Triagens
             resultado.Observacoes.Should().Be("Paciente relata dor de cabeça");
             resultado.NomeEnfermeiro.Should().Be("Enf. Maria");
             _triagemRepoMock.Verify(r => r.Add(It.IsAny<Triagem>()), Times.Once);
+
+            _auditoriaMock.Verify(a => a.Registrar(AcaoAuditoria.RegistroTriagem, "Triagem", It.IsAny<Guid>(), It.IsAny<string?>()), Times.Once);
         }
 
         [Fact]
