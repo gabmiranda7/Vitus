@@ -5,46 +5,11 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import api from '../../services/api';
 import { AuditoriaLog } from '../../types';
 import { cores } from '../../theme';
+import { acaoIcones, acaoCores, acaoLabel } from '../../utils/auditoria';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
-
-const acaoIcones: Record<string, string> = {
-  CriacaoPaciente: 'account-plus',
-  EdicaoPaciente: 'account-edit',
-  ExclusaoPaciente: 'account-remove',
-  CriacaoConsulta: 'calendar-plus',
-  CancelamentoConsulta: 'calendar-remove',
-  EmissaoReceita: 'pill',
-  AcessoProntuario: 'folder-open',
-  RegistroTriagem: 'stethoscope',
-  RegistroExame: 'flask',
-};
-
-const acaoCores: Record<string, string> = {
-  CriacaoPaciente: cores.sucesso,
-  EdicaoPaciente: cores.primaria,
-  ExclusaoPaciente: cores.erro,
-  CriacaoConsulta: cores.primaria,
-  CancelamentoConsulta: cores.erro,
-  EmissaoReceita: cores.sucesso,
-  AcessoProntuario: cores.secundaria,
-  RegistroTriagem: cores.aviso,
-  RegistroExame: cores.secundaria,
-};
-
-const acaoLabel: Record<string, string> = {
-  CriacaoPaciente: 'Paciente Criado',
-  EdicaoPaciente: 'Paciente Editado',
-  ExclusaoPaciente: 'Paciente Excluído',
-  CriacaoConsulta: 'Consulta Criada',
-  CancelamentoConsulta: 'Consulta Cancelada',
-  EmissaoReceita: 'Receita Emitida',
-  AcessoProntuario: 'Prontuário Acessado',
-  RegistroTriagem: 'Triagem Registrada',
-  RegistroExame: 'Exame Registrado',
-};
 
 export default function AuditoriaScreen() {
   const [logs, setLogs] = useState<AuditoriaLog[]>([]);

@@ -6,30 +6,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import api from '../../services/api';
 import { Consulta, AuditoriaLog, statusCores, statusLabels } from '../../types';
 import { cores, iniciais } from '../../theme';
-
-const acaoIcones: Record<string, string> = {
-  CriacaoPaciente: 'account-plus',
-  EdicaoPaciente: 'account-edit',
-  ExclusaoPaciente: 'account-remove',
-  CriacaoConsulta: 'calendar-plus',
-  CancelamentoConsulta: 'calendar-remove',
-  EmissaoReceita: 'pill',
-  AcessoProntuario: 'folder-open',
-  RegistroTriagem: 'stethoscope',
-  RegistroExame: 'flask',
-};
-
-const acaoCores: Record<string, string> = {
-  CriacaoPaciente: cores.sucesso,
-  EdicaoPaciente: cores.primaria,
-  ExclusaoPaciente: cores.erro,
-  CriacaoConsulta: cores.primaria,
-  CancelamentoConsulta: cores.erro,
-  EmissaoReceita: cores.sucesso,
-  AcessoProntuario: cores.secundaria,
-  RegistroTriagem: cores.aviso,
-  RegistroExame: cores.secundaria,
-};
+import { acaoIcones, acaoCores } from '../../utils/auditoria';
 
 export default function DashboardScreen() {
   const { usuario } = useAuth();
