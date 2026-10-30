@@ -11,5 +11,8 @@
         public string Nome { get; set; }
         public string Dosagem { get; set; }
         public string Posologia { get; set; }
+        public string Quantidade { get; set; } = string.Empty;
+        public bool AcompanharVencimento { get; set; }
+        public int? ValidadeDias { get; set; }
     }
 }

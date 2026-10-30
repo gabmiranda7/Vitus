@@ -351,6 +351,10 @@ namespace Vitus.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("consulta_id");
 
+                    b.Property<DateTime>("DataEmissao")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("data_emissao");
+
                     b.Property<Guid>("ProntuarioId")
                         .HasColumnType("uuid")
                         .HasColumnName("prontuario_id");
@@ -535,6 +539,10 @@ namespace Vitus.Infrastructure.Migrations
                                 .HasColumnType("uuid")
                                 .HasColumnName("id");
 
+                            b1.Property<bool>("AcompanharVencimento")
+                                .HasColumnType("boolean")
+                                .HasColumnName("acompanhar_vencimento");
+
                             b1.Property<string>("Dosagem")
                                 .IsRequired()
                                 .HasMaxLength(50)
@@ -562,6 +570,10 @@ namespace Vitus.Infrastructure.Migrations
                             b1.Property<Guid>("ReceitaId")
                                 .HasColumnType("uuid")
                                 .HasColumnName("receita_id");
+
+                            b1.Property<int?>("ValidadeDias")
+                                .HasColumnType("integer")
+                                .HasColumnName("validade_dias");
 
                             b1.HasKey("Id")
                                 .HasName("pk_medicamentos");

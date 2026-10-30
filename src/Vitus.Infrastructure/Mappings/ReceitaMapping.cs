@@ -20,6 +20,8 @@ namespace Vitus.Infrastructure.Mappings
                    .WithMany(p => p.Receitas)
                    .HasForeignKey(r => r.ProntuarioId);
 
+            builder.Property(r => r.DataEmissao).IsRequired();
+
             builder.OwnsMany(r => r.Medicamentos, m =>
             {
                 m.ToTable("medicamentos");
@@ -30,6 +32,8 @@ namespace Vitus.Infrastructure.Mappings
                 m.Property(p => p.Dosagem).HasMaxLength(50);
                 m.Property(p => p.Posologia).HasMaxLength(300);
                 m.Property(p => p.Quantidade).HasMaxLength(50);
+                m.Property(p => p.AcompanharVencimento);
+                m.Property(p => p.ValidadeDias);
             });
         }
     }

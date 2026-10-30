@@ -49,7 +49,9 @@ namespace Vitus.Application.UseCases.Receitas.CriarReceita
             var receita = new Receita(consulta.Id, prontuario.Id);
 
             foreach (var medicamento in request.Medicamentos)
-                receita.AdicionarMedicamento(medicamento.Nome, medicamento.Dosagem, medicamento.Posologia);
+                receita.AdicionarMedicamento(
+                    medicamento.Nome, medicamento.Dosagem, medicamento.Posologia,
+                    medicamento.Quantidade, medicamento.AcompanharVencimento, medicamento.ValidadeDias);
 
             await _receitaRepository.Add(receita);
             await _auditoriaService.Registrar(AcaoAuditoria.EmissaoReceita, "Receita", receita.Id);
