@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Vitus.Application.UseCases.Prontuarios.GetAcompanhamentoReceitas;
 using Vitus.Application.UseCases.Prontuarios.GetProntuarioByConsultaId;
 using Vitus.Application.UseCases.Prontuarios.GetProntuarioById;
 using Vitus.Application.UseCases.Prontuarios.GetProntuarioByPacienteId;
@@ -11,6 +12,14 @@ namespace Vitus.API.Controllers
     [Authorize(Roles = "Medico,Enfermeiro")]
     public class ProntuarioController : ControllerBase
     {
+        [HttpGet("acompanhamento")]
+        public async Task<IActionResult> GetAcompanhamento(
+            [FromServices] GetAcompanhamentoReceitasUseCase useCase)
+        {
+            var result = await useCase.Execute();
+            return Ok(result);
+        }
+
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(
             [FromServices] GetProntuarioByIdUseCase useCase,

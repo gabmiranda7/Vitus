@@ -6,5 +6,6 @@ namespace Vitus.Domain.Interfaces
     {
         Task<Prontuario?> GetById(Guid id);
         Task<Prontuario?> GetByPacienteId(Guid pacienteId);
+        Task<List<Prontuario>> GetAllComReceitas();
     }
 }

@@ -35,5 +35,14 @@ namespace Vitus.Infrastructure.Repositories
                     .ThenInclude(r => r.Medicamentos)
                 .FirstOrDefaultAsync(p => p.PacienteId == pacienteId);
         }
+
+        public async Task<List<Prontuario>> GetAllComReceitas()
+        {
+            return await _context.Prontuarios
+                .AsNoTracking()
+                .Include(p => p.Receitas)
+                    .ThenInclude(r => r.Medicamentos)
+                .ToListAsync();
+        }
     }
 }

@@ -1,4 +1,5 @@
-﻿using Vitus.Application.UseCases.Receitas.Acompanhamento;
+﻿using Vitus.Application.UseCases.Prontuarios.GetAcompanhamentoReceitas;
+using Vitus.Application.UseCases.Receitas.Acompanhamento;
 using Vitus.Communication.Consulta.Responses;
 using Vitus.Communication.Prontuario.Responses;
 using Vitus.Communication.Receita.Responses;
@@ -94,15 +95,7 @@ namespace Vitus.Application.UseCases.Prontuarios.GetProntuarioByPacienteId
                         ValidadeDias = m.ValidadeDias
                     }).ToList()
                 }).ToList(),
-                Tratamentos = tratamentos.Select(t => new TratamentoAcompanhadoResponseJson
-                {
-                    Medicamento = t.Medicamento,
-                    ReceitaId = t.ReceitaId,
-                    DataEmissao = t.DataEmissao,
-                    ValidadeDias = t.ValidadeDias,
-                    DataVencimento = t.DataVencimento,
-                    DiasRestantes = t.DiasRestantes
-                }).ToList()
+                Tratamentos = tratamentos.Select(GetAcompanhamentoReceitasUseCase.MapToResponse).ToList()
             };
         }
     }
