@@ -126,5 +126,35 @@ namespace Vitus.Tests.UseCases.Receitas
         {
             new Medicamento("Amoxicilina", "500mg", "1 cp", "21", false, 30).ValidadeDias.Should().BeNull();
         }
+
+        [Fact]
+        public void Noite_em_Brasilia_conta_no_dia_local()
+        {
+            // 01:30 UTC de 20/11 = 22:30 de 19/11 em Brasília
+            var utc = new DateTime(2026, 11, 20, 1, 30, 0, DateTimeKind.Utc);
+
+            AcompanhamentoReceitas.DataLocal(utc).Should().Be(new DateOnly(2026, 11, 19));
+        }
+
+        [Fact]
+        public void Data_sem_kind_e_tratada_como_utc()
+        {
+            var semKind = new DateTime(2026, 11, 20, 1, 30, 0, DateTimeKind.Unspecified);
+
+            AcompanhamentoReceitas.DataLocal(semKind).Should().Be(new DateOnly(2026, 11, 19));
+        }
+
+        [Fact]
+        public void Vencimento_parte_do_dia_local_da_emissao()
+        {
+            var emissao = new DateTime(2026, 11, 20, 1, 30, 0, DateTimeKind.Utc);
+            var receita = new Receita(Guid.NewGuid(), Guid.NewGuid(), emissao);
+            receita.AdicionarMedicamento("Losartana", "50mg", "1 cp ao dia", "30 cps", true, 30);
+
+            var resultado = AcompanhamentoReceitas.Calcular(new[] { receita }, new DateOnly(2026, 11, 20));
+
+            resultado[0].DataVencimento.Should().Be(new DateOnly(2026, 12, 19));
+            resultado[0].DiasRestantes.Should().Be(29);
+        }
     }
 }

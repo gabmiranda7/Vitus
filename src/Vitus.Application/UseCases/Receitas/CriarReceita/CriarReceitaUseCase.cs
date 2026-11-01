@@ -60,11 +60,15 @@ namespace Vitus.Application.UseCases.Receitas.CriarReceita
             {
                 Id = receita.Id,
                 ConsultaId = receita.ConsultaId,
+                DataEmissao = receita.DataEmissao,
                 Medicamentos = receita.Medicamentos.Select(m => new MedicamentoResponseJson
                 {
                     Nome = m.Nome,
                     Dosagem = m.Dosagem,
-                    Posologia = m.Posologia
+                    Posologia = m.Posologia,
+                    Quantidade = m.Quantidade,
+                    AcompanharVencimento = m.AcompanharVencimento,
+                    ValidadeDias = m.ValidadeDias
                 }).ToList()
             };
         }

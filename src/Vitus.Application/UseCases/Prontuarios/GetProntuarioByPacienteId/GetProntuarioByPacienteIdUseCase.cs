@@ -1,7 +1,9 @@
-﻿using Vitus.Communication.Consulta.Responses;
+﻿using Vitus.Application.UseCases.Receitas.Acompanhamento;
+using Vitus.Communication.Consulta.Responses;
 using Vitus.Communication.Prontuario.Responses;
 using Vitus.Communication.Receita.Responses;
 using Vitus.Communication.Triagem.Responses;
+using Vitus.Domain.Entities;
 using Vitus.Domain.Enums;
 using Vitus.Domain.Exceptions;
 using Vitus.Domain.Interfaces;
@@ -39,6 +41,14 @@ namespace Vitus.Application.UseCases.Prontuarios.GetProntuarioByPacienteId
             var pacientes = await _pacienteRepository.GetAll();
             var medicos = await _medicoRepository.GetAll();
 
+            return MapToResponse(prontuario, pacientes, medicos);
+        }
+
+        public static ProntuarioResponseJson MapToResponse(
+            Prontuario prontuario, List<Paciente> pacientes, List<Medico> medicos)
+        {
+            var tratamentos = AcompanhamentoReceitas.Calcular(prontuario.Receitas, AcompanhamentoReceitas.Hoje());
+
             return new ProntuarioResponseJson
             {
                 Id = prontuario.Id,
@@ -73,12 +83,25 @@ namespace Vitus.Application.UseCases.Prontuarios.GetProntuarioByPacienteId
                 {
                     Id = r.Id,
                     ConsultaId = r.ConsultaId,
+                    DataEmissao = r.DataEmissao,
                     Medicamentos = r.Medicamentos.Select(m => new MedicamentoResponseJson
                     {
                         Nome = m.Nome,
                         Dosagem = m.Dosagem,
-                        Posologia = m.Posologia
+                        Posologia = m.Posologia,
+                        Quantidade = m.Quantidade,
+                        AcompanharVencimento = m.AcompanharVencimento,
+                        ValidadeDias = m.ValidadeDias
                     }).ToList()
+                }).ToList(),
+                Tratamentos = tratamentos.Select(t => new TratamentoAcompanhadoResponseJson
+                {
+                    Medicamento = t.Medicamento,
+                    ReceitaId = t.ReceitaId,
+                    DataEmissao = t.DataEmissao,
+                    ValidadeDias = t.ValidadeDias,
+                    DataVencimento = t.DataVencimento,
+                    DiasRestantes = t.DiasRestantes
                 }).ToList()
             };
         }

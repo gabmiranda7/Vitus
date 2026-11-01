@@ -8,6 +8,8 @@ namespace Vitus.Application.UseCases.Receitas.Acompanhamento
 {
     public static class AcompanhamentoReceitas
     {
+        private static readonly TimeZoneInfo FusoBrasil = ResolverFuso();
+
         public static IReadOnlyList<TratamentoAcompanhado> Calcular(IEnumerable<Receita> receitas, DateOnly hoje)
         {
             return receitas
@@ -18,7 +20,7 @@ namespace Vitus.Application.UseCases.Receitas.Acompanhamento
                 .Select(x =>
                 {
                     var dias = x.Medicamento.ValidadeDias!.Value;
-                    var vencimento = DateOnly.FromDateTime(x.Receita.DataEmissao).AddDays(dias);
+                    var vencimento = DataLocal(x.Receita.DataEmissao).AddDays(dias);
 
                     return new TratamentoAcompanhado(
                         x.Medicamento.Nome,
@@ -32,6 +34,13 @@ namespace Vitus.Application.UseCases.Receitas.Acompanhamento
                 .ToList();
         }
 
+        public static DateOnly Hoje() => DataLocal(DateTime.UtcNow);
+
+        public static string DataFormatada() =>
+            ConverterParaBrasil(DateTime.UtcNow).ToString("dd/MM/yyyy", CultureInfo.InvariantCulture);
+
+        public static DateOnly DataLocal(DateTime utc) => DateOnly.FromDateTime(ConverterParaBrasil(utc));
+
         public static string Normalizar(string nome)
         {
             var decomposto = nome.Trim().ToLowerInvariant().Normalize(NormalizationForm.FormD);
@@ -42,6 +51,27 @@ namespace Vitus.Application.UseCases.Receitas.Acompanhamento
                     semAcento.Append(c);
 
             return Regex.Replace(semAcento.ToString().Normalize(NormalizationForm.FormC), @"\s+", " ");
+        }
+
+        private static DateTime ConverterParaBrasil(DateTime utc)
+        {
+            var instante = utc.Kind == DateTimeKind.Local
+                ? utc.ToUniversalTime()
+                : DateTime.SpecifyKind(utc, DateTimeKind.Utc);
+
+            return TimeZoneInfo.ConvertTimeFromUtc(instante, FusoBrasil);
+        }
+
+        private static TimeZoneInfo ResolverFuso()
+        {
+            foreach (var id in new[] { "America/Sao_Paulo", "E. South America Standard Time" })
+            {
+                try { return TimeZoneInfo.FindSystemTimeZoneById(id); }
+                catch (TimeZoneNotFoundException) { }
+                catch (InvalidTimeZoneException) { }
+            }
+
+            return TimeZoneInfo.CreateCustomTimeZone("BRT", TimeSpan.FromHours(-3), "Brasília", "Brasília");
         }
     }
 }

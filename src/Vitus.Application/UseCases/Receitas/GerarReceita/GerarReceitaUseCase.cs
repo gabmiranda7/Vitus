@@ -1,4 +1,5 @@
-﻿using Vitus.Communication.Receita.Requests;
+﻿using Vitus.Application.UseCases.Receitas.Acompanhamento;
+using Vitus.Communication.Receita.Requests;
 using Vitus.Domain.Entities;
 using Vitus.Domain.Enums;
 using Vitus.Domain.Exceptions;
@@ -63,7 +64,9 @@ namespace Vitus.Application.UseCases.Receitas.GerarReceita
 
             var receita = new Receita(consulta.Id, prontuario.Id);
             foreach (var m in request.Medicamentos)
-                receita.AdicionarMedicamento(m.Nome, m.Dosagem, m.Posologia, m.Quantidade);
+                receita.AdicionarMedicamento(
+                    m.Nome, m.Dosagem, m.Posologia, m.Quantidade,
+                    m.AcompanharVencimento, m.ValidadeDias);
 
             await _receitaRepository.Add(receita);
             await _auditoriaService.Registrar(AcaoAuditoria.EmissaoReceita, "Receita", receita.Id);
@@ -77,7 +80,7 @@ namespace Vitus.Application.UseCases.Receitas.GerarReceita
                 })
                 .ToList();
 
-            var dataFormatada = DateTime.Now.ToString("dd/MM/yyyy");
+            var dataFormatada = AcompanhamentoReceitas.DataFormatada();
 
             byte[] arquivo;
             try
