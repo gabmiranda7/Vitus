@@ -3,16 +3,21 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Box, Card, CardContent, Typography, TextField, InputAdornment,
-  Avatar, Chip, CircularProgress, Alert
+  Avatar, Chip, CircularProgress, Alert, Button, Paper, Tooltip,
+  FormControl, InputLabel, MenuItem, Select, alpha
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import PeopleIcon from '@mui/icons-material/People';
 import FolderSharedIcon from '@mui/icons-material/FolderShared';
 import PersonIcon from '@mui/icons-material/Person';
 import MedicalInformationIcon from '@mui/icons-material/MedicalInformation';
+import AccessAlarmIcon from '@mui/icons-material/AccessAlarm';
+import FilterListIcon from '@mui/icons-material/FilterList';
+import FilterListOffIcon from '@mui/icons-material/FilterListOff';
 import Layout from '../../components/layout/Layout';
 import api from '../../services/api';
-import { Paciente } from '../../types';
+import { situacaoVencimento } from '../../components/receitas/vencimento';
+import { AcompanhamentoPaciente, Paciente, Tratamento } from '../../types';
 
 function iniciais(nome: string) {
   return nome.split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase();
@@ -36,16 +41,26 @@ function calcularIdade(dataNascimento?: string): string {
 export default function ProntuariosPacientesPage(): React.ReactElement {
   const navigate = useNavigate();
   const [pacientes, setPacientes] = useState<Paciente[]>([]);
+  const [acompanhamentos, setAcompanhamentos] = useState<AcompanhamentoPaciente[]>([]);
   const [busca, setBusca] = useState('');
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState('');
+
+  const [filtrosVisiveis, setFiltrosVisiveis] = useState(false);
+  const [situacao, setSituacao] = useState('todos');
+  const [prazo, setPrazo] = useState('30');
+  const [unidade, setUnidade] = useState('dias');
 
   useEffect(() => { carregar(); }, []);
 
   async function carregar() {
     try {
-      const r = await api.get('/api/Paciente');
-      setPacientes(r.data);
+      const [rPacientes, rAcompanhamento] = await Promise.all([
+        api.get('/api/Paciente'),
+        api.get('/api/prontuarios/acompanhamento').catch(() => ({ data: [] })),
+      ]);
+      setPacientes(rPacientes.data);
+      setAcompanhamentos(rAcompanhamento.data);
     } catch {
       setErro('Erro ao carregar pacientes');
     } finally {
@@ -53,10 +68,36 @@ export default function ProntuariosPacientesPage(): React.ReactElement {
     }
   }
 
-  const filtrados = pacientes.filter(p =>
-    p.nome.toLowerCase().includes(busca.toLowerCase()) ||
-    (p.cpf?.replace(/\D/g, '').includes(busca.replace(/\D/g, '')) && busca.length >= 3)
-  );
+  const tratamentosPorPaciente = new Map(acompanhamentos.map(a => [a.pacienteId, a.tratamentos]));
+
+  function passaSituacao(trats: Tratamento[]): boolean {
+    if (situacao === 'todos') return true;
+    if (situacao === 'acompanhados') return trats.length > 0;
+    if (situacao === 'vencidas') return trats.some(t => t.diasRestantes < 0);
+
+    const n = Number(prazo);
+    if (!n || n < 1) return trats.some(t => t.diasRestantes >= 0);
+    if (unidade === 'dias') return trats.some(t => t.diasRestantes >= 0 && t.diasRestantes <= n);
+
+    const limite = new Date();
+    limite.setMonth(limite.getMonth() + n);
+    return trats.some(t => t.diasRestantes >= 0 && new Date(t.dataVencimento + 'T00:00:00') <= limite);
+  }
+
+  const temFiltroAtivo = situacao !== 'todos';
+
+  const filtrados = pacientes
+    .filter(p => {
+      const buscaOk = p.nome.toLowerCase().includes(busca.toLowerCase()) ||
+        (p.cpf?.replace(/\D/g, '').includes(busca.replace(/\D/g, '')) && busca.length >= 3);
+      return buscaOk && passaSituacao(tratamentosPorPaciente.get(p.id) ?? []);
+    })
+    .sort((a, b) => {
+      if (!temFiltroAtivo) return 0;
+      const da = tratamentosPorPaciente.get(a.id)?.[0]?.diasRestantes ?? Infinity;
+      const db = tratamentosPorPaciente.get(b.id)?.[0]?.diasRestantes ?? Infinity;
+      return da - db;
+    });
 
   return (
     <Layout>
@@ -69,20 +110,72 @@ export default function ProntuariosPacientesPage(): React.ReactElement {
         Busque um paciente para acessar seu prontuário completo
       </Typography>
 
-      <TextField
-        fullWidth
-        placeholder="Buscar por nome ou CPF..."
-        value={busca}
-        onChange={(e) => setBusca(e.target.value)}
-        sx={{ mb: 3 }}
-        slotProps={{
-          input: {
-            startAdornment: (
-              <InputAdornment position="start"><SearchIcon color="action" /></InputAdornment>
-            )
-          }
-        }}
-      />
+      <Box sx={{ display: 'flex', gap: 1, mb: filtrosVisiveis ? 2 : 3 }}>
+        <TextField
+          fullWidth
+          placeholder="Buscar por nome ou CPF..."
+          value={busca}
+          onChange={(e) => setBusca(e.target.value)}
+          slotProps={{
+            input: {
+              startAdornment: (
+                <InputAdornment position="start"><SearchIcon color="action" /></InputAdornment>
+              )
+            }
+          }}
+        />
+        <Tooltip title={filtrosVisiveis ? 'Ocultar filtros' : 'Mostrar filtros'}>
+          <Button
+            variant={temFiltroAtivo ? 'contained' : 'outlined'}
+            color={temFiltroAtivo ? 'primary' : 'inherit'}
+            onClick={() => setFiltrosVisiveis(v => !v)}
+            startIcon={filtrosVisiveis ? <FilterListOffIcon /> : <FilterListIcon />}
+            sx={{ borderRadius: 2, whiteSpace: 'nowrap' }}
+          >
+            Filtros {temFiltroAtivo && '(1)'}
+          </Button>
+        </Tooltip>
+      </Box>
+
+      {filtrosVisiveis && (
+        <Paper variant="outlined" sx={{ p: 2, mb: 3, borderRadius: 2 }}>
+          <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
+            <FormControl sx={{ minWidth: 220 }} size="small">
+              <InputLabel>Receita</InputLabel>
+              <Select value={situacao} label="Receita" onChange={(e) => setSituacao(e.target.value)}>
+                <MenuItem value="todos">Todos os pacientes</MenuItem>
+                <MenuItem value="acompanhados">Com receita acompanhada</MenuItem>
+                <MenuItem value="vencidas">Receita vencida</MenuItem>
+                <MenuItem value="a_vencer">A vencer em até...</MenuItem>
+              </Select>
+            </FormControl>
+            {situacao === 'a_vencer' && (
+              <>
+                <TextField
+                  label="Prazo" type="number" size="small" value={prazo}
+                  onChange={(e) => setPrazo(e.target.value)}
+                  slotProps={{ htmlInput: { min: 1 } }} sx={{ width: 100 }}
+                />
+                <FormControl sx={{ minWidth: 120 }} size="small">
+                  <InputLabel>Unidade</InputLabel>
+                  <Select value={unidade} label="Unidade" onChange={(e) => setUnidade(e.target.value)}>
+                    <MenuItem value="dias">dias</MenuItem>
+                    <MenuItem value="meses">meses</MenuItem>
+                  </Select>
+                </FormControl>
+              </>
+            )}
+            {temFiltroAtivo && (
+              <Button size="small" variant="outlined" color="error" onClick={() => setSituacao('todos')}>
+                Limpar filtros
+              </Button>
+            )}
+            <Typography variant="caption" color="text.secondary" sx={{ ml: 'auto' }}>
+              {filtrados.length} de {pacientes.length} paciente(s)
+            </Typography>
+          </Box>
+        </Paper>
+      )}
 
       {erro && <Alert severity="error" sx={{ mb: 2 }}>{erro}</Alert>}
 
@@ -94,7 +187,7 @@ export default function ProntuariosPacientesPage(): React.ReactElement {
         <Box sx={{ textAlign: 'center', py: 8, color: 'text.secondary' }}>
           <PeopleIcon sx={{ fontSize: 64, opacity: 0.15, mb: 2 }} />
           <Typography variant="h6" sx={{ opacity: 0.4 }}>
-            {busca ? 'Nenhum paciente encontrado' : 'Nenhum paciente cadastrado'}
+            {busca || temFiltroAtivo ? 'Nenhum paciente encontrado' : 'Nenhum paciente cadastrado'}
           </Typography>
         </Box>
       ) : (
@@ -141,6 +234,24 @@ export default function ProntuariosPacientesPage(): React.ReactElement {
                   </Box>
 
                   <Box sx={{ display: 'flex', gap: 1, flexShrink: 0, alignItems: 'center' }}>
+                    {(() => {
+                      const t = tratamentosPorPaciente.get(p.id)?.[0];
+                      if (!t) return null;
+                      const s = situacaoVencimento(t.diasRestantes);
+                      return (
+                        <Tooltip title={t.medicamento}>
+                          <Chip
+                            icon={<AccessAlarmIcon />}
+                            label={`Receita ${s.label}`}
+                            size="small"
+                            sx={{
+                              bgcolor: alpha(s.cor, 0.12), color: s.cor, fontWeight: 700, fontSize: 11,
+                              '& .MuiChip-icon': { color: s.cor },
+                            }}
+                          />
+                        </Tooltip>
+                      );
+                    })()}
                     {p.informacoesAdicionais && (
                       <Chip
                         icon={<MedicalInformationIcon />}
