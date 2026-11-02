@@ -23,9 +23,12 @@ import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import AttachFileIcon from '@mui/icons-material/AttachFile';
 import DownloadIcon from '@mui/icons-material/Download';
 import AddIcon from '@mui/icons-material/Add';
+import AccessAlarmIcon from '@mui/icons-material/AccessAlarm';
 import Layout from '../../components/layout/Layout';
 import api from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
+import TratamentosAcompanhados from '../../components/receitas/TratamentosAcompanhados';
+import { situacaoVencimento } from '../../components/receitas/vencimento';
 import { Prontuario, Receita, Triagem, Consulta, Paciente, Exame } from '../../types';
 
 const CATEGORIAS = ['Sangue', 'Imagem', 'Urina', 'Cardiologico', 'Fisico', 'Outro'];
@@ -320,8 +323,22 @@ export default function ProntuarioPacientePage(): React.ReactElement {
               </Box>
             </Box>
           )}
+          {(prontuario.tratamentos?.length ?? 0) > 0 && (() => {
+            const proximo = prontuario.tratamentos[0];
+            const s = situacaoVencimento(proximo.diasRestantes);
+            return (
+              <Box sx={{ mt: 2, p: 1.5, borderRadius: 2, bgcolor: 'white', display: 'flex', alignItems: 'center', gap: 1 }}>
+                <AccessAlarmIcon sx={{ color: s.cor, fontSize: 20 }} />
+                <Typography variant="body2" sx={{ color: s.cor, fontWeight: 700 }}>
+                  Receita {s.label} · {proximo.medicamento}
+                </Typography>
+              </Box>
+            );
+          })()}
         </CardContent>
       </Card>
+
+      <TratamentosAcompanhados tratamentos={prontuario.tratamentos ?? []} />
 
       {/* Seção de Exames */}
       <Card sx={{ borderRadius: 3, mb: 3 }}>
