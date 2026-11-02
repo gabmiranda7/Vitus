@@ -327,8 +327,7 @@ export default function ProntuarioPacientePage(): React.ReactElement {
             const proximo = prontuario.tratamentos[0];
             const s = situacaoVencimento(proximo.diasRestantes);
             return (
-              <Box sx={{ mt: 2, p: 1.5, borderRadius: 2, bgcolor: 'white', display: 'flex', alignItems: 'center', gap: 1 }}>
-                <AccessAlarmIcon sx={{ color: s.cor, fontSize: 20 }} />
+              <Box sx={{ mt: 2, p: 1.5, borderRadius: 2, bgcolor: paperBg, display: 'flex', alignItems: 'center', gap: 1 }}>                <AccessAlarmIcon sx={{ color: s.cor, fontSize: 20 }} />
                 <Typography variant="body2" sx={{ color: s.cor, fontWeight: 700 }}>
                   Receita {s.label} · {proximo.medicamento}
                 </Typography>
