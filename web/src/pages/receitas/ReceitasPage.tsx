@@ -15,6 +15,7 @@ import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 import PersonIcon from '@mui/icons-material/Person';
 import DownloadIcon from '@mui/icons-material/Download';
 import Layout from '../../components/layout/Layout';
+import AcompanhamentoVencimento from '../../components/receitas/AcompanhamentoVencimento';
 import api from '../../services/api';
 import { Consulta, Medicamento, Paciente, Prontuario } from '../../types';
 
@@ -40,7 +41,10 @@ const TIPOS_USO = [
   { value: 'Externo', label: 'Uso Externo' },
 ];
 
-const medVazio = (): Medicamento => ({ nome: '', dosagem: '', posologia: '', quantidade: '' });
+const medVazio = (): Medicamento => ({
+  nome: '', dosagem: '', posologia: '', quantidade: '',
+  acompanharVencimento: false, validadeDias: null,
+});
 
 export default function ReceitasPage() {
   const [pacientes, setPacientes] = useState<Paciente[]>([]);
@@ -101,14 +105,19 @@ export default function ReceitasPage() {
 
   function addMed() { setMedicamentos([...medicamentos, medVazio()]); }
   function removeMed(i: number) { setMedicamentos(medicamentos.filter((_, idx) => idx !== i)); }
-  function changeMed(i: number, campo: keyof Medicamento, valor: string) {
+  function changeMed(i: number, campo: 'nome' | 'dosagem' | 'posologia' | 'quantidade', valor: string) {
     const novos = [...medicamentos]; novos[i][campo] = valor; setMedicamentos(novos);
+  }
+  function patchMed(i: number, patch: Partial<Medicamento>) {
+    setMedicamentos(medicamentos.map((m, idx) => (idx === i ? { ...m, ...patch } : m)));
   }
 
   async function handleGerar() {
     setErro('');
     if (!consultaId) return setErro('Selecione uma consulta');
     if (medicamentos.some(m => !m.nome.trim())) return setErro('Preencha o nome de todos os medicamentos');
+    if (medicamentos.some(m => m.acompanharVencimento && !(m.validadeDias && m.validadeDias >= 1 && m.validadeDias <= 730)))
+    return setErro('Informe a validade (1 a 730 dias) dos medicamentos acompanhados');
 
     setGerando(true);
     try {
@@ -253,6 +262,7 @@ export default function ReceitasPage() {
                 onChange={(e) => changeMed(i, 'posologia', e.target.value)}
                 sx={{ flex: '2 1 160px' }} size="small" placeholder="ex: 1 cp. ao dia" />
             </Box>
+            <AcompanhamentoVencimento med={med} onChange={(patch) => patchMed(i, patch)} />
           </Paper>
         ))}
       </DialogContent>

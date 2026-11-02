@@ -1,3 +1,9 @@
+export interface AcompanhamentoPaciente {
+    pacienteId: string;
+    prontuarioId: string;
+    tratamentos: Tratamento[];
+}
+
 export interface AuditoriaLog {
     id: string;
     usuarioId: string;
@@ -39,6 +45,8 @@ export interface Medicamento {
   dosagem: string;
   posologia: string;
   quantidade: string;
+  acompanharVencimento: boolean;
+  validadeDias: number | null;
 }
 
 export interface Medico {
@@ -71,12 +79,23 @@ export interface Prontuario {
     triagens: Triagem[];
     consultas: Consulta[];
     receitas: Receita[];
+    tratamentos: Tratamento[];
 }
 
 export interface Receita {
     id: string;
     consultaId: string;
+    dataEmissao: string;
     medicamentos: Medicamento[];
+}
+
+export interface Tratamento {
+    medicamento: string;
+    receitaId: string;
+    dataEmissao: string;
+    validadeDias: number;
+    dataVencimento: string;
+    diasRestantes: number;
 }
 
 export interface Triagem {

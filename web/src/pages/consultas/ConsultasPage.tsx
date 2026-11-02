@@ -29,6 +29,7 @@ import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import FilterListOffIcon from '@mui/icons-material/FilterListOff';
 import Layout from '../../components/layout/Layout';
+import AcompanhamentoVencimento from '../../components/receitas/AcompanhamentoVencimento';
 import api from '../../services/api';
 import { Consulta, Medico, Paciente, Medicamento } from '../../types';
 import { useAuth } from '../../contexts/AuthContext';
@@ -66,7 +67,11 @@ const TIPOS_USO = [
   { value: 'Externo', label: 'Uso Externo' },
 ];
 
-const medVazio = (): Medicamento => ({ nome: '', dosagem: '', posologia: '', quantidade: '' });
+const medVazio = (): Medicamento => ({
+  nome: '', dosagem: '', posologia: '', quantidade: '',
+  acompanharVencimento: false, validadeDias: null,
+});
+
 const exameVazio = () => ({
   categoria: 'Sangue', nome: '', descricao: '',
   medicoSolicitante: '', dataExame: new Date().toISOString().split('T')[0], observacoes: '',
@@ -201,6 +206,8 @@ export default function ConsultasPage() {
     if (!consultaDrawer) return;
     setErro('');
     if (medicamentos.some(m => !m.nome.trim())) return setErro('Preencha o nome de todos os medicamentos');
+    if (medicamentos.some(m => m.acompanharVencimento && !(m.validadeDias && m.validadeDias >= 1 && m.validadeDias <= 730)))
+    return setErro('Informe a validade (1 a 730 dias) dos medicamentos acompanhados');
     setGerando(true);
     try {
       const r = await api.post('/api/receitas/gerar', {
@@ -792,6 +799,10 @@ export default function ConsultasPage() {
                   onChange={(e) => { const n = [...medicamentos]; n[i].posologia = e.target.value; setMedicamentos(n); }}
                   placeholder="ex: 1 cp. ao dia" />
               </Box>
+              <AcompanhamentoVencimento
+                med={med}
+                onChange={(patch) => setMedicamentos(medicamentos.map((m, idx) => (idx === i ? { ...m, ...patch } : m)))}
+              />
             </Paper>
           ))}
         </DialogContent>
