@@ -1,3 +1,9 @@
+export interface AcompanhamentoPaciente {
+  pacienteId: string;
+  prontuarioId: string;
+  tratamentos: Tratamento[];
+}
+
 export interface AuditoriaLog {
   id: string;
   acao: string;
@@ -19,6 +25,20 @@ export interface Consulta {
   anotacoes?: string;
 }
 
+export interface Exame {
+  id: string;
+  prontuarioId: string;
+  consultaId?: string;
+  categoria: string;
+  nome: string;
+  descricao?: string;
+  medicoSolicitante: string;
+  dataExame: string;
+  observacoes?: string;
+  nomeArquivoOriginal?: string;
+  temArquivo: boolean;
+}
+
 export interface Medico {
   id: string;
   nome: string;
@@ -31,6 +51,8 @@ export interface Medicamento {
   dosagem: string;
   posologia: string;
   quantidade: string;
+  acompanharVencimento: boolean;
+  validadeDias: number | null;
 }
 
 export interface Paciente {
@@ -48,6 +70,31 @@ export interface Paciente {
   informacoesAdicionais?: string;
 }
 
+export interface Prontuario {
+  id: string;
+  pacienteId: string;
+  triagens: Triagem[];
+  consultas: Consulta[];
+  receitas: Receita[];
+  tratamentos: Tratamento[];
+}
+
+export interface Receita {
+  id: string;
+  consultaId: string;
+  dataEmissao: string;
+  medicamentos: Medicamento[];
+}
+
+export interface Tratamento {
+  medicamento: string;
+  receitaId: string;
+  dataEmissao: string;
+  validadeDias: number;
+  dataVencimento: string;
+  diasRestantes: number;
+}
+
 export interface Triagem {
   id: string;
   consultaId: string;
@@ -57,33 +104,7 @@ export interface Triagem {
   nomeEnfermeiro: string;
 }
 
-export interface Receita {
-  id: string;
-  consultaId: string;
-  medicamentos: Medicamento[];
-}
 
-export interface Exame {
-  id: string;
-  prontuarioId: string;
-  consultaId?: string;
-  categoria: string;
-  nome: string;
-  descricao?: string;
-  medicoSolicitante: string;
-  dataExame: string;
-  observacoes?: string;
-  nomeArquivoOriginal?: string;
-  temArquivo: boolean;
-}
-
-export interface Prontuario {
-  id: string;
-  pacienteId: string;
-  triagens: Triagem[];
-  consultas: Consulta[];
-  receitas: Receita[];
-}
 
 export const statusCores: Record<string, string> = {
   Agendada: '#1976d2', EmTriagem: '#ed6c02', AguardandoAtendimento: '#0288d1',
