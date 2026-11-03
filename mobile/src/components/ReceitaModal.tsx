@@ -43,21 +43,19 @@ export default function ReceitaModal({ visible, consultaId, onClose, onSucesso }
   }
 
   function addMed() {
-    setMedicamentos([...medicamentos, medVazio()]);
+    setMedicamentos(prev => [...prev, medVazio()]);
   }
 
   function removeMed(i: number) {
-    setMedicamentos(medicamentos.filter((_, idx) => idx !== i));
+    setMedicamentos(prev => prev.filter((_, idx) => idx !== i));
   }
 
   function changeMed(i: number, campo: 'nome' | 'dosagem' | 'posologia' | 'quantidade', valor: string) {
-    const novos = [...medicamentos];
-    novos[i][campo] = valor;
-    setMedicamentos(novos);
+    setMedicamentos(prev => prev.map((m, idx) => (idx === i ? { ...m, [campo]: valor } : m)));
   }
 
   function patchMed(i: number, patch: Partial<Medicamento>) {
-    setMedicamentos(medicamentos.map((m, idx) => (idx === i ? { ...m, ...patch } : m)));
+    setMedicamentos(prev => prev.map((m, idx) => (idx === i ? { ...m, ...patch } : m)));
   }
 
   async function gerar() {
@@ -174,6 +172,8 @@ export default function ReceitaModal({ visible, consultaId, onClose, onSucesso }
                 mode="outlined"
                 style={styles.inputSmall}
                 dense
+                autoCorrect={false}
+                spellCheck={false}
               />
               <View style={styles.linha}>
                 <TextInput
@@ -184,6 +184,8 @@ export default function ReceitaModal({ visible, consultaId, onClose, onSucesso }
                   style={[styles.inputSmall, styles.flex1]}
                   dense
                   placeholder="ex: 50mg"
+                  autoCorrect={false}
+                spellCheck={false}
                 />
                 <TextInput
                   label="Quantidade"
@@ -193,6 +195,8 @@ export default function ReceitaModal({ visible, consultaId, onClose, onSucesso }
                   style={[styles.inputSmall, styles.flex1]}
                   dense
                   placeholder="ex: 60 cps."
+                  autoCorrect={false}
+                  spellCheck={false}
                 />
               </View>
               <TextInput
@@ -203,6 +207,8 @@ export default function ReceitaModal({ visible, consultaId, onClose, onSucesso }
                 style={styles.inputSmall}
                 dense
                 placeholder="ex: 1 cp. ao dia"
+                autoCorrect={false}
+                spellCheck={false}
               />
 
               <View style={styles.vencimentoLinha}>
