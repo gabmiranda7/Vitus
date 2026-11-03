@@ -9,6 +9,7 @@ import * as IntentLauncher from 'expo-intent-launcher';
 import api from '../../services/api';
 import { Prontuario, Paciente, Consulta, Triagem, Exame, statusCores, statusLabels } from '../../types';
 import { cores, iniciais } from '../../theme';
+import { situacaoVencimento, dataVencimentoBr, capitalizar } from '../../utils/vencimento';
 
 interface ConsultaAgrupada {
   consulta: Consulta;
@@ -200,8 +201,44 @@ export default function ProntuarioDetalheScreen() {
               <Text variant="bodyMedium" style={styles.alertaTexto}>{paciente.informacoesAdicionais}</Text>
             </View>
           )}
+          {(prontuario.tratamentos?.length ?? 0) > 0 && (() => {
+            const proximo = prontuario.tratamentos[0];
+            const s = situacaoVencimento(proximo.diasRestantes);
+            return (
+              <View style={[styles.alertaVencimento, { backgroundColor: s.cor + '15', borderColor: s.cor }]}>
+                <MaterialCommunityIcons name="alarm" size={18} color={s.cor} />
+                <Text variant="bodyMedium" style={[styles.alertaVencimentoTexto, { color: s.cor }]}>
+                  Receita {s.label} · {proximo.medicamento}
+                </Text>
+              </View>
+            );
+          })()}
         </Card.Content>
       </Card>
+
+      {(prontuario.tratamentos?.length ?? 0) > 0 && (
+        <View style={styles.listaSecao}>
+          <Text variant="titleMedium" style={styles.tituloTratamentos}>Tratamentos acompanhados</Text>
+          {prontuario.tratamentos.map((t) => {
+            const s = situacaoVencimento(t.diasRestantes);
+            return (
+              <Card key={`${t.receitaId}-${t.medicamento}`} style={[styles.cardItem, { borderLeftColor: s.cor, borderLeftWidth: 4 }]}>
+                <Card.Content>
+                  <View style={styles.tratamentoTopo}>
+                    <Text variant="titleSmall" style={styles.tratamentoNome}>{t.medicamento}</Text>
+                    <Chip compact style={{ backgroundColor: s.cor + '20' }} textStyle={{ color: s.cor, fontSize: 11 }}>
+                      {capitalizar(s.label)}
+                    </Chip>
+                  </View>
+                  <Text variant="bodySmall" style={styles.itemData}>
+                    Emitida em {new Date(t.dataEmissao).toLocaleDateString('pt-BR')} · validade de {t.validadeDias} dias · vence em {dataVencimentoBr(t.dataVencimento)}
+                  </Text>
+                </Card.Content>
+              </Card>
+            );
+          })}
+        </View>
+      )}
 
       {/* Seção Receitas */}
       <TouchableOpacity onPress={() => setReceitasAbertas(v => !v)}>
@@ -401,6 +438,20 @@ const styles = StyleSheet.create({
   alertaTitulo: { color: '#e65100', fontWeight: 'bold', marginBottom: 8, fontSize: 11, letterSpacing: 0.5 },
   alertaTexto: { backgroundColor: '#fff3e0', padding: 10, borderRadius: 8, color: '#e65100' },
 
+    alertaVencimento: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 12,
+    padding: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  alertaVencimentoTexto: { flex: 1, fontWeight: '700' },
+  tituloTratamentos: { fontWeight: 'bold', marginBottom: 4 },
+  tratamentoTopo: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 },
+  tratamentoNome: { fontWeight: '600', flex: 1, marginRight: 8 },
+  
   cardSecao: { borderRadius: 12, marginBottom: 8 },
   secaoHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   secaoHeaderEsquerda: { flexDirection: 'row', alignItems: 'center', gap: 8 },
