@@ -119,24 +119,26 @@ export default function DashboardPage() {
       </Box>
 
       {atalhos.length > 0 && (
-        <Box sx={{ display: 'flex', gap: 2, mb: 4, flexWrap: 'wrap' }}>
+        <Box sx={{ display: 'flex', gap: 1.5, mb: 3, flexWrap: 'wrap' }}>
           {atalhos.map((a) => (
             <Paper
               key={a.label}
               onClick={() => navigate(a.rota)}
               sx={{
-                flex: '1 1 180px',
-                p: 2.5, borderRadius: 3,
+                display: 'flex', alignItems: 'center', gap: 1.5,
+                px: 2, py: 1.25, borderRadius: 2,
                 cursor: 'pointer',
-                border: `1px solid ${alpha(a.cor, 0.2)}`,
-                bgcolor: alpha(a.cor, isDark ? 0.1 : 0.05),
+                border: `1px solid ${alpha(a.cor, 0.25)}`,
+                bgcolor: alpha(a.cor, isDark ? 0.1 : 0.06),
                 transition: '0.2s',
-                '&:hover': { transform: 'translateY(-2px)', boxShadow: 3, bgcolor: alpha(a.cor, isDark ? 0.18 : 0.1) },
+                '&:hover': { boxShadow: 2, bgcolor: alpha(a.cor, isDark ? 0.18 : 0.12) },
               }}
             >
-              <Box sx={{ color: a.cor, mb: 1 }}>{a.icon}</Box>
-              <Typography variant="body1" sx={{ fontWeight: 700 }}>{a.label}</Typography>
-              <Typography variant="caption" color="text.secondary">{a.sublabel}</Typography>
+              <Box sx={{ color: a.cor, display: 'flex' }}>{a.icon}</Box>
+              <Box>
+                <Typography variant="body2" sx={{ fontWeight: 700, lineHeight: 1.2 }}>{a.label}</Typography>
+                <Typography variant="caption" color="text.secondary">{a.sublabel}</Typography>
+              </Box>
             </Paper>
           ))}
         </Box>

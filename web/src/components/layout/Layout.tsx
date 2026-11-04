@@ -71,7 +71,7 @@ export default function Layout({ children }: { children: ReactNode }) {
       {/* AppBar */}
       <AppBar position="fixed" elevation={0} sx={{
         zIndex: (t) => t.zIndex.drawer + 1,
-        bgcolor: isDark ? 'grey.900' : 'white',
+        bgcolor: isDark ? 'grey.900' : 'background.paper',
         borderBottom: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)'}`,
       }}>
         <Toolbar sx={{ justifyContent: 'space-between' }}>
@@ -208,7 +208,7 @@ export default function Layout({ children }: { children: ReactNode }) {
       {/* Conteúdo */}
       <Box component="main" sx={{
         flexGrow: 1, p: 3,
-        bgcolor: isDark ? 'grey.950' : '#f0f4ff',
+        bgcolor: isDark ? 'grey.950' : 'background.default',
         minHeight: '100vh',
       }}>
         <Toolbar />

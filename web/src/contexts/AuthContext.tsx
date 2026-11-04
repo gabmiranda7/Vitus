@@ -32,6 +32,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     palette: {
       mode: darkMode ? 'dark' : 'light',
       primary: { main: '#1976d2' },
+      ...(darkMode ? {} : { background: { default: '#e9edf3', paper: '#f7f9fc' } }),
     },
   }), [darkMode]);
 
