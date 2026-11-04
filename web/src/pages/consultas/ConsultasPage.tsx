@@ -45,10 +45,6 @@ const statusLabels: Record<string, string> = {
   Finalizada: 'Finalizada', Cancelada: 'Cancelada',
 };
 
-const ordemStatus: Record<string, number> = {
-  EmAtendimento: 0, AguardandoAtendimento: 1, EmTriagem: 2, Agendada: 3,
-};
-
 const statusAtivos = ['Agendada', 'EmTriagem', 'AguardandoAtendimento', 'EmAtendimento'];
 const statusHistorico = ['Finalizada', 'Cancelada'];
 
@@ -88,6 +84,17 @@ function dataHojeLocal() {
   const agora = new Date();
   const pad = (n: number) => String(n).padStart(2, '0');
   return `${agora.getFullYear()}-${pad(agora.getMonth() + 1)}-${pad(agora.getDate())}T${pad(agora.getHours())}:${pad(agora.getMinutes())}`;
+}
+
+function rotuloDia(data: string) {
+  const d = new Date(data);
+  const hoje = new Date();
+  const amanha = new Date(); amanha.setDate(hoje.getDate() + 1);
+  const ontem = new Date(); ontem.setDate(hoje.getDate() - 1);
+  if (d.toDateString() === hoje.toDateString()) return 'Hoje';
+  if (d.toDateString() === amanha.toDateString()) return 'Amanhã';
+  if (d.toDateString() === ontem.toDateString()) return 'Ontem';
+  return d.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
 }
 
 export default function ConsultasPage() {
@@ -269,7 +276,7 @@ export default function ConsultasPage() {
 
   const consultasAtivas = useMemo(() =>
     consultas.filter(c => statusAtivos.includes(c.status))
-      .sort((a, b) => (ordemStatus[a.status] ?? 99) - (ordemStatus[b.status] ?? 99)),
+      .sort((a, b) => new Date(a.dataConsulta).getTime() - new Date(b.dataConsulta).getTime()),
     [consultas]);
 
   const consultasHistorico = useMemo(() =>
@@ -317,71 +324,66 @@ export default function ConsultasPage() {
       </Box>
     );
 
+    const grupos: { chave: string; rotulo: string; itens: Consulta[] }[] = [];
+    for (const c of lista) {
+      const chave = new Date(c.dataConsulta).toDateString();
+      let g = grupos.find(x => x.chave === chave);
+      if (!g) {
+        g = { chave, rotulo: rotuloDia(c.dataConsulta), itens: [] };
+        grupos.push(g);
+      }
+      g.itens.push(c);
+    }
+
     return (
-      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
-        {lista.map((c) => {
-          const cor = statusCores[c.status] ?? '#1976d2';
-          return (
-            <Paper key={c.id} onClick={() => abrirDrawer(c)} sx={{
-              flex: '1 1 280px',
-              maxWidth: { xs: '100%', sm: 'calc(50% - 8px)', md: 'calc(33.33% - 11px)' },
-              borderRadius: 3, overflow: 'hidden', cursor: 'pointer',
-              border: `1px solid ${alpha(cor, 0.25)}`,
-              borderTop: `4px solid ${cor}`,
-              transition: '0.2s',
-              '&:hover': { transform: 'translateY(-3px)', boxShadow: 4 },
-            }}>
-              <Box sx={{ p: 2.5 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-                  <Chip label={statusLabels[c.status]} size="small"
-                    sx={{ bgcolor: alpha(cor, 0.12), color: cor, fontWeight: 700, fontSize: 11 }} />
-                  <ChevronRightIcon sx={{ color: 'text.disabled', fontSize: 18 }} />
-                </Box>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1.5 }}>
-                  <Avatar sx={{ width: 42, height: 42, fontSize: 14, fontWeight: 700, bgcolor: corAvatar(c.nomePaciente), flexShrink: 0 }}>
-                    {iniciais(c.nomePaciente)}
-                  </Avatar>
-                  <Box sx={{ minWidth: 0 }}>
-                    <Typography variant="body2" sx={{ fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {c.nomePaciente}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">Paciente</Typography>
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+        {grupos.map((g) => (
+          <Box key={g.chave}>
+            <Typography
+              variant="overline" color="text.secondary"
+              sx={{ letterSpacing: 1, fontWeight: 700, textTransform: 'capitalize', display: 'block', mb: 1 }}
+            >
+              {g.rotulo} · {g.itens.length}
+            </Typography>
+            <Paper variant="outlined" sx={{ borderRadius: 2, overflow: 'hidden' }}>
+              {g.itens.map((c, i) => {
+                const cor = statusCores[c.status] ?? '#1976d2';
+                return (
+                  <Box key={c.id}>
+                    <Box
+                      onClick={() => abrirDrawer(c)}
+                      sx={{
+                        display: 'flex', alignItems: 'center', gap: 2, px: 2, py: 1.5,
+                        cursor: 'pointer', borderLeft: `4px solid ${cor}`,
+                        opacity: c.status === 'Cancelada' ? 0.55 : 1,
+                        transition: '0.15s', '&:hover': { bgcolor: 'action.hover' },
+                      }}
+                    >
+                      <Typography variant="body2" sx={{ fontWeight: 700, width: 48, flexShrink: 0, color: cor }}>
+                        {new Date(c.dataConsulta).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                      </Typography>
+                      <Avatar sx={{ width: 38, height: 38, fontSize: 13, fontWeight: 700, bgcolor: corAvatar(c.nomePaciente), flexShrink: 0 }}>
+                        {iniciais(c.nomePaciente)}
+                      </Avatar>
+                      <Box sx={{ flex: 1, minWidth: 0 }}>
+                        <Typography variant="body2" noWrap sx={{ fontWeight: 600 }}>{c.nomePaciente}</Typography>
+                        <Typography variant="caption" color="text.secondary" noWrap sx={{ display: 'block' }}>
+                          {c.nomeMedico}
+                        </Typography>
+                      </Box>
+                      <Chip
+                        label={statusLabels[c.status]} size="small"
+                        sx={{ bgcolor: alpha(cor, 0.12), color: cor, fontWeight: 700, fontSize: 11, flexShrink: 0 }}
+                      />
+                      <ChevronRightIcon sx={{ color: 'text.disabled', fontSize: 18, flexShrink: 0 }} />
+                    </Box>
+                    {i < g.itens.length - 1 && <Divider />}
                   </Box>
-                </Box>
-                <Divider sx={{ mb: 1.5 }} />
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
-                  <Avatar sx={{ width: 28, height: 28, fontSize: 11, bgcolor: '#1565c0', flexShrink: 0 }}>
-                    {iniciais(c.nomeMedico)}
-                  </Avatar>
-                  <Typography variant="body2" color="text.secondary" sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {c.nomeMedico}
-                  </Typography>
-                </Box>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                    <CalendarMonthIcon sx={{ fontSize: 13, color: 'text.disabled' }} />
-                    <Typography variant="caption" color="text.secondary">
-                      {new Date(c.dataConsulta).toLocaleDateString('pt-BR')}
-                    </Typography>
-                  </Box>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                    <AccessTimeIcon sx={{ fontSize: 13, color: 'text.disabled' }} />
-                    <Typography variant="caption" color="text.secondary">
-                      {new Date(c.dataConsulta).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-                    </Typography>
-                  </Box>
-                </Box>
-                {c.anotacoes && (
-                  <Box sx={{ mt: 1.5, p: 1, borderRadius: 1, bgcolor: isDark ? 'grey.800' : 'grey.50', borderLeft: `3px solid ${alpha('#0288d1', 0.4)}` }}>
-                    <Typography variant="caption" color="text.secondary" sx={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                      {c.anotacoes}
-                    </Typography>
-                  </Box>
-                )}
-              </Box>
+                );
+              })}
             </Paper>
-          );
-        })}
+          </Box>
+        ))}
       </Box>
     );
   }
