@@ -3,7 +3,7 @@ import {
   Box, Button, Chip, Dialog, DialogActions, DialogContent,
   Divider, FormControl, IconButton, InputLabel, MenuItem, Select,
   TextField, Typography, Alert, Card, CardContent,
-  Avatar, InputAdornment, Paper, CircularProgress
+  Avatar, InputAdornment, Paper, CircularProgress, Tooltip, alpha
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -14,10 +14,14 @@ import NavigateBeforeIcon from '@mui/icons-material/NavigateBefore';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 import PersonIcon from '@mui/icons-material/Person';
 import DownloadIcon from '@mui/icons-material/Download';
+import AccessAlarmIcon from '@mui/icons-material/AccessAlarm';
+import FilterListIcon from '@mui/icons-material/FilterList';
+import FilterListOffIcon from '@mui/icons-material/FilterListOff';
 import Layout from '../../components/layout/Layout';
 import AcompanhamentoVencimento from '../../components/receitas/AcompanhamentoVencimento';
+import { situacaoVencimento } from '../../components/receitas/vencimento';
 import api from '../../services/api';
-import { Consulta, Medicamento, Paciente, Prontuario } from '../../types';
+import { AcompanhamentoPaciente, Consulta, Medicamento, Paciente, Prontuario, Tratamento } from '../../types';
 
 const POR_PAGINA = 12;
 
@@ -62,6 +66,11 @@ export default function ReceitasPage() {
   const [medicamentos, setMedicamentos] = useState<Medicamento[]>([medVazio()]);
   const [erro, setErro] = useState('');
   const [gerando, setGerando] = useState(false);
+  const [acompanhamentos, setAcompanhamentos] = useState<AcompanhamentoPaciente[]>([]);
+  const [filtrosVisiveis, setFiltrosVisiveis] = useState(false);
+  const [situacao, setSituacao] = useState('todos');
+  const [prazo, setPrazo] = useState('30');
+  const [unidade, setUnidade] = useState('dias');
 
   useEffect(() => { carregar(); }, []);
 
@@ -74,12 +83,14 @@ export default function ReceitasPage() {
   }, [consultasAtivas]);
 
   async function carregar() {
-    const [rPacientes, rConsultas] = await Promise.all([
+    const [rPacientes, rConsultas, rAcompanhamento] = await Promise.all([
       api.get('/api/Paciente'),
       api.get('/api/consultas'),
+      api.get('/api/prontuarios/acompanhamento').catch(() => ({ data: [] })),
     ]);
     setPacientes(rPacientes.data);
     setConsultasAtivas(rConsultas.data.filter((c: Consulta) => c.status === 'EmAtendimento'));
+    setAcompanhamentos(rAcompanhamento.data);
   }
 
   async function abrirPaciente(p: Paciente) {
@@ -167,14 +178,44 @@ export default function ReceitasPage() {
     setErro('');
   }
 
+  const temFiltroAtivo = situacao !== 'todos';
+
+  const tratamentosPorPaciente = useMemo(
+    () => new Map(acompanhamentos.map(a => [a.pacienteId, a.tratamentos])),
+    [acompanhamentos]
+  );
+
   const filtrados = useMemo(() => {
     setPagina(1);
     const q = busca.toLowerCase();
-    return pacientes.filter(p =>
-      p.nome.toLowerCase().includes(q) ||
-      (p.cpf?.replace(/\D/g, '').includes(busca.replace(/\D/g, '')) && busca.length >= 3)
-    );
-  }, [pacientes, busca]);
+
+    function passaSituacao(trats: Tratamento[]): boolean {
+      if (situacao === 'todos') return true;
+      if (situacao === 'acompanhados') return trats.length > 0;
+      if (situacao === 'vencidas') return trats.some(t => t.diasRestantes < 0);
+
+      const n = Number(prazo);
+      if (!n || n < 1) return trats.some(t => t.diasRestantes >= 0);
+      if (unidade === 'dias') return trats.some(t => t.diasRestantes >= 0 && t.diasRestantes <= n);
+
+      const limite = new Date();
+      limite.setMonth(limite.getMonth() + n);
+      return trats.some(t => t.diasRestantes >= 0 && new Date(t.dataVencimento + 'T00:00:00') <= limite);
+    }
+
+    return pacientes
+      .filter(p => {
+        const buscaOk = p.nome.toLowerCase().includes(q) ||
+          (p.cpf?.replace(/\D/g, '').includes(busca.replace(/\D/g, '')) && busca.length >= 3);
+        return buscaOk && passaSituacao(tratamentosPorPaciente.get(p.id) ?? []);
+      })
+      .sort((a, b) => {
+        if (!temFiltroAtivo) return 0;
+        const da = tratamentosPorPaciente.get(a.id)?.[0]?.diasRestantes ?? Infinity;
+        const db = tratamentosPorPaciente.get(b.id)?.[0]?.diasRestantes ?? Infinity;
+        return da - db;
+      });
+  }, [pacientes, busca, tratamentosPorPaciente, situacao, prazo, unidade]);
 
   const totalPaginas = Math.max(1, Math.ceil(filtrados.length / POR_PAGINA));
   const paginaAtual = filtrados.slice((pagina - 1) * POR_PAGINA, pagina * POR_PAGINA);
@@ -378,16 +419,69 @@ export default function ReceitasPage() {
         )}
       </Box>
 
-      <TextField fullWidth placeholder="Buscar paciente por nome ou CPF..."
-        value={busca} onChange={(e) => setBusca(e.target.value)} sx={{ mb: 3 }}
-        slotProps={{ input: { startAdornment: <InputAdornment position="start"><SearchIcon color="action" /></InputAdornment> } }}
-      />
+      <Box sx={{ display: 'flex', gap: 1, mb: filtrosVisiveis ? 2 : 3 }}>
+        <TextField fullWidth placeholder="Buscar paciente por nome ou CPF..."
+          value={busca} onChange={(e) => setBusca(e.target.value)}
+          slotProps={{ input: { startAdornment: <InputAdornment position="start"><SearchIcon color="action" /></InputAdornment> } }}
+        />
+        <Tooltip title={filtrosVisiveis ? 'Ocultar filtros' : 'Mostrar filtros'}>
+          <Button
+            variant={temFiltroAtivo ? 'contained' : 'outlined'}
+            color={temFiltroAtivo ? 'primary' : 'inherit'}
+            onClick={() => setFiltrosVisiveis(v => !v)}
+            startIcon={filtrosVisiveis ? <FilterListOffIcon /> : <FilterListIcon />}
+            sx={{ borderRadius: 2, whiteSpace: 'nowrap' }}
+          >
+            Filtros {temFiltroAtivo && '(1)'}
+          </Button>
+        </Tooltip>
+      </Box>
+
+      {filtrosVisiveis && (
+        <Paper variant="outlined" sx={{ p: 2, mb: 3, borderRadius: 2 }}>
+          <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
+            <FormControl sx={{ minWidth: 220 }} size="small">
+              <InputLabel>Receita</InputLabel>
+              <Select value={situacao} label="Receita" onChange={(e) => setSituacao(e.target.value)}>
+                <MenuItem value="todos">Todos os pacientes</MenuItem>
+                <MenuItem value="acompanhados">Com receita acompanhada</MenuItem>
+                <MenuItem value="vencidas">Receita vencida</MenuItem>
+                <MenuItem value="a_vencer">A vencer em até...</MenuItem>
+              </Select>
+            </FormControl>
+            {situacao === 'a_vencer' && (
+              <>
+                <TextField
+                  label="Prazo" type="number" size="small" value={prazo}
+                  onChange={(e) => setPrazo(e.target.value)}
+                  slotProps={{ htmlInput: { min: 1 } }} sx={{ width: 100 }}
+                />
+                <FormControl sx={{ minWidth: 120 }} size="small">
+                  <InputLabel>Unidade</InputLabel>
+                  <Select value={unidade} label="Unidade" onChange={(e) => setUnidade(e.target.value)}>
+                    <MenuItem value="dias">dias</MenuItem>
+                    <MenuItem value="meses">meses</MenuItem>
+                  </Select>
+                </FormControl>
+              </>
+            )}
+            {temFiltroAtivo && (
+              <Button size="small" variant="outlined" color="error" onClick={() => setSituacao('todos')}>
+                Limpar filtros
+              </Button>
+            )}
+            <Typography variant="caption" color="text.secondary" sx={{ ml: 'auto' }}>
+              {filtrados.length} de {pacientes.length} paciente(s)
+            </Typography>
+          </Box>
+        </Paper>
+      )}
 
       {filtrados.length === 0 ? (
         <Box sx={{ textAlign: 'center', py: 8, color: 'text.secondary' }}>
           <PersonIcon sx={{ fontSize: 64, opacity: 0.2, mb: 2 }} />
           <Typography variant="h6" sx={{ opacity: 0.5 }}>
-            {busca ? 'Nenhum paciente encontrado' : 'Nenhum paciente cadastrado'}
+            {busca || temFiltroAtivo ? 'Nenhum paciente encontrado' : 'Nenhum paciente cadastrado'}
           </Typography>
         </Box>
       ) : (
@@ -414,7 +508,27 @@ export default function ReceitasPage() {
                         {p.cpf && <Typography variant="caption" color="text.secondary">CPF: {p.cpf}</Typography>}
                       </Box>
                     </Box>
-                    <Chip icon={<MedicationIcon />} label="Ver receitas" size="small" color="primary" variant="outlined" sx={{ fontSize: 11 }} />
+                    <Box sx={{ display: 'flex', gap: 1, flexShrink: 0, alignItems: 'center' }}>
+                      {(() => {
+                        const t = tratamentosPorPaciente.get(p.id)?.[0];
+                        if (!t) return null;
+                        const s = situacaoVencimento(t.diasRestantes);
+                        return (
+                          <Tooltip title={t.medicamento}>
+                            <Chip
+                              icon={<AccessAlarmIcon />}
+                              label={`Receita ${s.label}`}
+                              size="small"
+                              sx={{
+                                bgcolor: alpha(s.cor, 0.12), color: s.cor, fontWeight: 700, fontSize: 11,
+                                '& .MuiChip-icon': { color: s.cor },
+                              }}
+                            />
+                          </Tooltip>
+                        );
+                      })()}
+                      <Chip icon={<MedicationIcon />} label="Ver receitas" size="small" color="primary" variant="outlined" sx={{ fontSize: 11 }} />
+                    </Box>
                   </Box>
                 </CardContent>
               </Card>
