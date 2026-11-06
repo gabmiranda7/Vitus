@@ -16,6 +16,7 @@ namespace Vitus.Tests.UseCases.Receitas
         private readonly Mock<IProntuarioRepository> _prontuarioRepoMock;
         private readonly Mock<IReceitaRepository> _receitaRepoMock;
         private readonly Mock<IAuditoriaService> _auditoriaServiceMock;
+        private readonly Mock<IConsultaAcessoService> _acessoServiceMock;
         private readonly CriarReceitaUseCase _useCase;
 
         public CriarReceitaUseCaseTests()
@@ -25,12 +26,14 @@ namespace Vitus.Tests.UseCases.Receitas
             _prontuarioRepoMock = new Mock<IProntuarioRepository>();
             _receitaRepoMock = new Mock<IReceitaRepository>();
             _auditoriaServiceMock = new Mock<IAuditoriaService>();
+            _acessoServiceMock = new Mock<IConsultaAcessoService>();
             _useCase = new CriarReceitaUseCase(
                 _consultaRepoMock.Object,
                 _pacienteRepoMock.Object,
                 _prontuarioRepoMock.Object,
                 _receitaRepoMock.Object,
-                _auditoriaServiceMock.Object
+                _auditoriaServiceMock.Object,
+                _acessoServiceMock.Object
             );
         }
 
@@ -129,6 +132,20 @@ namespace Vitus.Tests.UseCases.Receitas
 
             await act.Should().ThrowAsync<DomainException>()
                 .WithMessage("Paciente não encontrado");
+        }
+
+        [Fact]
+        public async Task Execute_Fail_MedicoNaoResponsavel()
+        {
+            var consulta = EntidadeFactory.CriarConsultaEmAtendimento();
+            _consultaRepoMock.Setup(r => r.GetById(consulta.Id)).ReturnsAsync(consulta);
+            _acessoServiceMock.Setup(a => a.GarantirMedicoResponsavel(consulta))
+                .ThrowsAsync(new AcessoNegadoException("Você só pode realizar esta ação em consultas atribuídas a você"));
+
+            var act = async () => await _useCase.Execute(RequestValido(consulta.Id));
+
+            await act.Should().ThrowAsync<AcessoNegadoException>();
+            _receitaRepoMock.Verify(r => r.Add(It.IsAny<Receita>()), Times.Never);
         }
     }
 }

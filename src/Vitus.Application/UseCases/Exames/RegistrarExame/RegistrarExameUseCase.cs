@@ -12,15 +12,21 @@ namespace Vitus.Application.UseCases.Exames.RegistrarExame
         private readonly IExameRepository _exameRepository;
         private readonly IProntuarioRepository _prontuarioRepository;
         private readonly IAuditoriaService _auditoriaService;
+        private readonly IConsultaRepository _consultaRepository;
+        private readonly IConsultaAcessoService _acessoService;
 
         public RegistrarExameUseCase(
             IExameRepository exameRepository,
             IProntuarioRepository prontuarioRepository,
-            IAuditoriaService auditoriaService)
+            IAuditoriaService auditoriaService,
+            IConsultaRepository consultaRepository,
+            IConsultaAcessoService acessoService)
         {
             _exameRepository = exameRepository;
             _prontuarioRepository = prontuarioRepository;
             _auditoriaService = auditoriaService;
+            _consultaRepository = consultaRepository;
+            _acessoService = acessoService;
         }
 
         public async Task<ExameResponseJson> Execute(CreateExameRequestJson request)
@@ -29,6 +35,16 @@ namespace Vitus.Application.UseCases.Exames.RegistrarExame
 
             if (prontuario == null)
                 throw new DomainException("Prontuário não encontrado");
+
+            if (request.ConsultaId.HasValue)
+            {
+                var consulta = await _consultaRepository.GetById(request.ConsultaId.Value);
+
+                if (consulta == null || consulta.ProntuarioId != request.ProntuarioId)
+                    throw new DomainException("Consulta não encontrada para este prontuário");
+
+                await _acessoService.GarantirMedicoResponsavel(consulta);
+            }
 
             if (!Enum.TryParse<CategoriaExame>(request.Categoria, ignoreCase: true, out var categoria))
                 throw new DomainException("Categoria inválida");

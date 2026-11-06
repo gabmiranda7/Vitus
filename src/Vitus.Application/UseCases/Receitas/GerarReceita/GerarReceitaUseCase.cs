@@ -16,6 +16,7 @@ namespace Vitus.Application.UseCases.Receitas.GerarReceita
         private readonly IReceitaRepository _receitaRepository;
         private readonly IDocumentoService _documentoService;
         private readonly IAuditoriaService _auditoriaService;
+        private readonly IConsultaAcessoService _acessoService;
 
         public GerarReceitaUseCase(
             IConsultaRepository consultaRepository,
@@ -24,8 +25,10 @@ namespace Vitus.Application.UseCases.Receitas.GerarReceita
             IProntuarioRepository prontuarioRepository,
             IReceitaRepository receitaRepository,
             IDocumentoService documentoService,
-            IAuditoriaService auditoriaService)
+            IAuditoriaService auditoriaService,
+            IConsultaAcessoService acessoService)
         {
+            _acessoService = acessoService;
             _consultaRepository = consultaRepository;
             _pacienteRepository = pacienteRepository;
             _medicoRepository = medicoRepository;
@@ -40,6 +43,7 @@ namespace Vitus.Application.UseCases.Receitas.GerarReceita
             var consulta = await _consultaRepository.GetById(request.ConsultaId);
             if (consulta == null)
                 throw new DomainException("Consulta não encontrada");
+            await _acessoService.GarantirMedicoResponsavel(consulta);
 
             if (consulta.Status == StatusConsulta.Cancelada)
                 throw new DomainException("Não é possível gerar receita para consulta cancelada");

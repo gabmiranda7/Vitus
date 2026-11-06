@@ -14,19 +14,22 @@ namespace Vitus.Application.UseCases.Receitas.CriarReceita
         private readonly IProntuarioRepository _prontuarioRepository;
         private readonly IReceitaRepository _receitaRepository;
         private readonly IAuditoriaService _auditoriaService;
+        private readonly IConsultaAcessoService _acessoService;
 
         public CriarReceitaUseCase(
             IConsultaRepository consultaRepository,
             IPacienteRepository pacienteRepository,
             IProntuarioRepository prontuarioRepository,
             IReceitaRepository receitaRepository,
-            IAuditoriaService auditoriaService)
+            IAuditoriaService auditoriaService,
+            IConsultaAcessoService acessoService)
         {
             _consultaRepository = consultaRepository;
             _pacienteRepository = pacienteRepository;
             _prontuarioRepository = prontuarioRepository;
             _receitaRepository = receitaRepository;
             _auditoriaService = auditoriaService;
+            _acessoService = acessoService;
         }
 
         public async Task<ReceitaResponseJson> Execute(CreateReceitaRequestJson request)
@@ -34,6 +37,7 @@ namespace Vitus.Application.UseCases.Receitas.CriarReceita
             var consulta = await _consultaRepository.GetById(request.ConsultaId);
             if (consulta == null)
                 throw new DomainException("Consulta não encontrada");
+            await _acessoService.GarantirMedicoResponsavel(consulta);
 
             if (consulta.Status != StatusConsulta.EmAtendimento)
                 throw new DomainException("Receita só pode ser criada durante o atendimento");
