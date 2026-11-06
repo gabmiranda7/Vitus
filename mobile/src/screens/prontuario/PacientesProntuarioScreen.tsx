@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, ScrollView, StyleSheet } from 'react-native';
-import { Text, Card, Avatar, Searchbar, ActivityIndicator, Chip, TextInput, SegmentedButtons } from 'react-native-paper';
+import { Text, Card, Avatar, Searchbar, ActivityIndicator, Chip, TextInput, SegmentedButtons, Button } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
 import api from '../../services/api';
 import { AcompanhamentoPaciente, Paciente, Tratamento } from '../../types';
@@ -8,10 +8,10 @@ import { cores, corAvatar, iniciais } from '../../theme';
 import { situacaoVencimento } from '../../utils/vencimento';
 
 const SITUACOES = [
-  { value: 'todos', label: 'Todos' },
-  { value: 'acompanhados', label: 'Acompanhadas' },
-  { value: 'vencidas', label: 'Vencidas' },
-  { value: 'a_vencer', label: 'A vencer' },
+  { value: 'todos', label: 'Todos os pacientes' },
+  { value: 'acompanhados', label: 'Com receita acompanhada' },
+  { value: 'vencidas', label: 'Receita vencida' },
+  { value: 'a_vencer', label: 'A vencer em até...' },
 ];
 
 export default function PacientesProntuarioScreen() {
@@ -23,6 +23,7 @@ export default function PacientesProntuarioScreen() {
   const [situacao, setSituacao] = useState('todos');
   const [prazo, setPrazo] = useState('30');
   const [unidade, setUnidade] = useState('dias');
+  const [filtrosVisiveis, setFiltrosVisiveis] = useState(false);
 
   useEffect(() => {
     carregar();
@@ -83,47 +84,76 @@ export default function PacientesProntuarioScreen() {
 
   return (
     <View style={styles.container}>
-      <Searchbar
-        placeholder="Buscar paciente..."
-        value={busca}
-        onChangeText={setBusca}
-        style={styles.busca}
-      />
-
-      <View style={styles.filtros}>
-        {SITUACOES.map((s) => (
-          <Chip
-            key={s.value}
-            compact
-            selected={situacao === s.value}
-            onPress={() => setSituacao(s.value)}
-          >
-            {s.label}
-          </Chip>
-        ))}
+      <View style={styles.buscaLinha}>
+        <Searchbar
+          placeholder="Buscar paciente..."
+          value={busca}
+          onChangeText={setBusca}
+          style={styles.buscaInput}
+        />
+        <Button
+          mode={temFiltroAtivo ? 'contained' : 'outlined'}
+          icon={filtrosVisiveis ? 'filter-variant-remove' : 'filter-variant'}
+          onPress={() => setFiltrosVisiveis(v => !v)}
+          compact
+        >
+          Filtros{temFiltroAtivo ? ' (1)' : ''}
+        </Button>
       </View>
 
-      {situacao === 'a_vencer' && (
-        <View style={styles.prazoLinha}>
-          <TextInput
-            label="Prazo"
-            value={prazo}
-            onChangeText={(v) => setPrazo(v.replace(/\D/g, ''))}
-            keyboardType="numeric"
-            mode="outlined"
-            dense
-            maxLength={3}
-            style={styles.prazoInput}
-          />
-          <SegmentedButtons
-            value={unidade}
-            onValueChange={setUnidade}
-            buttons={[
-              { value: 'dias', label: 'dias' },
-              { value: 'meses', label: 'meses' },
-            ]}
-            style={styles.prazoUnidade}
-          />
+      {filtrosVisiveis && (
+        <View style={styles.painelFiltros}>
+          <Text variant="labelLarge" style={styles.painelTitulo}>Receita</Text>
+          <View style={styles.filtros}>
+            {SITUACOES.map((s) => (
+              <Chip
+                key={s.value}
+                compact
+                selected={situacao === s.value}
+                onPress={() => {
+                  setSituacao(s.value);
+                  if (s.value !== 'a_vencer') setFiltrosVisiveis(false);
+                }}
+              >
+                {s.label}
+              </Chip>
+            ))}
+          </View>
+
+          {situacao === 'a_vencer' && (
+            <View style={styles.prazoLinha}>
+              <TextInput
+                label="Prazo"
+                value={prazo}
+                onChangeText={(v) => setPrazo(v.replace(/\D/g, ''))}
+                keyboardType="numeric"
+                mode="outlined"
+                dense
+                maxLength={3}
+                style={styles.prazoInput}
+              />
+              <SegmentedButtons
+                value={unidade}
+                onValueChange={setUnidade}
+                buttons={[
+                  { value: 'dias', label: 'dias' },
+                  { value: 'meses', label: 'meses' },
+                ]}
+                style={styles.prazoUnidade}
+              />
+            </View>
+          )}
+
+          <View style={styles.painelRodape}>
+            <Text variant="bodySmall" style={styles.textoSecundario}>
+              {filtrados.length} de {pacientes.length} paciente(s)
+            </Text>
+            {temFiltroAtivo && (
+              <Button compact textColor={cores.erro} onPress={() => setSituacao('todos')}>
+                Limpar
+              </Button>
+            )}
+          </View>
         </View>
       )}
 
@@ -175,23 +205,43 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  busca: {
+  buscaLinha: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
     margin: 16,
+    marginBottom: 8,
+  },
+  buscaInput: {
+    flex: 1,
+  },
+  painelFiltros: {
+    backgroundColor: 'white',
+    borderRadius: 12,
+    padding: 12,
+    marginHorizontal: 16,
+    marginBottom: 8,
+  },
+  painelTitulo: {
+    color: cores.textoSecundario,
     marginBottom: 8,
   },
   filtros: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 6,
-    paddingHorizontal: 16,
-    marginBottom: 8,
   },
   prazoLinha: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    paddingHorizontal: 16,
-    marginBottom: 8,
+    marginTop: 12,
+  },
+  painelRodape: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 12,
   },
   prazoInput: {
     width: 90,
