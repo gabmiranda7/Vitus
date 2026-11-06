@@ -21,6 +21,7 @@ import Layout from '../../components/layout/Layout';
 import AcompanhamentoVencimento from '../../components/receitas/AcompanhamentoVencimento';
 import { situacaoVencimento } from '../../components/receitas/vencimento';
 import api from '../../services/api';
+import { useAuth } from '../../contexts/AuthContext';
 import { AcompanhamentoPaciente, Consulta, Medicamento, Paciente, Prontuario, Tratamento } from '../../types';
 
 const POR_PAGINA = 12;
@@ -51,6 +52,7 @@ const medVazio = (): Medicamento => ({
 });
 
 export default function ReceitasPage() {
+  const { usuario } = useAuth();
   const [pacientes, setPacientes] = useState<Paciente[]>([]);
   const [consultasAtivas, setConsultasAtivas] = useState<Consulta[]>([]);
   const [busca, setBusca] = useState('');
@@ -89,7 +91,9 @@ export default function ReceitasPage() {
       api.get('/api/prontuarios/acompanhamento').catch(() => ({ data: [] })),
     ]);
     setPacientes(rPacientes.data);
-    setConsultasAtivas(rConsultas.data.filter((c: Consulta) => c.status === 'EmAtendimento'));
+    setConsultasAtivas(rConsultas.data.filter((c: Consulta) =>
+      c.status === 'EmAtendimento' && c.medicoId === usuario?.medicoId
+    ));
     setAcompanhamentos(rAcompanhamento.data);
   }
 
