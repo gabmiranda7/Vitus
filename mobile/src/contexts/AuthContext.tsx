@@ -6,6 +6,7 @@ interface Usuario {
   nome: string;
   email: string;
   perfil: string;
+  medicoId?: string;
 }
 
 interface AuthContextData {
@@ -40,6 +41,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         nome: response.data.nome,
         email: response.data.email,
         perfil: response.data.perfil,
+        medicoId: response.data.medicoId ?? undefined,
       };
 
       await SecureStore.setItemAsync('vitus_usuario', JSON.stringify(usuarioValidado));
@@ -55,9 +57,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   async function login(email: string, senha: string) {
     const response = await api.post('/api/auth/login', { email, senha });
-    const { token, nome, perfil } = response.data;
+    const { token, nome, perfil, medicoId } = response.data;
 
-    const usuarioLogado: Usuario = { nome, email, perfil };
+    const usuarioLogado: Usuario = { nome, email, perfil, medicoId: medicoId ?? undefined };
 
     await SecureStore.setItemAsync('vitus_token', token);
     await SecureStore.setItemAsync('vitus_usuario', JSON.stringify(usuarioLogado));

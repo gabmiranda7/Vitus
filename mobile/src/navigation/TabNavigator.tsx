@@ -8,6 +8,7 @@ import ProntuarioStack from './ProntuarioStack';
 import PacientesScreen from '../screens/pacientes/PacientesScreen';
 import PerfilScreen from '../screens/perfil/PerfilScreen';
 import { useAuth } from '../contexts/AuthContext';
+import AgendaScreen from '../screens/agenda/AgendaScreen';
 import MedicosScreen from '../screens//medicos/MedicosScreen';
 import ReceitasStack from './ReceitasStack';
 import AuditoriaScreen from '../screens/auditoria/AuditoriaScreen';
@@ -40,6 +41,19 @@ export default function TabNavigator() {
           ),
         }}
       />
+
+      {usuario?.perfil === 'Medico' && (
+        <Tab.Screen
+          name="Agenda"
+          component={AgendaScreen}
+          options={{
+            title: 'Minha Agenda',
+            tabBarIcon: ({ color, size }) => (
+              <MaterialCommunityIcons name="calendar-today" color={color} size={size} />
+            ),
+          }}
+        />
+      )}
 
       {usuario?.perfil === 'Administrador' && (
         <Tab.Screen
