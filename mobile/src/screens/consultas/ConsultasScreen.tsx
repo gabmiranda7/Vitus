@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { View, ScrollView, StyleSheet, RefreshControl } from 'react-native';
-import { Text, Card, Chip, ActivityIndicator, Avatar, Button, Portal, Modal, SegmentedButtons } from 'react-native-paper';
+import { Text, Card, Chip, ActivityIndicator, Avatar, Button, Portal, Modal, SegmentedButtons, Searchbar } from 'react-native-paper';
 import { useAuth } from '../../contexts/AuthContext';
 import api from '../../services/api';
 import { Consulta, statusCores, statusLabels } from '../../types';
@@ -14,12 +14,32 @@ import ConfirmModal from '../../components/ConfirmModal';
 const statusAtivos = ['Agendada', 'EmTriagem', 'AguardandoAtendimento', 'EmAtendimento'];
 const statusHistorico = ['Finalizada', 'Cancelada'];
 
+function hora(data: string) {
+  return new Date(data).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+}
+
+function rotuloDia(data: string) {
+  const d = new Date(data);
+  const hoje = new Date();
+  const amanha = new Date(); amanha.setDate(hoje.getDate() + 1);
+  const ontem = new Date(); ontem.setDate(hoje.getDate() - 1);
+  if (d.toDateString() === hoje.toDateString()) return 'Hoje';
+  if (d.toDateString() === amanha.toDateString()) return 'Amanhã';
+  if (d.toDateString() === ontem.toDateString()) return 'Ontem';
+  return d.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
+}
+
 export default function ConsultasScreen() {
   const { usuario } = useAuth();
   const [consultas, setConsultas] = useState<Consulta[]>([]);
   const [aba, setAba] = useState('ativas');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+
+  const [busca, setBusca] = useState('');
+  const [filtrosVisiveis, setFiltrosVisiveis] = useState(false);
+  const [filtroMedico, setFiltroMedico] = useState('');
+  const [filtroStatus, setFiltroStatus] = useState('');
 
   const [consultaSelecionada, setConsultaSelecionada] = useState<Consulta | null>(null);
   const [modalAcoes, setModalAcoes] = useState(false);
@@ -49,13 +69,65 @@ export default function ConsultasScreen() {
     carregar();
   }
 
+  function limparFiltros() {
+    setFiltroMedico('');
+    setFiltroStatus('');
+  }
+
+  function trocarAba(valor: string) {
+    setAba(valor);
+    setBusca('');
+    limparFiltros();
+  }
+
   const consultasAtivas = useMemo(() =>
-    consultas.filter(c => statusAtivos.includes(c.status)), [consultas]);
+    consultas
+      .filter(c => statusAtivos.includes(c.status))
+      .sort((a, b) => new Date(a.dataConsulta).getTime() - new Date(b.dataConsulta).getTime()),
+    [consultas]);
 
   const consultasHistorico = useMemo(() =>
-    consultas.filter(c => statusHistorico.includes(c.status)), [consultas]);
+    consultas
+      .filter(c => statusHistorico.includes(c.status))
+      .sort((a, b) => new Date(b.dataConsulta).getTime() - new Date(a.dataConsulta).getTime()),
+    [consultas]);
 
-  const listaAtual = aba === 'ativas' ? consultasAtivas : consultasHistorico;
+  const listaAba = aba === 'ativas' ? consultasAtivas : consultasHistorico;
+  const statusNaAba = aba === 'ativas' ? statusAtivos : statusHistorico;
+
+  const medicosNaAba = useMemo(
+    () => [...new Set(listaAba.map(c => c.nomeMedico))].sort(),
+    [listaAba]);
+
+  const qtdFiltros = [filtroMedico, filtroStatus].filter(Boolean).length;
+
+  const consultasFiltradas = useMemo(() => {
+    const q = busca.trim().toLowerCase();
+    return listaAba.filter(c => {
+      const buscaOk = !q ||
+        c.nomePaciente.toLowerCase().includes(q) ||
+        c.nomeMedico.toLowerCase().includes(q) ||
+        new Date(c.dataConsulta).toLocaleDateString('pt-BR').includes(q) ||
+        (statusLabels[c.status] ?? '').toLowerCase().includes(q);
+      return buscaOk &&
+        (filtroMedico === '' || c.nomeMedico === filtroMedico) &&
+        (filtroStatus === '' || c.status === filtroStatus);
+    });
+  }, [listaAba, busca, filtroMedico, filtroStatus]);
+
+  const grupos = useMemo(() => {
+    const lista: { chave: string; rotulo: string; itens: Consulta[] }[] = [];
+    for (const c of consultasFiltradas) {
+      const chave = new Date(c.dataConsulta).toDateString();
+      let g = lista.find(x => x.chave === chave);
+      if (!g) {
+        g = { chave, rotulo: rotuloDia(c.dataConsulta), itens: [] };
+        lista.push(g);
+      }
+      g.itens.push(c);
+    }
+    return lista;
+  }, [consultasFiltradas]);
 
   function abrirAcoes(c: Consulta) {
     setConsultaSelecionada(c);
@@ -99,6 +171,11 @@ export default function ConsultasScreen() {
     carregar();
   }
 
+  const ehMinhaConsulta =
+    usuario?.perfil === 'Medico' &&
+    !!usuario.medicoId &&
+    consultaSelecionada?.medicoId === usuario.medicoId;
+
   if (loading) {
     return (
       <View style={styles.centro}>
@@ -112,7 +189,7 @@ export default function ConsultasScreen() {
       <View style={styles.tabs}>
         <SegmentedButtons
           value={aba}
-          onValueChange={setAba}
+          onValueChange={trocarAba}
           buttons={[
             { value: 'ativas', label: `Ativas (${consultasAtivas.length})` },
             { value: 'historico', label: `Histórico (${consultasHistorico.length})` },
@@ -120,42 +197,103 @@ export default function ConsultasScreen() {
         />
       </View>
 
+      <View style={styles.buscaLinha}>
+        <Searchbar
+          placeholder="Paciente, médico, data ou status..."
+          value={busca}
+          onChangeText={setBusca}
+          style={styles.buscaInput}
+        />
+        <Button
+          mode={qtdFiltros > 0 ? 'contained' : 'outlined'}
+          icon={filtrosVisiveis ? 'filter-variant-remove' : 'filter-variant'}
+          onPress={() => setFiltrosVisiveis(v => !v)}
+          compact
+        >
+          Filtros{qtdFiltros > 0 ? ` (${qtdFiltros})` : ''}
+        </Button>
+      </View>
+
+      {filtrosVisiveis && (
+        <View style={styles.painelFiltros}>
+          <Text variant="labelLarge" style={styles.painelTitulo}>Status</Text>
+          <View style={styles.chips}>
+            {statusNaAba.map((s) => (
+              <Chip
+                key={s}
+                compact
+                selected={filtroStatus === s}
+                onPress={() => setFiltroStatus(filtroStatus === s ? '' : s)}
+              >
+                {statusLabels[s]}
+              </Chip>
+            ))}
+          </View>
+
+          <Text variant="labelLarge" style={[styles.painelTitulo, { marginTop: 12 }]}>Médico</Text>
+          <View style={styles.chips}>
+            {medicosNaAba.map((m) => (
+              <Chip
+                key={m}
+                compact
+                selected={filtroMedico === m}
+                onPress={() => setFiltroMedico(filtroMedico === m ? '' : m)}
+              >
+                {m}
+              </Chip>
+            ))}
+          </View>
+
+          <View style={styles.painelRodape}>
+            <Text variant="bodySmall" style={styles.textoSecundario}>
+              {consultasFiltradas.length} de {listaAba.length} consulta(s)
+            </Text>
+            {qtdFiltros > 0 && (
+              <Button compact textColor={cores.erro} onPress={limparFiltros}>Limpar</Button>
+            )}
+          </View>
+        </View>
+      )}
+
       <ScrollView
         contentContainerStyle={styles.lista}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
-        {listaAtual.length === 0 ? (
+        {grupos.length === 0 ? (
           <Text style={styles.textoVazio}>Nenhuma consulta encontrada</Text>
         ) : (
-          listaAtual.map((c) => {
-            const cor = statusCores[c.status] ?? cores.primaria;
-            return (
-              <Card
-                key={c.id}
-                style={[styles.card, { borderLeftColor: cor, borderLeftWidth: 4 }]}
-                onPress={() => abrirAcoes(c)}
-              >
-                <Card.Content>
-                  <View style={styles.cardTop}>
-                    <Chip style={{ backgroundColor: cor + '20' }} textStyle={{ color: cor, fontWeight: 'bold' }}>
-                      {statusLabels[c.status]}
-                    </Chip>
-                  </View>
-                  <View style={styles.cardHeader}>
-                    <Avatar.Text size={40} label={iniciais(c.nomePaciente)} style={{ backgroundColor: cor }} />
-                    <View style={styles.cardInfo}>
-                      <Text variant="titleMedium">{c.nomePaciente}</Text>
-                      <Text variant="bodySmall" style={styles.textoSecundario}>{c.nomeMedico}</Text>
-                    </View>
-                  </View>
-                  <Text variant="bodySmall" style={styles.data}>
-                    {new Date(c.dataConsulta).toLocaleDateString('pt-BR')} às{' '}
-                    {new Date(c.dataConsulta).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-                  </Text>
-                </Card.Content>
-              </Card>
-            );
-          })
+          grupos.map((g) => (
+            <View key={g.chave} style={styles.grupo}>
+              <Text variant="labelLarge" style={styles.grupoTitulo}>
+                {g.rotulo} · {g.itens.length}
+              </Text>
+              {g.itens.map((c) => {
+                const cor = statusCores[c.status] ?? cores.primaria;
+                return (
+                  <Card
+                    key={c.id}
+                    style={[
+                      styles.card,
+                      { borderLeftColor: cor, borderLeftWidth: 4, opacity: c.status === 'Cancelada' ? 0.55 : 1 },
+                    ]}
+                    onPress={() => abrirAcoes(c)}
+                  >
+                    <Card.Content style={styles.cardLinha}>
+                      <Text variant="titleSmall" style={[styles.hora, { color: cor }]}>{hora(c.dataConsulta)}</Text>
+                      <Avatar.Text size={36} label={iniciais(c.nomePaciente)} style={{ backgroundColor: cor }} />
+                      <View style={styles.cardInfo}>
+                        <Text variant="titleSmall" numberOfLines={1}>{c.nomePaciente}</Text>
+                        <Text variant="bodySmall" style={styles.textoSecundario} numberOfLines={1}>{c.nomeMedico}</Text>
+                      </View>
+                      <Chip compact style={{ backgroundColor: cor + '20' }} textStyle={{ color: cor, fontSize: 11, fontWeight: 'bold' }}>
+                        {statusLabels[c.status]}
+                      </Chip>
+                    </Card.Content>
+                  </Card>
+                );
+              })}
+            </View>
+          ))
         )}
       </ScrollView>
 
@@ -176,12 +314,12 @@ export default function ConsultasScreen() {
                 Mover para Aguardando
               </Button>
             )}
-            {usuario?.perfil === 'Medico' && consultaSelecionada?.status === 'AguardandoAtendimento' && (
+            {ehMinhaConsulta && consultaSelecionada?.status === 'AguardandoAtendimento' && (
               <Button mode="contained" icon="account" onPress={() => acaoRapida('iniciar-atendimento')}>
                 Iniciar Atendimento
               </Button>
             )}
-            {usuario?.perfil === 'Medico' && consultaSelecionada?.status === 'EmAtendimento' && (<>
+            {ehMinhaConsulta && consultaSelecionada?.status === 'EmAtendimento' && (<>
               <Button mode="outlined" icon="note-edit" onPress={() => { setModalAcoes(false); setModalAnotacao(true); }}>
                 Anotações Clínicas
               </Button>
@@ -195,11 +333,17 @@ export default function ConsultasScreen() {
                 Finalizar Consulta
               </Button>
             </>)}
-            {['Recepcionista', 'Medico'].includes(usuario?.perfil ?? '') &&
+            {(usuario?.perfil === 'Recepcionista' || ehMinhaConsulta) &&
               consultaSelecionada && !['Finalizada', 'Cancelada'].includes(consultaSelecionada.status) && (
                 <Button mode="outlined" textColor={cores.erro} icon="close-circle" onPress={() => pedirConfirmacao('cancelar', cores.erro, 'Cancelar Consulta')}>
                   Cancelar Consulta
                 </Button>
+              )}
+            {usuario?.perfil === 'Medico' && consultaSelecionada && !ehMinhaConsulta &&
+              !['Finalizada', 'Cancelada'].includes(consultaSelecionada.status) && (
+                <Text variant="bodySmall" style={styles.textoSecundario}>
+                  Esta consulta é do(a) {consultaSelecionada.nomeMedico}. Só o médico responsável pode atendê-la.
+                </Text>
               )}
           </View>
 
@@ -258,32 +402,68 @@ const styles = StyleSheet.create({
     padding: 16,
     paddingBottom: 8,
   },
+  buscaLinha: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 16,
+    marginBottom: 8,
+  },
+  buscaInput: {
+    flex: 1,
+  },
+  painelFiltros: {
+    backgroundColor: 'white',
+    borderRadius: 12,
+    padding: 12,
+    marginHorizontal: 16,
+    marginBottom: 8,
+  },
+  painelTitulo: {
+    color: cores.textoSecundario,
+    marginBottom: 8,
+  },
+  chips: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+  },
+  painelRodape: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 12,
+  },
   lista: {
     padding: 16,
     paddingTop: 8,
   },
-  card: {
-    marginBottom: 12,
-    borderRadius: 12,
+  grupo: {
+    marginBottom: 16,
   },
-  cardTop: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
+  grupoTitulo: {
+    color: cores.textoSecundario,
+    textTransform: 'capitalize',
     marginBottom: 8,
   },
-  cardHeader: {
+  card: {
+    marginBottom: 8,
+    borderRadius: 12,
+  },
+  cardLinha: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 10,
+  },
+  hora: {
+    width: 44,
+    fontWeight: 'bold',
   },
   cardInfo: {
-    marginLeft: 12,
+    flex: 1,
   },
   textoSecundario: {
     color: cores.textoSecundario,
-  },
-  data: {
-    color: cores.textoDesabilitado,
-    marginTop: 8,
   },
   textoVazio: {
     textAlign: 'center',
