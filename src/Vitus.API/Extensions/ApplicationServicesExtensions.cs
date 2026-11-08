@@ -1,10 +1,14 @@
 ﻿using Vitus.Application.UseCases.Auditoria.GetAuditoriaLogs;
 using Vitus.Application.UseCases.Auth.AprovarUsuario;
+using Vitus.Application.UseCases.Auth.AtualizarFotoPerfil;
+using Vitus.Application.UseCases.Auth.AtualizarPerfil;
 using Vitus.Application.UseCases.Auth.GetUsuariosPendentes;
 using Vitus.Application.UseCases.Auth.Login;
+using Vitus.Application.UseCases.Auth.ObterFotoPerfil;
 using Vitus.Application.UseCases.Auth.ObterUsuarioLogado;
 using Vitus.Application.UseCases.Auth.RecusarUsuario;
 using Vitus.Application.UseCases.Auth.Registrar;
+using Vitus.Application.UseCases.Auth.RemoverFotoPerfil;
 using Vitus.Application.UseCases.Consultas.AguardarAtendimento;
 using Vitus.Application.UseCases.Consultas.AnotarConsulta;
 using Vitus.Application.UseCases.Consultas.CancelarConsulta;
@@ -45,11 +49,15 @@ namespace Vitus.API.Extensions
             services.AddScoped<IAuditoriaService, AuditoriaService>();
 
             services.AddScoped<AprovarUsuarioUseCase>();
+            services.AddScoped<AtualizarPerfilUseCase>();
+            services.AddScoped<AtualizarFotoPerfilUseCase>();
             services.AddScoped<GetUsuariosPendentesUseCase>();
             services.AddScoped<LoginUsuarioUseCase>();
+            services.AddScoped<ObterFotoPerfilUseCase>();
             services.AddScoped<ObterUsuarioLogadoUseCase>();
             services.AddScoped<RecusarUsuarioUseCase>();
             services.AddScoped<RegistrarUsuarioUseCase>();
+            services.AddScoped<RemoverFotoPerfilUseCase>();
 
             services.AddScoped<AguardarAtendimentoUseCase>();
             services.AddScoped<AnotarConsultaUseCase>();

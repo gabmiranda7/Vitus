@@ -11,6 +11,7 @@ namespace Vitus.Domain.Entities
         public string SenhaHash { get; private set; }
         public PerfilUsuario Perfil { get; private set; }
         public StatusUsuario Status { get; private set; }
+        public string? FotoCaminho { get; private set; }
 
         protected Usuario() { }
 
@@ -50,5 +51,23 @@ namespace Vitus.Domain.Entities
 
             Status = StatusUsuario.Recusado;
         }
+
+        public void AlterarNome(string nome)
+        {
+            if (string.IsNullOrWhiteSpace(nome))
+                throw new DomainException("Nome é obrigatório");
+
+            Nome = nome.Trim();
+        }
+
+        public void DefinirFoto(string caminho)
+        {
+            if (string.IsNullOrWhiteSpace(caminho))
+                throw new DomainException("Caminho da foto é obrigatório");
+
+            FotoCaminho = caminho;
+        }
+
+        public void RemoverFoto() => FotoCaminho = null;
     }
 }

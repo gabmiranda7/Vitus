@@ -7,5 +7,6 @@
         public string Email { get; set; }
         public string Perfil { get; set; }
         public string? MedicoId { get; set; }
+        public bool? TemFoto { get; set; }
     }
 }

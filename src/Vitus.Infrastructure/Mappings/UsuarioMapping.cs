@@ -29,6 +29,9 @@ namespace Vitus.Infrastructure.Mappings
             builder.Property(u => u.Perfil)
                    .HasConversion<string>()
                    .IsRequired();
+
+            builder.Property(u => u.FotoCaminho)
+                .HasMaxLength(500);
         }
     }
 }

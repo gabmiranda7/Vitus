@@ -40,5 +40,11 @@ namespace Vitus.Infrastructure.Repositories
                 .AsNoTracking()
                 .ToListAsync();
         }
+
+        public async Task Update(Medico medico)
+        {
+            _context.Medicos.Update(medico);
+            await _context.SaveChangesAsync();
+        }
     }
 }

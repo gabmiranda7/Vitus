@@ -14,6 +14,7 @@
         AnexoExame,
         DownloadExame,
         AprovacaoCadastro,
-        RecusaCadastro
+        RecusaCadastro,
+        AtualizacaoPerfil
     }
 }

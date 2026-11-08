@@ -3,9 +3,13 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using Vitus.Application.UseCases.Auth.AprovarUsuario;
+using Vitus.Application.UseCases.Auth.AtualizarFotoPerfil;
+using Vitus.Application.UseCases.Auth.AtualizarPerfil;
 using Vitus.Application.UseCases.Auth.GetUsuariosPendentes;
 using Vitus.Application.UseCases.Auth.Login;
+using Vitus.Application.UseCases.Auth.ObterFotoPerfil;
 using Vitus.Application.UseCases.Auth.ObterUsuarioLogado;
+using Vitus.Application.UseCases.Auth.RemoverFotoPerfil;
 using Vitus.Application.UseCases.Auth.RecusarUsuario;
 using Vitus.Application.UseCases.Auth.Registrar;
 using Vitus.Communication.Auth.Requests;
@@ -51,6 +55,51 @@ namespace Vitus.API.Controllers
             var response = await useCase.Execute(email);
             return Ok(response);
         }
+
+        [HttpPut("me")]
+        [Authorize]
+        public async Task<IActionResult> AtualizarPerfil(
+            [FromServices] AtualizarPerfilUseCase useCase,
+            [FromBody] AtualizarPerfilRequestJson request)
+        {
+            var response = await useCase.Execute(UsuarioIdLogado(), request);
+            return Ok(response);
+        }
+
+        [HttpGet("me/foto")]
+        [Authorize]
+        public async Task<IActionResult> ObterFoto(
+            [FromServices] ObterFotoPerfilUseCase useCase)
+        {
+            var foto = await useCase.Execute(UsuarioIdLogado());
+
+            if (foto == null)
+                return NotFound();
+
+            return File(foto.Conteudo, foto.ContentType);
+        }
+
+        [HttpPost("me/foto")]
+        [Authorize]
+        public async Task<IActionResult> AtualizarFoto(
+            [FromServices] AtualizarFotoPerfilUseCase useCase,
+            IFormFile arquivo)
+        {
+            await useCase.Execute(UsuarioIdLogado(), arquivo);
+            return NoContent();
+        }
+
+        [HttpDelete("me/foto")]
+        [Authorize]
+        public async Task<IActionResult> RemoverFoto(
+            [FromServices] RemoverFotoPerfilUseCase useCase)
+        {
+            await useCase.Execute(UsuarioIdLogado());
+            return NoContent();
+        }
+
+        private Guid UsuarioIdLogado() =>
+            Guid.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var id) ? id : Guid.Empty;
 
         [HttpGet("pendentes")]
         [Authorize(Roles = "Administrador")]
