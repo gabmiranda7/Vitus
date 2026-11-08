@@ -114,4 +114,5 @@ export interface Usuario {
     email: string;
     perfil: string;
     medicoId?: string;
+    temFoto?: boolean;
 }

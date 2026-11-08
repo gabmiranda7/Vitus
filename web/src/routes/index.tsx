@@ -9,6 +9,7 @@ import ConsultasPage from '../pages/consultas/ConsultasPage';
 import DashboardPage from '../pages/dashboard/DashboardPage';
 import MedicosPage from '../pages/medicos/MedicosPage';
 import PacientesPage from '../pages/pacientes/PacientesPage';
+import PerfilPage from '../pages/perfil/PerfilPage';
 import ProntuarioPacientePage from '../pages/prontuario/ProntuarioPacientePage';
 import ProntuariosPacientesPage from '../pages/prontuario/ProntuariosPacientesPage';
 import ProntuarioPage from '../pages/prontuario/ProntuarioPage';
@@ -68,6 +69,12 @@ export default function AppRoutes() {
         <Route path="/pacientes" element={
           <PrivateRoute perfis={['Recepcionista']}>
             <PacientesPage />
+          </PrivateRoute>
+        } />
+
+        <Route path="/perfil" element={
+          <PrivateRoute perfis={['Recepcionista', 'Enfermeiro', 'Medico', 'Administrador']}>
+            <PerfilPage />
           </PrivateRoute>
         } />
 

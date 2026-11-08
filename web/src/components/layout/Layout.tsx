@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import {
   AppBar, Box, Drawer, List, ListItemButton,
   ListItemIcon, ListItemText, Toolbar, Typography, IconButton,
-  Divider, Avatar, Tooltip, useTheme, Chip
+  Divider, Tooltip, useTheme, Chip
 } from '@mui/material';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import PeopleIcon from '@mui/icons-material/People';
@@ -18,7 +18,9 @@ import DarkModeIcon from '@mui/icons-material/DarkMode';
 import LightModeIcon from '@mui/icons-material/LightMode';
 import FolderSharedIcon from '@mui/icons-material/FolderShared';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
+import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import { useAuth } from '../../contexts/AuthContext';
+import AvatarUsuario from './AvatarUsuario';
 
 const DRAWER_WIDTH = 256;
 
@@ -33,6 +35,7 @@ const menuItems = [
   { label: 'Prontuários', path: '/prontuarios', icon: <FolderSharedIcon />, perfis: ['Medico', 'Enfermeiro'] },
   { label: 'Pacientes',  path: '/pacientes',  icon: <PeopleIcon />,           perfis: ['Recepcionista'] },
   { label: 'Médicos',    path: '/medicos',    icon: <LocalHospitalIcon />,    perfis: ['Recepcionista'] },
+  { label: 'Meu Perfil', path: '/perfil', icon: <AccountCircleIcon />, perfis: ['Recepcionista', 'Enfermeiro', 'Medico', 'Administrador'] },
 ];
 
 const perfilCores: Record<string, string> = {
@@ -48,10 +51,6 @@ const perfilLabels: Record<string, string> = {
   Recepcionista: 'Recepcionista',
   Administrador: 'Administrador',
 };
-
-function iniciaisNome(nome: string) {
-  return nome.split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase();
-}
 
 export default function Layout({ children }: { children: ReactNode }) {
   const { usuario, logout, darkMode, toggleDarkMode } = useAuth();
@@ -96,12 +95,11 @@ export default function Layout({ children }: { children: ReactNode }) {
             </Tooltip>
             <Divider orientation="vertical" flexItem sx={{ mx: 0.5 }} />
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-              <Avatar sx={{
-                width: 34, height: 34, fontSize: 13, fontWeight: 700,
-                bgcolor: corPerfil,
-              }}>
-                {iniciaisNome(usuario?.nome ?? '')}
-              </Avatar>
+              <Tooltip title="Meu perfil">
+                <Box onClick={() => navigate('/perfil')} sx={{ cursor: 'pointer', display: 'flex' }}>
+                  <AvatarUsuario size={34} bgcolor={corPerfil} />
+                </Box>
+              </Tooltip>
               <Box sx={{ display: 'none', '@media (min-width: 600px)': { display: 'block' } }}>
                 <Typography variant="body2" sx={{ fontWeight: 600, color: 'text.primary', lineHeight: 1.2 }}>
                   {usuario?.nome?.split(' ')[0]}
