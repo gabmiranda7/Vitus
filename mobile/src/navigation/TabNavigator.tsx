@@ -1,4 +1,5 @@
 import React from 'react';
+import { TouchableOpacity } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import AprovacoesScreen from '../screens/aprovacoes/AprovacoesScreen';
@@ -8,6 +9,7 @@ import ProntuarioStack from './ProntuarioStack';
 import PacientesScreen from '../screens/pacientes/PacientesScreen';
 import PerfilScreen from '../screens/perfil/PerfilScreen';
 import { useAuth } from '../contexts/AuthContext';
+import AvatarUsuario from '../components/AvatarUsuario';
 import AgendaScreen from '../screens/agenda/AgendaScreen';
 import MedicosScreen from '../screens//medicos/MedicosScreen';
 import ReceitasStack from './ReceitasStack';
@@ -21,11 +23,16 @@ export default function TabNavigator() {
 
   return (
     <Tab.Navigator
-      screenOptions={{
+      screenOptions={({ navigation }) => ({
         headerStyle: { backgroundColor: '#1976d2' },
         headerTintColor: '#fff',
         tabBarActiveTintColor: '#1976d2',
-      }}
+        headerRight: () => (
+          <TouchableOpacity onPress={() => navigation.navigate('Perfil')} style={{ marginRight: 12 }}>
+            <AvatarUsuario size={32} cor="rgba(255,255,255,0.25)" />
+          </TouchableOpacity>
+        ),
+      })}
     >
       <Tab.Screen
         name="Dashboard"
@@ -188,6 +195,7 @@ export default function TabNavigator() {
         name="Perfil"
         component={PerfilScreen}
         options={{
+          headerRight: () => null,
           tabBarIcon: ({ color, size }) => (
             <MaterialCommunityIcons
               name="account"
