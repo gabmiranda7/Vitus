@@ -14,6 +14,7 @@ export const acaoIcones: Record<string, string> = {
   DownloadExame: 'file-download',
   AprovacaoCadastro: 'account-check',
   RecusaCadastro: 'account-cancel',
+  AtualizacaoPerfil: 'account-circle'
 };
 
 export const acaoCores: Record<string, string> = {
@@ -30,6 +31,7 @@ export const acaoCores: Record<string, string> = {
   DownloadExame: cores.secundaria,
   AprovacaoCadastro: cores.sucesso,
   RecusaCadastro: cores.erro,
+  AtualizacaoPerfil: cores.info
 };
 
 export const acaoLabel: Record<string, string> = {
@@ -46,4 +48,5 @@ export const acaoLabel: Record<string, string> = {
   DownloadExame: 'Arquivo de Exame Baixado',
   AprovacaoCadastro: 'Cadastro Aprovado',
   RecusaCadastro: 'Cadastro Recusado',
+  AtualizacaoPerfil: 'Perfil Atualizado'
 };

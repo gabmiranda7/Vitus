@@ -30,6 +30,7 @@ const acaoLabels: Record<string, string> = {
   DownloadExame: 'Download de Arquivo de Exame',
   AprovacaoCadastro: 'Aprovação de Cadastro',
   RecusaCadastro: 'Recusa de Cadastro',
+  AtualizacaoPerfil: 'Atualização de Perfil',
 };
 
 const acaoCores: Record<string, string> = {
@@ -41,6 +42,7 @@ const acaoCores: Record<string, string> = {
   CriacaoPaciente: '#6a1b9a',
   EdicaoPaciente: '#5d4037',
   ExclusaoPaciente: '#b71c1c',
+  AtualizacaoPerfil: '#00838f'
 };
 
 const POR_PAGINA = 10;
