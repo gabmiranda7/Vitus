@@ -1,15 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { View, ScrollView, StyleSheet, TouchableOpacity, LayoutAnimation, Platform, UIManager } from 'react-native';
+import { View, ScrollView, StyleSheet, TouchableOpacity, LayoutAnimation, Platform } from 'react-native';
 import { Text, Card, Searchbar, ActivityIndicator, Chip, Divider } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import api from '../../services/api';
 import { AuditoriaLog } from '../../types';
 import { cores } from '../../theme';
 import { acaoIcones, acaoCores, acaoLabel } from '../../utils/auditoria';
-
-if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
-  UIManager.setLayoutAnimationEnabledExperimental(true);
-}
 
 export default function AuditoriaScreen() {
   const [logs, setLogs] = useState<AuditoriaLog[]>([]);
