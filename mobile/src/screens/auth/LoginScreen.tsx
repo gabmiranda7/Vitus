@@ -82,8 +82,8 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     padding: 20,
-    backgroundColor: cores.fundo === '#f5f5f5' ? '#e3f2fd' : cores.fundo,
-  },
+    backgroundColor: '#e3f2fd',
+    },
   card: {
     padding: 24,
     borderRadius: 16,

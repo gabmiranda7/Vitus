@@ -17,7 +17,8 @@ export const cores = {
   gradienteVerde: ['#1b5e20', '#2e7d32'],
   gradienteVermelho: ['#b71c1c', '#d32f2f'],
 
-  fundo: '#f5f5f5',
+  fundo: '#e9edf3',
+  superficie: '#f7f9fc',
   textoSecundario: '#666',
   textoDesabilitado: '#999',
 };
@@ -28,6 +29,14 @@ export const theme = {
     ...MD3LightTheme.colors,
     primary: cores.primaria,
     secondary: cores.secundaria,
+    background: cores.fundo,
+    surface: cores.superficie,
+    elevation: {
+      ...MD3LightTheme.colors.elevation,
+      level1: cores.superficie,
+      level2: cores.superficie,
+      level3: cores.superficie,
+    },
   },
 };
 
