@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { View, ScrollView, StyleSheet, RefreshControl } from 'react-native';
-import { Text, Card, Chip, ActivityIndicator, Avatar, Button, Portal, Modal, SegmentedButtons, Searchbar } from 'react-native-paper';
+import { Text, Card, Chip, ActivityIndicator, Avatar, Button, Portal, Modal, SegmentedButtons, Searchbar, FAB } from 'react-native-paper';
 import { useAuth } from '../../contexts/AuthContext';
 import api from '../../services/api';
 import { Consulta, statusCores, statusLabels } from '../../types';
@@ -10,6 +10,7 @@ import AnotacaoModal from '../../components/AnotacaoModal';
 import ReceitaModal from '../../components/ReceitaModal';
 import ExameModal from '../../components/ExameModal';
 import ConfirmModal from '../../components/ConfirmModal';
+import NovaConsultaModal from '../../components/NovaConsultaModal';
 
 const statusAtivos = ['Agendada', 'EmTriagem', 'AguardandoAtendimento', 'EmAtendimento'];
 const statusHistorico = ['Finalizada', 'Cancelada'];
@@ -48,6 +49,7 @@ export default function ConsultasScreen() {
   const [modalReceita, setModalReceita] = useState(false);
   const [modalExame, setModalExame] = useState(false);
   const [modalConfirm, setModalConfirm] = useState(false);
+  const [modalNova, setModalNova] = useState(false);
   const [confirmAcao, setConfirmAcao] = useState<{ acao: string; cor: string; titulo: string } | null>(null);
 
   useEffect(() => {
@@ -384,6 +386,20 @@ export default function ConsultasScreen() {
         onClose={() => setModalConfirm(false)}
         onConfirmar={confirmarAcao}
       />
+
+      {usuario?.perfil === 'Recepcionista' && (
+        <FAB icon="plus" label="Nova consulta" style={styles.fab} onPress={() => setModalNova(true)} />
+      )}
+
+      <NovaConsultaModal
+        visible={modalNova}
+        onClose={() => setModalNova(false)}
+        onSucesso={() => {
+          setModalNova(false);
+          setAba('ativas');
+          carregar();
+        }}
+      />
     </View>
   );
 }
@@ -437,6 +453,13 @@ const styles = StyleSheet.create({
   lista: {
     padding: 16,
     paddingTop: 8,
+    paddingBottom: 90,
+  },
+  fab: {
+    position: 'absolute',
+    right: 16,
+    bottom: 16,
+    backgroundColor: cores.primaria,
   },
   grupo: {
     marginBottom: 16,
