@@ -5,6 +5,8 @@ namespace Vitus.Application.Validators.Consultas
 {
     public class CreateConsultaRequestValidator : AbstractValidator<CreateConsultaRequestJson>
     {
+        private static readonly TimeSpan ToleranciaPassado = TimeSpan.FromMinutes(15);
+
         public CreateConsultaRequestValidator()
         {
             RuleFor(x => x.PacienteId)
@@ -15,7 +17,8 @@ namespace Vitus.Application.Validators.Consultas
 
             RuleFor(x => x.DataConsulta)
                 .NotEmpty().WithMessage("Data da consulta é obrigatória")
-                .GreaterThan(DateTime.UtcNow).WithMessage("Data da consulta não pode ser no passado");
+                .Must(d => d.ToUniversalTime() >= DateTime.UtcNow - ToleranciaPassado)
+                .WithMessage("Data da consulta não pode ser no passado");
         }
     }
 }
