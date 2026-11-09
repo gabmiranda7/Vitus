@@ -81,7 +81,7 @@ function corAvatar(nome: string) {
   return cores[nome.charCodeAt(0) % cores.length];
 }
 function dataHojeLocal() {
-  const agora = new Date();
+  const agora = new Date(Date.now() + 10 * 60000);
   const pad = (n: number) => String(n).padStart(2, '0');
   return `${agora.getFullYear()}-${pad(agora.getMonth() + 1)}-${pad(agora.getDate())}T${pad(agora.getHours())}:${pad(agora.getMinutes())}`;
 }
