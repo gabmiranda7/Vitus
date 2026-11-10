@@ -21,6 +21,7 @@ import MedicalInformationIcon from '@mui/icons-material/MedicalInformation';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import FilterListOffIcon from '@mui/icons-material/FilterListOff';
 import Layout from '../../components/layout/Layout';
+import ConfirmDialog from '../../components/ConfirmDialog';
 import api from '../../services/api';
 import { Paciente } from '../../types';
 
@@ -79,6 +80,8 @@ export default function PacientesPage() {
   const [editando, setEditando] = useState<Paciente | null>(null);
   const [form, setForm] = useState(campoVazio());
   const [erro, setErro] = useState('');
+  const [excluir, setExcluir] = useState<Paciente | null>(null);
+  const [excluindo, setExcluindo] = useState(false);
 
   useEffect(() => { carregar(); }, []);
 
@@ -113,11 +116,18 @@ export default function PacientesPage() {
     } catch (error: any) { setErro(error.mensagemBack ?? 'Erro ao salvar paciente'); }
   }
 
-  async function handleDeletar(id: string) {
-    if (!confirm('Deseja excluir este paciente?')) return;
-    await api.delete(`/api/Paciente/${id}`);
+async function confirmarExclusao() {
+  if (!excluir) return;
+  setExcluindo(true);
+  try {
+    await api.delete(`/api/Paciente/${excluir.id}`);
+    setExcluir(null);
     carregar();
-  }
+  } catch (error: any) {
+    setErro(error.mensagemBack ?? 'Erro ao excluir paciente');
+    setExcluir(null);
+  } finally { setExcluindo(false); }
+}
 
   function abrirCadastro() { setEditando(null); setForm(campoVazio()); setModalAberto(true); }
 
@@ -301,7 +311,7 @@ export default function PacientesPage() {
                         </IconButton>
                       </Tooltip>
                       <Tooltip title="Excluir">
-                        <IconButton size="small" color="error" onClick={() => handleDeletar(p.id)}>
+                        <IconButton size="small" color="error" onClick={() => setExcluir(p)}>
                           <DeleteIcon fontSize="small" />
                         </IconButton>
                       </Tooltip>
@@ -520,6 +530,12 @@ export default function PacientesPage() {
           </Button>
         </DialogActions>
       </Dialog>
+      <ConfirmDialog
+        open={!!excluir} tipo="excluir" titulo="Excluir paciente" subtitulo={excluir?.nome}
+        mensagem="O paciente e todo o prontuário dele serão removidos. Esta ação não pode ser desfeita."
+        confirmarLabel="Sim, excluir" loading={excluindo}
+        onClose={() => setExcluir(null)} onConfirm={confirmarExclusao}
+      />
     </Layout>
   );
 }

@@ -31,6 +31,7 @@ import FilterListOffIcon from '@mui/icons-material/FilterListOff';
 import Layout from '../../components/layout/Layout';
 import AcompanhamentoVencimento from '../../components/receitas/AcompanhamentoVencimento';
 import api from '../../services/api';
+import ConfirmDialog from '../../components/ConfirmDialog';
 import { Consulta, Medico, Paciente, Medicamento } from '../../types';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -892,43 +893,21 @@ export default function ConsultasPage() {
         </DialogActions>
       </Dialog>
 
+
       {/* Modal Confirmação */}
-      <Dialog open={modalConfirm} onClose={() => setModalConfirm(false)} maxWidth="xs" fullWidth>
-        <Box sx={{
-          background: confirmAcao?.cor === 'error'
-            ? 'linear-gradient(135deg, #b71c1c 0%, #d32f2f 100%)'
-            : 'linear-gradient(135deg, #1b5e20 0%, #2e7d32 100%)',
-          p: 3
-        }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Avatar sx={{ bgcolor: 'rgba(255,255,255,0.2)', width: 48, height: 48, border: '2px solid rgba(255,255,255,0.4)' }}>
-              {confirmAcao?.cor === 'error'
-                ? <CancelIcon sx={{ color: 'white', fontSize: 26 }} />
-                : <CheckCircleIcon sx={{ color: 'white', fontSize: 26 }} />}
-            </Avatar>
-            <Box>
-              <Typography variant="h6" sx={{ color: 'white', fontWeight: 'bold', lineHeight: 1.2 }}>
-                {confirmAcao?.cor === 'error' ? 'Cancelar Consulta' : 'Finalizar Consulta'}
-              </Typography>
-              <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.8)' }}>{confirmAcao?.label}</Typography>
-            </Box>
-          </Box>
-        </Box>
-        <DialogContent sx={{ pt: 3 }}>
-          <Typography variant="body2" color="text.secondary">
-            {confirmAcao?.cor === 'error'
-              ? 'Tem certeza que deseja cancelar esta consulta? Esta ação não pode ser desfeita.'
-              : 'Tem certeza que deseja finalizar esta consulta? O prontuário será encerrado.'}
-          </Typography>
-        </DialogContent>
-        <DialogActions sx={{ p: 2, gap: 1 }}>
-          <Button onClick={() => setModalConfirm(false)} variant="outlined" fullWidth>Voltar</Button>
-          <Button onClick={confirmarAcao} variant="contained" color={confirmAcao?.cor ?? 'primary'} fullWidth
-            startIcon={confirmAcao?.cor === 'error' ? <CancelIcon /> : <CheckCircleIcon />}>
-            {confirmAcao?.cor === 'error' ? 'Sim, cancelar' : 'Sim, finalizar'}
-          </Button>
-        </DialogActions>
-      </Dialog>
+      <ConfirmDialog
+        open={modalConfirm}
+        tipo={confirmAcao?.cor === 'error' ? 'cancelar' : 'finalizar'}
+        titulo={confirmAcao?.cor === 'error' ? 'Cancelar consulta' : 'Finalizar consulta'}
+        subtitulo={confirmAcao?.label}
+        mensagem={confirmAcao?.cor === 'error'
+          ? 'Tem certeza que deseja cancelar esta consulta? Esta ação não pode ser desfeita.'
+          : 'Tem certeza que deseja finalizar esta consulta? O atendimento será encerrado.'}
+        confirmarLabel={confirmAcao?.cor === 'error' ? 'Sim, cancelar' : 'Sim, finalizar'}
+        onClose={() => setModalConfirm(false)}
+        onConfirm={confirmarAcao}
+      />
+
     </Layout>
   );
 }
