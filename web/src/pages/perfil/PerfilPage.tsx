@@ -119,10 +119,9 @@ export default function PerfilPage() {
         {sucesso && <Alert severity="success" sx={{ mb: 2 }} onClose={() => setSucesso('')}>{sucesso}</Alert>}
 
         <Card sx={{ borderRadius: 4, overflow: 'hidden' }}>
-          <Box sx={{ height: 110, background: `linear-gradient(135deg, ${cor} 0%, ${alpha(cor, 0.65)} 100%)` }} />
 
-          <CardContent sx={{ pt: 0, px: 4, pb: 4, textAlign: 'center' }}>
-            <Box sx={{ position: 'relative', display: 'inline-flex', mt: -7, mb: 1.5 }}>
+          <CardContent sx={{ pt: 4, px: 4, pb: 4, textAlign: 'center' }}>
+            <Box sx={{ position: 'relative', display: 'inline-flex', mb: 1.5 }}>
               <Box sx={{
                 display: 'flex', borderRadius: '50%',
                 border: '4px solid', borderColor: 'background.paper',
