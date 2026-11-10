@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -17,17 +18,29 @@ import { useAuth } from '../../contexts/AuthContext';
 import { Consulta } from '../../types';
 
 const statusCores: Record<string, string> = {
-  Agendada: '#1976d2', EmTriagem: '#ed6c02', AguardandoAtendimento: '#0288d1',
-  EmAtendimento: '#7b1fa2', Finalizada: '#2e7d32', Cancelada: '#d32f2f',
+  Agendada: '#1976d2',
+  EmTriagem: '#ed6c02',
+  AguardandoAtendimento: '#0288d1',
+  EmAtendimento: '#7b1fa2',
+  Finalizada: '#2e7d32',
+  Cancelada: '#d32f2f',
 };
 
 const statusLabels: Record<string, string> = {
-  Agendada: 'Agendada', EmTriagem: 'Em Triagem',
-  AguardandoAtendimento: 'Aguardando', EmAtendimento: 'Em Atendimento',
-  Finalizada: 'Finalizada', Cancelada: 'Cancelada',
+  Agendada: 'Agendada',
+  EmTriagem: 'Em Triagem',
+  AguardandoAtendimento: 'Aguardando',
+  EmAtendimento: 'Em Atendimento',
+  Finalizada: 'Finalizada',
+  Cancelada: 'Cancelada',
 };
 
-const statusAtivos = ['EmAtendimento', 'AguardandoAtendimento', 'EmTriagem', 'Agendada'];
+const statusAtivos = [
+  'EmAtendimento',
+  'AguardandoAtendimento',
+  'EmTriagem',
+  'Agendada',
+];
 
 const LIMITE_LISTA = 5;
 
@@ -49,7 +62,10 @@ function saudacao() {
 
 function dataHoje() {
   return new Date().toLocaleDateString('pt-BR', {
-    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
   });
 }
 
@@ -58,6 +74,7 @@ export default function DashboardPage() {
   const navigate = useNavigate();
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
+
   const [consultas, setConsultas] = useState<Consulta[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -87,73 +104,129 @@ export default function DashboardPage() {
 
   const atalhos = [
     ...(isRecepcionista ? [
-      { label: 'Pacientes', sublabel: 'Cadastro e edição', cor: '#1976d2', icon: <PeopleIcon />, rota: '/pacientes' },
-      { label: 'Médicos', sublabel: 'Equipe médica', cor: '#1565c0', icon: <LocalHospitalIcon />, rota: '/medicos' },
-      { label: 'Consultas', sublabel: 'Agendar e acompanhar', cor: '#7b1fa2', icon: <EventNoteIcon />, rota: '/consultas' },
+      {
+        label: 'Pacientes',
+        sublabel: 'Cadastro e edição',
+        cor: '#1976d2',
+        icon: <PeopleIcon />,
+        rota: '/pacientes',
+      },
+      {
+        label: 'Médicos',
+        sublabel: 'Equipe médica',
+        cor: '#1565c0',
+        icon: <LocalHospitalIcon />,
+        rota: '/medicos',
+      },
+      {
+        label: 'Consultas',
+        sublabel: 'Agendar e acompanhar',
+        cor: '#7b1fa2',
+        icon: <EventNoteIcon />,
+        rota: '/consultas',
+      },
     ] : []),
+
     ...(isMedico ? [
-      { label: 'Consultas', sublabel: 'Atender e anotar', cor: '#1976d2', icon: <EventNoteIcon />, rota: '/consultas' },
-      { label: 'Prontuários', sublabel: 'Histórico de pacientes', cor: '#7b1fa2', icon: <PeopleIcon />, rota: '/prontuarios' },
-      { label: 'Receitas', sublabel: 'Emitir receitas', cor: '#2e7d32', icon: <MedicationIcon />, rota: '/receitas' },
+      {
+        label: 'Consultas',
+        sublabel: 'Atender e anotar',
+        cor: '#1976d2',
+        icon: <EventNoteIcon />,
+        rota: '/consultas',
+      },
+      {
+        label: 'Prontuários',
+        sublabel: 'Histórico de pacientes',
+        cor: '#7b1fa2',
+        icon: <PeopleIcon />,
+        rota: '/prontuarios',
+      },
+      {
+        label: 'Receitas',
+        sublabel: 'Emitir receitas',
+        cor: '#2e7d32',
+        icon: <MedicationIcon />,
+        rota: '/receitas',
+      },
     ] : []),
+
     ...(isEnfermeiro ? [
-      { label: 'Triagem', sublabel: 'Registrar sinais vitais', cor: '#ed6c02', icon: <MedicalServicesIcon />, rota: '/triagem' },
-      { label: 'Consultas', sublabel: 'Acompanhar a fila', cor: '#1976d2', icon: <EventNoteIcon />, rota: '/consultas' },
-      { label: 'Prontuários', sublabel: 'Histórico de pacientes', cor: '#7b1fa2', icon: <ScienceIcon />, rota: '/prontuarios' },
+      {
+        label: 'Triagem',
+        sublabel: 'Registrar sinais vitais',
+        cor: '#ed6c02',
+        icon: <MedicalServicesIcon />,
+        rota: '/triagem',
+      },
+      {
+        label: 'Consultas',
+        sublabel: 'Acompanhar a fila',
+        cor: '#1976d2',
+        icon: <EventNoteIcon />,
+        rota: '/consultas',
+      },
+      {
+        label: 'Prontuários',
+        sublabel: 'Histórico de pacientes',
+        cor: '#7b1fa2',
+        icon: <ScienceIcon />,
+        rota: '/prontuarios',
+      },
     ] : []),
-  ];
+  ].sort((a, b) => a.label.localeCompare(b.label, 'pt-BR'));
 
   return (
     <Layout>
       {loading && (
-        <LinearProgress sx={{ position: 'fixed', top: 64, left: 0, right: 0, zIndex: 9999 }} />
+        <LinearProgress
+          sx={{
+            position: 'fixed',
+            top: 64,
+            left: 0,
+            right: 0,
+            zIndex: 9999,
+          }}
+        />
       )}
 
       <Box sx={{ mb: 4 }}>
         <Typography variant="h4" sx={{ fontWeight: 800, mb: 0.5 }}>
-          {saudacao()}, {usuario?.nome?.split(' ')[0]}! 👋
+          {saudacao()}, {usuario?.nome?.split(' ')[0]}
         </Typography>
-        <Typography variant="body1" color="text.secondary" sx={{ textTransform: 'capitalize' }}>
+
+        <Typography
+          variant="body1"
+          color="text.secondary"
+          sx={{ textTransform: 'capitalize' }}
+        >
           {dataHoje()}
         </Typography>
       </Box>
 
-      {atalhos.length > 0 && (
-        <Box sx={{ display: 'flex', gap: 1.5, mb: 3, flexWrap: 'wrap' }}>
-          {atalhos.map((a) => (
-            <Paper
-              key={a.label}
-              onClick={() => navigate(a.rota)}
-              sx={{
-                display: 'flex', alignItems: 'center', gap: 1.5,
-                px: 2, py: 1.25, borderRadius: 2,
-                cursor: 'pointer',
-                border: `1px solid ${alpha(a.cor, 0.25)}`,
-                bgcolor: alpha(a.cor, isDark ? 0.1 : 0.06),
-                transition: '0.2s',
-                '&:hover': { boxShadow: 2, bgcolor: alpha(a.cor, isDark ? 0.18 : 0.12) },
-              }}
-            >
-              <Box sx={{ color: a.cor, display: 'flex' }}>{a.icon}</Box>
-              <Box>
-                <Typography variant="body2" sx={{ fontWeight: 700, lineHeight: 1.2 }}>{a.label}</Typography>
-                <Typography variant="caption" color="text.secondary">{a.sublabel}</Typography>
-              </Box>
-            </Paper>
-          ))}
-        </Box>
-      )}
-
       <Card sx={{ borderRadius: 3 }}>
         <CardContent sx={{ p: 3 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+          <Box sx={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            mb: 2,
+          }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <Typography variant="h6" sx={{ fontWeight: 700 }}>
                 {isMedico ? 'Minhas consultas ativas' : 'Ativas agora'}
               </Typography>
-              {ativas.length > 0 && <Chip label={ativas.length} size="small" color="primary" />}
+
+              {ativas.length > 0 && (
+                <Chip label={ativas.length} size="small" color="primary" />
+              )}
             </Box>
-            <Button size="small" endIcon={<ArrowForwardIcon />} onClick={() => navigate('/consultas')}>
+
+            <Button
+              size="small"
+              endIcon={<ArrowForwardIcon />}
+              onClick={() => navigate('/consultas')}
+            >
               Ver todas
             </Button>
           </Box>
@@ -161,55 +234,88 @@ export default function DashboardPage() {
           {ativas.length === 0 ? (
             <Box sx={{ textAlign: 'center', py: 5, color: 'text.secondary' }}>
               <EventNoteIcon sx={{ fontSize: 44, opacity: 0.15, mb: 1 }} />
-              <Typography variant="body2" sx={{ opacity: 0.5 }}>Nenhuma consulta ativa no momento</Typography>
+              <Typography variant="body2" sx={{ opacity: 0.5 }}>
+                Nenhuma consulta ativa no momento
+              </Typography>
             </Box>
           ) : (
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
               {ativas.slice(0, LIMITE_LISTA).map((c) => {
                 const cor = statusCores[c.status] ?? '#1976d2';
+
                 return (
                   <Paper
                     key={c.id}
                     variant="outlined"
                     onClick={() => navigate('/consultas')}
                     sx={{
-                      p: 2, borderRadius: 2,
+                      p: 2,
+                      borderRadius: 2,
                       borderLeft: `4px solid ${cor}`,
-                      cursor: 'pointer', transition: '0.15s',
-                      '&:hover': { bgcolor: 'action.hover', transform: 'translateX(2px)' },
+                      cursor: 'pointer',
+                      transition: '0.15s',
+                      '&:hover': {
+                        bgcolor: 'action.hover',
+                        transform: 'translateX(2px)',
+                      },
                     }}
                   >
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                       <Avatar sx={{
-                        width: 40, height: 40, fontSize: 13, fontWeight: 700,
-                        bgcolor: corAvatar(c.nomePaciente), flexShrink: 0,
+                        width: 40,
+                        height: 40,
+                        fontSize: 13,
+                        fontWeight: 700,
+                        bgcolor: corAvatar(c.nomePaciente),
+                        flexShrink: 0,
                       }}>
                         {iniciais(c.nomePaciente)}
                       </Avatar>
+
                       <Box sx={{ flex: 1, minWidth: 0 }}>
                         <Typography variant="body2" sx={{
                           fontWeight: 600,
-                          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
                         }}>
                           {c.nomePaciente}
                         </Typography>
+
                         <Typography variant="caption" color="text.secondary">
-                          {c.nomeMedico} · {new Date(c.dataConsulta).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                          {c.nomeMedico} · {new Date(c.dataConsulta).toLocaleTimeString('pt-BR', {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })}
                         </Typography>
                       </Box>
+
                       <Chip
                         label={statusLabels[c.status]}
                         size="small"
-                        sx={{ bgcolor: alpha(cor, 0.12), color: cor, fontWeight: 600, fontSize: 11, flexShrink: 0 }}
+                        sx={{
+                          bgcolor: alpha(cor, 0.12),
+                          color: cor,
+                          fontWeight: 600,
+                          fontSize: 11,
+                          flexShrink: 0,
+                        }}
                       />
                     </Box>
                   </Paper>
                 );
               })}
+
               {ativas.length > LIMITE_LISTA && (
                 <Typography
-                  variant="caption" color="text.secondary"
-                  sx={{ textAlign: 'center', pt: 1, cursor: 'pointer', '&:hover': { color: 'primary.main' } }}
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{
+                    textAlign: 'center',
+                    pt: 1,
+                    cursor: 'pointer',
+                    '&:hover': { color: 'primary.main' },
+                  }}
                   onClick={() => navigate('/consultas')}
                 >
                   +{ativas.length - LIMITE_LISTA} consultas, ver todas
@@ -219,6 +325,28 @@ export default function DashboardPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Atalhos */}
+      {atalhos.length > 0 && (
+        <Box sx={{ display: 'flex', gap: 1, mt: 3, flexWrap: 'wrap' }}>
+          {atalhos.map((a) => (
+            <Button
+              key={a.label}
+              size="small"
+              variant="outlined"
+              startIcon={a.icon}
+              onClick={() => navigate(a.rota)}
+              sx={{
+                borderRadius: 2,
+                color: a.cor,
+                borderColor: alpha(a.cor, 0.4),
+              }}
+            >
+              {a.label}
+            </Button>
+          ))}
+        </Box>
+      )}
     </Layout>
   );
 }
