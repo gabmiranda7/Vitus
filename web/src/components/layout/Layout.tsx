@@ -1,3 +1,4 @@
+
 import { ReactNode } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
@@ -5,6 +6,7 @@ import {
   ListItemIcon, ListItemText, Toolbar, Typography, IconButton,
   Divider, Tooltip, useTheme, Chip
 } from '@mui/material';
+import logo from '../../assets/logo.svg';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import PeopleIcon from '@mui/icons-material/People';
 import LocalHospitalIcon from '@mui/icons-material/LocalHospital';
@@ -18,7 +20,6 @@ import DarkModeIcon from '@mui/icons-material/DarkMode';
 import LightModeIcon from '@mui/icons-material/LightMode';
 import FolderSharedIcon from '@mui/icons-material/FolderShared';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
-import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import { useAuth } from '../../contexts/AuthContext';
 import AvatarUsuario from './AvatarUsuario';
 
@@ -28,14 +29,13 @@ const menuItems = [
   { label: 'Auditoria', path: '/auditoria', icon: <HistoryIcon />, perfis: ['Administrador'] },
   { label: 'Aprovações', path: '/aprovacoes', icon: <FactCheckIcon />, perfis: ['Administrador'] },
   { label: 'Minha Agenda', path: '/agenda', icon: <CalendarTodayIcon />, perfis: ['Medico'] },
-  { label: 'Dashboard',  path: '/dashboard',  icon: <DashboardIcon />,       perfis: ['Recepcionista', 'Enfermeiro', 'Medico'] },
-  { label: 'Consultas',  path: '/consultas',  icon: <EventNoteIcon />,        perfis: ['Recepcionista', 'Enfermeiro', 'Medico'] },
-  { label: 'Triagem',    path: '/triagem',    icon: <MedicalServicesIcon />,  perfis: ['Enfermeiro'] },
-  { label: 'Receitas',   path: '/receitas',   icon: <MedicationIcon />,       perfis: ['Medico'] },
+  { label: 'Dashboard', path: '/dashboard', icon: <DashboardIcon />, perfis: ['Recepcionista', 'Enfermeiro', 'Medico'] },
+  { label: 'Consultas', path: '/consultas', icon: <EventNoteIcon />, perfis: ['Recepcionista', 'Enfermeiro', 'Medico'] },
+  { label: 'Triagem', path: '/triagem', icon: <MedicalServicesIcon />, perfis: ['Enfermeiro'] },
+  { label: 'Receitas', path: '/receitas', icon: <MedicationIcon />, perfis: ['Medico'] },
   { label: 'Prontuários', path: '/prontuarios', icon: <FolderSharedIcon />, perfis: ['Medico', 'Enfermeiro'] },
-  { label: 'Pacientes',  path: '/pacientes',  icon: <PeopleIcon />,           perfis: ['Recepcionista'] },
-  { label: 'Médicos',    path: '/medicos',    icon: <LocalHospitalIcon />,    perfis: ['Recepcionista'] },
-  { label: 'Meu Perfil', path: '/perfil', icon: <AccountCircleIcon />, perfis: ['Recepcionista', 'Enfermeiro', 'Medico', 'Administrador'] },
+  { label: 'Pacientes', path: '/pacientes', icon: <PeopleIcon />, perfis: ['Recepcionista'] },
+  { label: 'Médicos', path: '/medicos', icon: <LocalHospitalIcon />, perfis: ['Recepcionista'] },
 ];
 
 const perfilCores: Record<string, string> = {
@@ -75,13 +75,17 @@ export default function Layout({ children }: { children: ReactNode }) {
       }}>
         <Toolbar sx={{ justifyContent: 'space-between' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-            <Box sx={{
-              width: 32, height: 32, borderRadius: '8px',
-              bgcolor: 'primary.main', display: 'flex',
-              alignItems: 'center', justifyContent: 'center'
-            }}>
-              <FolderSharedIcon sx={{ color: 'white', fontSize: 18 }} />
-            </Box>
+            <Box
+              component="img"
+              src={logo}
+              alt="Vitus"
+              sx={{
+                width: 34,
+                height: 34,
+                borderRadius: '8px',
+                objectFit: 'contain',
+              }}
+            />
             <Typography variant="h6" sx={{ fontWeight: 800, color: 'primary.main', letterSpacing: -0.5 }}>
               Vitus
             </Typography>
