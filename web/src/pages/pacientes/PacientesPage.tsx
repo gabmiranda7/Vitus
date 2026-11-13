@@ -1,11 +1,9 @@
 import { useEffect, useState, useMemo } from 'react';
 import {
-  Box, Button, Dialog, DialogActions, DialogContent, DialogTitle,
-  TextField, Typography, Alert, InputAdornment, Avatar, Card,
-  CardContent, IconButton, Tooltip, Chip, MenuItem, Select,
-  FormControl, InputLabel, FormControlLabel, Checkbox, Divider, Paper
+  Box, Button, Dialog, DialogActions, DialogContent, TextField, Typography,
+  Alert, InputAdornment, Avatar, IconButton, Tooltip, Chip, MenuItem, Select,
+  FormControl, InputLabel, FormControlLabel, Checkbox, Divider, Paper, alpha,
 } from '@mui/material';
-import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import PeopleIcon from '@mui/icons-material/People';
@@ -22,10 +20,11 @@ import FilterListIcon from '@mui/icons-material/FilterList';
 import FilterListOffIcon from '@mui/icons-material/FilterListOff';
 import Layout from '../../components/layout/Layout';
 import ConfirmDialog from '../../components/ConfirmDialog';
+import FabNovo from '../../components/FabNovo';
 import api from '../../services/api';
 import { Paciente } from '../../types';
 
-const POR_PAGINA = 12;
+const POR_PAGINA = 10;
 
 const SEXOS = ['Masculino', 'Feminino', 'Outro', 'Prefiro não informar'];
 const ESTADOS_CIVIS = ['Solteiro(a)', 'Casado(a)', 'Divorciado(a)', 'Viúvo(a)', 'União estável'];
@@ -61,11 +60,69 @@ function idadeLabel(dataNascimento?: string): string {
   return idade !== null ? `${idade} anos` : '';
 }
 
+function formatarCpf(cpf: string): string {
+  const s = cpf.replace(/\D/g, '').substring(0, 11);
+  if (s.length <= 3) return s;
+  if (s.length <= 6) return `${s.slice(0, 3)}.${s.slice(3)}`;
+  if (s.length <= 9) return `${s.slice(0, 3)}.${s.slice(3, 6)}.${s.slice(6)}`;
+  return `${s.slice(0, 3)}.${s.slice(3, 6)}.${s.slice(6, 9)}-${s.slice(9, 11)}`;
+}
+
+function formatarCartaoSus(sus: string): string {
+  const s = sus.replace(/\D/g, '').substring(0, 15);
+  if (s.length <= 3) return s;
+  if (s.length <= 7) return `${s.slice(0, 3)}.${s.slice(3)}`;
+  if (s.length <= 11) return `${s.slice(0, 3)}.${s.slice(3, 7)}.${s.slice(7)}`;
+  return `${s.slice(0, 3)}.${s.slice(3, 7)}.${s.slice(7, 11)}.${s.slice(11, 15)}`;
+}
+
+function exibirCpf(cpf?: string): string {
+  if (!cpf) return '';
+  const s = cpf.replace(/\D/g, '');
+  if (s.length === 11) return `${s.slice(0, 3)}.${s.slice(3, 6)}.${s.slice(6, 9)}-${s.slice(9, 11)}`;
+  return cpf;
+}
+
+function exibirCartaoSus(sus?: string): string {
+  if (!sus) return '';
+  const s = sus.replace(/\D/g, '');
+  if (s.length === 15) return `${s.slice(0, 3)}.${s.slice(3, 7)}.${s.slice(7, 11)}.${s.slice(11, 15)}`;
+  return sus;
+}
+
 const campoVazio = () => ({
   nome: '', cpf: '', cartaoSus: '', dataNascimento: '', sexo: '',
   nomePai: '', nomeMae: '', endereco: '', profissao: '',
   estadoCivil: '', informacoesAdicionais: '', aceitaTermos: false,
 });
+
+function SecaoTitulo({ icone, titulo, cor = 'primary' }: { icone: React.ReactNode; titulo: string; cor?: 'primary' | 'warning' }) {
+  return (
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
+      {icone}
+      <Typography variant="caption" sx={{ fontWeight: 700, color: `${cor}.main`, textTransform: 'uppercase', letterSpacing: 0.8, fontSize: 11 }}>
+        {titulo}
+      </Typography>
+    </Box>
+  );
+}
+
+function LinhasInfo({ itens }: { itens: { label: string; value?: string | null }[] }) {
+  const visiveis = itens.filter(i => i.value);
+  return (
+    <Box>
+      {visiveis.map((item, i) => (
+        <Box key={item.label} sx={{
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 1.25, gap: 2,
+          borderBottom: i < visiveis.length - 1 ? '1px solid' : 'none', borderColor: 'divider',
+        }}>
+          <Typography variant="body2" color="text.secondary">{item.label}</Typography>
+          <Typography variant="body2" sx={{ fontWeight: 600, textAlign: 'right' }}>{item.value}</Typography>
+        </Box>
+      ))}
+    </Box>
+  );
+}
 
 export default function PacientesPage() {
   const [pacientes, setPacientes] = useState<Paciente[]>([]);
@@ -80,6 +137,7 @@ export default function PacientesPage() {
   const [editando, setEditando] = useState<Paciente | null>(null);
   const [form, setForm] = useState(campoVazio());
   const [erro, setErro] = useState('');
+  const [erroLista, setErroLista] = useState('');
   const [excluir, setExcluir] = useState<Paciente | null>(null);
   const [excluindo, setExcluindo] = useState(false);
 
@@ -116,18 +174,18 @@ export default function PacientesPage() {
     } catch (error: any) { setErro(error.mensagemBack ?? 'Erro ao salvar paciente'); }
   }
 
-async function confirmarExclusao() {
-  if (!excluir) return;
-  setExcluindo(true);
-  try {
-    await api.delete(`/api/Paciente/${excluir.id}`);
-    setExcluir(null);
-    carregar();
-  } catch (error: any) {
-    setErro(error.mensagemBack ?? 'Erro ao excluir paciente');
-    setExcluir(null);
-  } finally { setExcluindo(false); }
-}
+  async function confirmarExclusao() {
+    if (!excluir) return;
+    setExcluindo(true);
+    try {
+      await api.delete(`/api/Paciente/${excluir.id}`);
+      setExcluir(null);
+      carregar();
+    } catch (error: any) {
+      setErroLista(error.mensagemBack ?? 'Erro ao excluir paciente');
+      setExcluir(null);
+    } finally { setExcluindo(false); }
+  }
 
   function abrirCadastro() { setEditando(null); setForm(campoVazio()); setModalAberto(true); }
 
@@ -147,44 +205,14 @@ async function confirmarExclusao() {
 
   function abrirDetalhes(p: Paciente) { setPacienteSelecionado(p); setModalDetalhes(true); }
 
-  function formatarCpf(cpf: string): string {
-    const s = cpf.replace(/\D/g, '').substring(0, 11);
-    if (s.length <= 3) return s;
-    if (s.length <= 6) return `${s.slice(0,3)}.${s.slice(3)}`;
-    if (s.length <= 9) return `${s.slice(0,3)}.${s.slice(3,6)}.${s.slice(6)}`;
-    return `${s.slice(0,3)}.${s.slice(3,6)}.${s.slice(6,9)}-${s.slice(9,11)}`;
-  }
-
-  function formatarCartaoSus(sus: string): string {
-    const s = sus.replace(/\D/g, '').substring(0, 15);
-    if (s.length <= 3) return s;
-    if (s.length <= 7) return `${s.slice(0,3)}.${s.slice(3)}`;
-    if (s.length <= 11) return `${s.slice(0,3)}.${s.slice(3,7)}.${s.slice(7)}`;
-    return `${s.slice(0,3)}.${s.slice(3,7)}.${s.slice(7,11)}.${s.slice(11,15)}`;
-  }
-
-  function exibirCpf(cpf?: string): string {
-    if (!cpf) return '';
-    const s = cpf.replace(/\D/g, '');
-    if (s.length === 11) return `${s.slice(0,3)}.${s.slice(3,6)}.${s.slice(6,9)}-${s.slice(9,11)}`;
-    return cpf;
-  }
-
-  function exibirCartaoSus(sus?: string): string {
-    if (!sus) return '';
-    const s = sus.replace(/\D/g, '');
-    if (s.length === 15) return `${s.slice(0,3)}.${s.slice(3,7)}.${s.slice(7,11)}.${s.slice(11,15)}`;
-    return sus;
-  }
-
   function fechar() { setModalAberto(false); setEditando(null); setForm(campoVazio()); setErro(''); }
 
   const temFiltroAtivo = filtroSexo !== '' || filtroFaixa !== 'Todas';
+  const qtdFiltros = [filtroSexo, filtroFaixa !== 'Todas' ? filtroFaixa : ''].filter(Boolean).length;
 
   function limparFiltros() { setFiltroSexo(''); setFiltroFaixa('Todas'); }
 
   const filtrados = useMemo(() => {
-    setPagina(1);
     const q = busca.toLowerCase();
     const faixa = FAIXAS_ETARIAS.find(f => f.label === filtroFaixa) ?? FAIXAS_ETARIAS[0];
 
@@ -198,23 +226,23 @@ async function confirmarExclusao() {
     });
   }, [pacientes, busca, filtroSexo, filtroFaixa]);
 
+  useEffect(() => { setPagina(1); }, [busca, filtroSexo, filtroFaixa]);
+
   const totalPaginas = Math.max(1, Math.ceil(filtrados.length / POR_PAGINA));
   const paginaAtual = filtrados.slice((pagina - 1) * POR_PAGINA, pagina * POR_PAGINA);
 
+  const p = pacienteSelecionado;
+
   return (
     <Layout>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <PeopleIcon color="primary" />
-          <Typography variant="h5" sx={{ fontWeight: 'bold' }}>Pacientes</Typography>
-          <Chip label={pacientes.length} size="small" color="primary" />
-        </Box>
-        <Button variant="contained" startIcon={<AddIcon />} onClick={abrirCadastro} sx={{ borderRadius: 2 }}>
-          Novo Paciente
-        </Button>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 3 }}>
+        <PeopleIcon color="primary" />
+        <Typography variant="h5" sx={{ fontWeight: 'bold' }}>Pacientes</Typography>
+        <Chip label={pacientes.length} size="small" color="primary" />
       </Box>
 
-      {/* Barra de busca + botão de filtros */}
+      {erroLista && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setErroLista('')}>{erroLista}</Alert>}
+
       <Box sx={{ display: 'flex', gap: 1, mb: filtrosVisiveis ? 2 : 3 }}>
         <TextField fullWidth placeholder="Buscar paciente por nome ou CPF..."
           value={busca} onChange={(e) => setBusca(e.target.value)}
@@ -228,12 +256,11 @@ async function confirmarExclusao() {
             startIcon={filtrosVisiveis ? <FilterListOffIcon /> : <FilterListIcon />}
             sx={{ borderRadius: 2, whiteSpace: 'nowrap' }}
           >
-            Filtros {temFiltroAtivo && `(${[filtroSexo, filtroFaixa !== 'Todas' ? filtroFaixa : ''].filter(Boolean).length})`}
+            Filtros {qtdFiltros > 0 && `(${qtdFiltros})`}
           </Button>
         </Tooltip>
       </Box>
 
-      {/* Filtros expandíveis */}
       {filtrosVisiveis && (
         <Paper variant="outlined" sx={{ p: 2, mb: 3, borderRadius: 2 }}>
           <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
@@ -251,9 +278,7 @@ async function confirmarExclusao() {
               </Select>
             </FormControl>
             {temFiltroAtivo && (
-              <Button size="small" variant="outlined" color="error" onClick={limparFiltros}>
-                Limpar filtros
-              </Button>
+              <Button size="small" variant="outlined" color="error" onClick={limparFiltros}>Limpar filtros</Button>
             )}
             <Typography variant="caption" color="text.secondary" sx={{ ml: 'auto' }}>
               {filtrados.length} de {pacientes.length} paciente(s)
@@ -268,69 +293,61 @@ async function confirmarExclusao() {
           <Typography variant="h6" sx={{ opacity: 0.5 }}>
             {busca || temFiltroAtivo ? 'Nenhum paciente encontrado' : 'Nenhum paciente cadastrado'}
           </Typography>
-          {temFiltroAtivo && (
-            <Button size="small" onClick={limparFiltros} sx={{ mt: 1 }}>Limpar filtros</Button>
-          )}
+          {temFiltroAtivo && <Button size="small" onClick={limparFiltros} sx={{ mt: 1 }}>Limpar filtros</Button>}
         </Box>
       ) : (
         <>
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
-            {paginaAtual.map((p) => (
-              <Box key={p.id} sx={{ flex: '1 1 220px', maxWidth: { xs: '100%', sm: 'calc(50% - 8px)', md: 'calc(25% - 12px)' } }}>
-                <Card
-                  sx={{ borderRadius: 2, height: '100%', transition: '0.2s', cursor: 'pointer', '&:hover': { boxShadow: 6, transform: 'translateY(-2px)' } }}
-                  onClick={() => abrirDetalhes(p)}
-                >
-                  <CardContent sx={{ p: 2 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1.5 }}>
-                      <Avatar sx={{ bgcolor: corAvatar(p.nome), width: 48, height: 48, fontSize: 18, fontWeight: 'bold', flexShrink: 0 }}>
-                        {iniciais(p.nome)}
-                      </Avatar>
-                      <Box sx={{ flex: 1, minWidth: 0 }}>
-                        <Typography variant="body1" sx={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                          {p.nome}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          {idadeLabel(p.dataNascimento ?? undefined) || 'Idade não informada'}
-                          {p.sexo ? ` · ${p.sexo}` : ''}
-                        </Typography>
-                      </Box>
-                    </Box>
-                    {p.cpf && (
-                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
-                        CPF: {p.cpf}
-                      </Typography>
-                    )}
-                    {p.informacoesAdicionais && (
-                      <Chip label="⚠️ Info adicional" size="small" color="warning" variant="outlined" sx={{ mt: 0.5, fontSize: 11 }} />
-                    )}
-                    <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 0.5, mt: 1 }} onClick={(e) => e.stopPropagation()}>
-                      <Tooltip title="Editar">
-                        <IconButton size="small" color="primary" onClick={() => abrirEdicao(p)}>
-                          <EditIcon fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
-                      <Tooltip title="Excluir">
-                        <IconButton size="small" color="error" onClick={() => setExcluir(p)}>
-                          <DeleteIcon fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
-                    </Box>
-                  </CardContent>
-                </Card>
-              </Box>
-            ))}
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, pb: 8 }}>
+            {paginaAtual.map((pac) => {
+              const cor = corAvatar(pac.nome);
+              return (
+                <Paper key={pac.id} variant="outlined" onClick={() => abrirDetalhes(pac)} sx={{
+                  p: 1.5, px: 2, borderRadius: 2, display: 'flex', alignItems: 'center', gap: 2,
+                  cursor: 'pointer', borderLeft: `4px solid ${cor}`, transition: '0.15s',
+                  '&:hover': { bgcolor: 'action.hover' },
+                }}>
+                  <Avatar sx={{ bgcolor: cor, width: 40, height: 40, fontSize: 14, fontWeight: 700, flexShrink: 0 }}>
+                    {iniciais(pac.nome)}
+                  </Avatar>
+                  <Box sx={{ flex: 1, minWidth: 0 }}>
+                    <Typography variant="body2" sx={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {pac.nome}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {[idadeLabel(pac.dataNascimento ?? undefined) || 'Idade não informada', pac.sexo, pac.cpf && `CPF: ${pac.cpf}`]
+                        .filter(Boolean).join(' · ')}
+                    </Typography>
+                  </Box>
+                  {pac.informacoesAdicionais && (
+                    <Chip icon={<MedicalInformationIcon />} label="Info médica" size="small" color="warning"
+                      variant="outlined" sx={{ fontSize: 11, display: { xs: 'none', sm: 'inline-flex' } }} />
+                  )}
+                  <Box sx={{ display: 'flex', flexShrink: 0 }} onClick={(e) => e.stopPropagation()}>
+                    <Tooltip title="Editar">
+                      <IconButton size="small" color="primary" onClick={() => abrirEdicao(pac)}>
+                        <EditIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                    <Tooltip title="Excluir">
+                      <IconButton size="small" color="error" onClick={() => setExcluir(pac)}>
+                        <DeleteIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                  </Box>
+                </Paper>
+              );
+            })}
           </Box>
 
           {totalPaginas > 1 && (
-            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 2, mt: 3 }}>
-              <IconButton onClick={() => setPagina(p => Math.max(1, p - 1))} disabled={pagina === 1}>
+            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 2, mt: -4, pb: 8 }}>
+              <IconButton onClick={() => setPagina(n => Math.max(1, n - 1))} disabled={pagina === 1}>
                 <NavigateBeforeIcon />
               </IconButton>
               <Typography variant="body2" color="text.secondary">
                 Página {pagina} de {totalPaginas} · {filtrados.length} paciente(s)
               </Typography>
-              <IconButton onClick={() => setPagina(p => Math.min(totalPaginas, p + 1))} disabled={pagina === totalPaginas}>
+              <IconButton onClick={() => setPagina(n => Math.min(totalPaginas, n + 1))} disabled={pagina === totalPaginas}>
                 <NavigateNextIcon />
               </IconButton>
             </Box>
@@ -338,21 +355,21 @@ async function confirmarExclusao() {
         </>
       )}
 
-      {/* Modal de Detalhes */}
+      <FabNovo label="Novo Paciente" onClick={abrirCadastro} />
+
+      {/* Detalhes */}
       <Dialog open={modalDetalhes} onClose={() => setModalDetalhes(false)} fullWidth maxWidth="sm">
-        {pacienteSelecionado && (
+        {p && (
           <>
             <Box sx={{ background: 'linear-gradient(135deg, #1565c0 0%, #1976d2 100%)', p: 3 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                <Avatar sx={{ bgcolor: corAvatar(pacienteSelecionado.nome), width: 60, height: 60, fontSize: 22, fontWeight: 'bold', border: '3px solid rgba(255,255,255,0.4)' }}>
-                  {iniciais(pacienteSelecionado.nome)}
+                <Avatar sx={{ bgcolor: corAvatar(p.nome), width: 60, height: 60, fontSize: 22, fontWeight: 'bold', border: '3px solid rgba(255,255,255,0.4)' }}>
+                  {iniciais(p.nome)}
                 </Avatar>
                 <Box>
-                  <Typography variant="h6" sx={{ color: 'white', fontWeight: 'bold', lineHeight: 1.2 }}>
-                    {pacienteSelecionado.nome}
-                  </Typography>
+                  <Typography variant="h6" sx={{ color: 'white', fontWeight: 'bold', lineHeight: 1.2 }}>{p.nome}</Typography>
                   <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.85)', mt: 0.5 }}>
-                    {[idadeLabel(pacienteSelecionado.dataNascimento ?? undefined), pacienteSelecionado.sexo, pacienteSelecionado.estadoCivil].filter(Boolean).join(' · ')}
+                    {[idadeLabel(p.dataNascimento ?? undefined), p.sexo, p.estadoCivil].filter(Boolean).join(' · ')}
                   </Typography>
                 </Box>
               </Box>
@@ -360,68 +377,45 @@ async function confirmarExclusao() {
 
             <DialogContent sx={{ p: 3 }}>
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                {(pacienteSelecionado.cpf || pacienteSelecionado.cartaoSus || pacienteSelecionado.dataNascimento || pacienteSelecionado.profissao) && (
+                {(p.cpf || p.cartaoSus || p.dataNascimento || p.profissao) && (
                   <Box>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
-                      <BadgeIcon fontSize="small" color="primary" />
-                      <Typography variant="caption" sx={{ fontWeight: 700, color: 'primary.main', textTransform: 'uppercase', letterSpacing: 0.8, fontSize: 11 }}>Identificação</Typography>
-                    </Box>
-                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
-                      {[
-                        { label: 'CPF', value: exibirCpf(pacienteSelecionado.cpf) },
-                        { label: 'Cartão SUS', value: exibirCartaoSus(pacienteSelecionado.cartaoSus) },
-                        { label: 'Data de Nascimento', value: pacienteSelecionado.dataNascimento ? new Date(pacienteSelecionado.dataNascimento + 'T00:00:00').toLocaleDateString('pt-BR') : null },
-                        { label: 'Profissão', value: pacienteSelecionado.profissao },
-                      ].filter(item => item.value).map((item, i, arr) => (
-                        <Box key={i} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 1.25, borderBottom: i < arr.length - 1 ? '1px solid' : 'none', borderColor: 'divider' }}>
-                          <Typography variant="body2" color="text.secondary">{item.label}</Typography>
-                          <Typography variant="body2" sx={{ fontWeight: 600 }}>{item.value}</Typography>
-                        </Box>
-                      ))}
+                    <SecaoTitulo icone={<BadgeIcon fontSize="small" color="primary" />} titulo="Identificação" />
+                    <LinhasInfo itens={[
+                      { label: 'CPF', value: exibirCpf(p.cpf) },
+                      { label: 'Cartão SUS', value: exibirCartaoSus(p.cartaoSus) },
+                      { label: 'Data de Nascimento', value: p.dataNascimento ? new Date(p.dataNascimento + 'T00:00:00').toLocaleDateString('pt-BR') : null },
+                      { label: 'Profissão', value: p.profissao },
+                    ]} />
+                  </Box>
+                )}
+
+                {(p.nomePai || p.nomeMae) && (
+                  <Box>
+                    <SecaoTitulo icone={<FamilyRestroomIcon fontSize="small" color="primary" />} titulo="Família" />
+                    <LinhasInfo itens={[
+                      { label: 'Nome do Pai', value: p.nomePai },
+                      { label: 'Nome da Mãe', value: p.nomeMae },
+                    ]} />
+                  </Box>
+                )}
+
+                {p.endereco && (
+                  <Box>
+                    <SecaoTitulo icone={<HomeIcon fontSize="small" color="primary" />} titulo="Endereço" />
+                    <Typography variant="body2">{p.endereco}</Typography>
+                  </Box>
+                )}
+
+                {p.informacoesAdicionais && (
+                  <Box>
+                    <SecaoTitulo icone={<MedicalInformationIcon fontSize="small" color="warning" />} titulo="Informações Médicas Adicionais" cor="warning" />
+                    <Box sx={{ p: 2, borderRadius: 2, border: '1px solid', borderColor: 'warning.main', bgcolor: (t) => alpha(t.palette.warning.main, 0.06) }}>
+                      <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>{p.informacoesAdicionais}</Typography>
                     </Box>
                   </Box>
                 )}
 
-                {(pacienteSelecionado.nomePai || pacienteSelecionado.nomeMae) && (
-                  <Box>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
-                      <FamilyRestroomIcon fontSize="small" color="primary" />
-                      <Typography variant="caption" sx={{ fontWeight: 700, color: 'primary.main', textTransform: 'uppercase', letterSpacing: 0.8, fontSize: 11 }}>Família</Typography>
-                    </Box>
-                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
-                      {[{ label: 'Nome do Pai', value: pacienteSelecionado.nomePai }, { label: 'Nome da Mãe', value: pacienteSelecionado.nomeMae }].filter(item => item.value).map((item, i, arr) => (
-                        <Box key={i} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 1.25, borderBottom: i < arr.length - 1 ? '1px solid' : 'none', borderColor: 'divider' }}>
-                          <Typography variant="body2" color="text.secondary">{item.label}</Typography>
-                          <Typography variant="body2" sx={{ fontWeight: 600 }}>{item.value}</Typography>
-                        </Box>
-                      ))}
-                    </Box>
-                  </Box>
-                )}
-
-                {pacienteSelecionado.endereco && (
-                  <Box>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
-                      <HomeIcon fontSize="small" color="primary" />
-                      <Typography variant="caption" sx={{ fontWeight: 700, color: 'primary.main', textTransform: 'uppercase', letterSpacing: 0.8, fontSize: 11 }}>Endereço</Typography>
-                    </Box>
-                    <Typography variant="body2">{pacienteSelecionado.endereco}</Typography>
-                  </Box>
-                )}
-
-                {pacienteSelecionado.informacoesAdicionais && (
-                  <Box>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
-                      <MedicalInformationIcon fontSize="small" color="warning" />
-                      <Typography variant="caption" sx={{ fontWeight: 700, color: 'warning.main', textTransform: 'uppercase', letterSpacing: 0.8, fontSize: 11 }}>Informações Médicas Adicionais</Typography>
-                    </Box>
-                    <Box sx={{ p: 2, borderRadius: 2, border: '1px solid', borderColor: 'warning.main' }}>
-                      <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap', color: 'warning.dark' }}>⚠️ {pacienteSelecionado.informacoesAdicionais}</Typography>
-                    </Box>
-                  </Box>
-                )}
-
-                {!pacienteSelecionado.cpf && !pacienteSelecionado.cartaoSus && !pacienteSelecionado.dataNascimento && !pacienteSelecionado.profissao && !pacienteSelecionado.nomePai && !pacienteSelecionado.nomeMae && !pacienteSelecionado.endereco && !pacienteSelecionado.informacoesAdicionais && (
+                {!p.cpf && !p.cartaoSus && !p.dataNascimento && !p.profissao && !p.nomePai && !p.nomeMae && !p.endereco && !p.informacoesAdicionais && (
                   <Box sx={{ textAlign: 'center', py: 4, color: 'text.secondary' }}>
                     <PersonIcon sx={{ fontSize: 48, opacity: 0.2, mb: 1 }} />
                     <Typography variant="body2" sx={{ opacity: 0.5 }}>Nenhuma informação adicional cadastrada</Typography>
@@ -432,13 +426,13 @@ async function confirmarExclusao() {
 
             <DialogActions sx={{ p: 2.5, gap: 1, borderTop: '1px solid', borderColor: 'divider' }}>
               <Button onClick={() => setModalDetalhes(false)} variant="outlined">Fechar</Button>
-              <Button onClick={() => { setModalDetalhes(false); abrirEdicao(pacienteSelecionado); }} variant="contained" startIcon={<EditIcon />}>Editar</Button>
+              <Button onClick={() => { setModalDetalhes(false); abrirEdicao(p); }} variant="contained" startIcon={<EditIcon />}>Editar</Button>
             </DialogActions>
           </>
         )}
       </Dialog>
 
-      {/* Modal de Cadastro/Edição */}
+      {/* Cadastro / Edição */}
       <Dialog open={modalAberto} onClose={fechar} fullWidth maxWidth="md">
         <Box sx={{ background: 'linear-gradient(135deg, #1565c0 0%, #1976d2 100%)', p: 3 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
@@ -454,10 +448,7 @@ async function confirmarExclusao() {
         <DialogContent sx={{ pt: 3 }}>
           {erro && <Alert severity="error" sx={{ mb: 2 }}>{erro}</Alert>}
 
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-            <PersonIcon fontSize="small" color="primary" />
-            <Typography variant="subtitle2" sx={{ fontWeight: 700, color: 'primary.main', textTransform: 'uppercase', letterSpacing: 0.5, fontSize: 11 }}>Dados Pessoais</Typography>
-          </Box>
+          <SecaoTitulo icone={<PersonIcon fontSize="small" color="primary" />} titulo="Dados Pessoais" />
           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, mb: 3 }}>
             <TextField label="Nome completo *" value={form.nome} onChange={(e) => setField('nome', e.target.value)} sx={{ flex: '1 1 100%' }} />
             <TextField label="CPF" value={form.cpf} onChange={(e) => setField('cpf', formatarCpf(e.target.value))} placeholder="000.000.000-00" sx={{ flex: '1 1 180px' }} slotProps={{ htmlInput: { maxLength: 14 } }} />
@@ -482,10 +473,7 @@ async function confirmarExclusao() {
 
           <Divider sx={{ mb: 3 }} />
 
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-            <FamilyRestroomIcon fontSize="small" color="primary" />
-            <Typography variant="subtitle2" sx={{ fontWeight: 700, color: 'primary.main', textTransform: 'uppercase', letterSpacing: 0.5, fontSize: 11 }}>Família</Typography>
-          </Box>
+          <SecaoTitulo icone={<FamilyRestroomIcon fontSize="small" color="primary" />} titulo="Família" />
           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, mb: 3 }}>
             <TextField label="Nome do Pai" value={form.nomePai} onChange={(e) => setField('nomePai', e.target.value)} sx={{ flex: '1 1 200px' }} />
             <TextField label="Nome da Mãe" value={form.nomeMae} onChange={(e) => setField('nomeMae', e.target.value)} sx={{ flex: '1 1 200px' }} />
@@ -493,18 +481,12 @@ async function confirmarExclusao() {
 
           <Divider sx={{ mb: 3 }} />
 
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-            <HomeIcon fontSize="small" color="primary" />
-            <Typography variant="subtitle2" sx={{ fontWeight: 700, color: 'primary.main', textTransform: 'uppercase', letterSpacing: 0.5, fontSize: 11 }}>Endereço</Typography>
-          </Box>
+          <SecaoTitulo icone={<HomeIcon fontSize="small" color="primary" />} titulo="Endereço" />
           <TextField label="Endereço completo" value={form.endereco} onChange={(e) => setField('endereco', e.target.value)} fullWidth sx={{ mb: 3 }} placeholder="Rua, número, bairro, cidade, estado" />
 
           <Divider sx={{ mb: 3 }} />
 
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-            <MedicalInformationIcon fontSize="small" color="warning" />
-            <Typography variant="subtitle2" sx={{ fontWeight: 700, color: 'warning.main', textTransform: 'uppercase', letterSpacing: 0.5, fontSize: 11 }}>Informações Médicas Adicionais</Typography>
-          </Box>
+          <SecaoTitulo icone={<MedicalInformationIcon fontSize="small" color="warning" />} titulo="Informações Médicas Adicionais" cor="warning" />
           <TextField label="Alergias, condições especiais, observações..." value={form.informacoesAdicionais}
             onChange={(e) => setField('informacoesAdicionais', e.target.value)}
             fullWidth multiline rows={3} sx={{ mb: 3 }}
@@ -530,6 +512,7 @@ async function confirmarExclusao() {
           </Button>
         </DialogActions>
       </Dialog>
+
       <ConfirmDialog
         open={!!excluir} tipo="excluir" titulo="Excluir paciente" subtitulo={excluir?.nome}
         mensagem="O paciente e todo o prontuário dele serão removidos. Esta ação não pode ser desfeita."

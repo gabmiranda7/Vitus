@@ -1,22 +1,17 @@
 import { useEffect, useState, useMemo } from 'react';
 import {
-  Box, Button, Dialog, DialogActions, DialogContent,
-  TextField, Typography, Alert, InputAdornment, Avatar, Card,
-  CardContent, Chip, IconButton, MenuItem, Select, FormControl,
-  InputLabel, Paper, useTheme, alpha, Divider
+  Box, TextField, Typography, InputAdornment, Avatar, Chip, IconButton,
+  MenuItem, Select, FormControl, InputLabel, Paper, alpha,
 } from '@mui/material';
-import AddIcon from '@mui/icons-material/Add';
 import LocalHospitalIcon from '@mui/icons-material/LocalHospital';
 import SearchIcon from '@mui/icons-material/Search';
-import BadgeIcon from '@mui/icons-material/Badge';
 import NavigateBeforeIcon from '@mui/icons-material/NavigateBefore';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
-import MedicalServicesIcon from '@mui/icons-material/MedicalServices';
 import Layout from '../../components/layout/Layout';
 import api from '../../services/api';
 import { Medico } from '../../types';
 
-const POR_PAGINA = 9;
+const POR_PAGINA = 10;
 
 function iniciais(nome: string) {
   return nome.replace(/^Dr\.?\s*/i, '').split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase();
@@ -38,13 +33,6 @@ export default function MedicosPage() {
   const [busca, setBusca] = useState('');
   const [filtroEsp, setFiltroEsp] = useState('');
   const [pagina, setPagina] = useState(1);
-  const [modalAberto, setModalAberto] = useState(false);
-  const [nome, setNome] = useState('');
-  const [especialidade, setEspecialidade] = useState('');
-  const [crm, setCrm] = useState('');
-  const [erro, setErro] = useState('');
-  const theme = useTheme();
-  const isDark = theme.palette.mode === 'dark';
 
   useEffect(() => { carregar(); }, []);
 
@@ -53,89 +41,66 @@ export default function MedicosPage() {
     setMedicos(r.data);
   }
 
-  async function handleSalvar() {
-    setErro('');
-    try {
-      await api.post('/api/medicos', { nome, especialidade, crm });
-      fechar(); carregar();
-    } catch (error: any) { setErro(error.mensagemBack ?? 'Erro ao salvar médico'); }
-  }
-
-  function fechar() { setModalAberto(false); setNome(''); setEspecialidade(''); setCrm(''); setErro(''); }
-
   const especialidades = useMemo(() =>
     [...new Set(medicos.map(m => m.especialidade))].filter(Boolean).sort(), [medicos]
   );
 
-  const filtrados = useMemo(() => {
-    setPagina(1);
-    return medicos.filter(m =>
+  const filtrados = useMemo(() =>
+    medicos.filter(m =>
       m.nome.toLowerCase().includes(busca.toLowerCase()) &&
       (filtroEsp === '' || m.especialidade === filtroEsp)
-    );
-  }, [medicos, busca, filtroEsp]);
+    ), [medicos, busca, filtroEsp]);
+
+  useEffect(() => { setPagina(1); }, [busca, filtroEsp]);
+
+  const resumo = useMemo(() => {
+    const map: Record<string, number> = {};
+    medicos.forEach(m => { map[m.especialidade] = (map[m.especialidade] ?? 0) + 1; });
+    return Object.entries(map).sort((a, b) => b[1] - a[1]).slice(0, 6);
+  }, [medicos]);
 
   const totalPaginas = Math.max(1, Math.ceil(filtrados.length / POR_PAGINA));
   const paginaAtual = filtrados.slice((pagina - 1) * POR_PAGINA, pagina * POR_PAGINA);
 
-  // Estatísticas por especialidade
-  const espCount = useMemo(() => {
-    const map: Record<string, number> = {};
-    medicos.forEach(m => { map[m.especialidade] = (map[m.especialidade] ?? 0) + 1; });
-    return Object.entries(map).sort((a, b) => b[1] - a[1]).slice(0, 4);
-  }, [medicos]);
-
   return (
     <Layout>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <LocalHospitalIcon color="primary" />
-          <Typography variant="h5" sx={{ fontWeight: 'bold' }}>Médicos</Typography>
-          <Chip label={medicos.length} size="small" color="primary" />
-        </Box>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+        <LocalHospitalIcon color="primary" />
+        <Typography variant="h5" sx={{ fontWeight: 'bold' }}>Médicos</Typography>
+        <Chip label={medicos.length} size="small" color="primary" />
       </Box>
 
-      {/* Cards de especialidade */}
-      {espCount.length > 0 && (
-        <Box sx={{ display: 'flex', gap: 2, mb: 3, flexWrap: 'wrap' }}>
-          {espCount.map(([esp, count]) => (
-            <Paper
-              key={esp}
-              onClick={() => setFiltroEsp(filtroEsp === esp ? '' : esp)}
-              sx={{
-                flex: '1 1 120px',
-                p: 2, borderRadius: 3, cursor: 'pointer',
-                bgcolor: filtroEsp === esp
-                  ? alpha(corEspecialidade(esp), isDark ? 0.25 : 0.12)
-                  : alpha(corEspecialidade(esp), isDark ? 0.1 : 0.06),
-                border: `1px solid ${alpha(corEspecialidade(esp), filtroEsp === esp ? 0.5 : 0.2)}`,
-                transition: '0.2s',
-                '&:hover': { transform: 'translateY(-2px)', boxShadow: 2 },
-              }}
-            >
-              <Typography variant="h5" sx={{ fontWeight: 800, color: corEspecialidade(esp), lineHeight: 1, mb: 0.5 }}>
-                {count}
-              </Typography>
-              <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.2, display: 'block' }}>
-                {esp}
-              </Typography>
-            </Paper>
-          ))}
+      {resumo.length > 0 && (
+        <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mb: 3 }}>
+          {resumo.map(([esp, count]) => {
+            const cor = corEspecialidade(esp);
+            const ativo = filtroEsp === esp;
+            return (
+              <Chip
+                key={esp}
+                label={`${esp} · ${count}`}
+                size="small"
+                clickable
+                onClick={() => setFiltroEsp(ativo ? '' : esp)}
+                sx={{
+                  fontWeight: 600, fontSize: 12,
+                  color: cor,
+                  bgcolor: alpha(cor, ativo ? 0.22 : 0.08),
+                  border: `1px solid ${alpha(cor, ativo ? 0.6 : 0.25)}`,
+                }}
+              />
+            );
+          })}
         </Box>
       )}
 
-      {/* Filtros */}
       <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
         <TextField
           fullWidth
           placeholder="Buscar médico por nome..."
           value={busca}
           onChange={(e) => setBusca(e.target.value)}
-          slotProps={{
-            input: {
-              startAdornment: <InputAdornment position="start"><SearchIcon color="action" /></InputAdornment>
-            }
-          }}
+          slotProps={{ input: { startAdornment: <InputAdornment position="start"><SearchIcon color="action" /></InputAdornment> } }}
         />
         <FormControl sx={{ minWidth: 200 }}>
           <InputLabel>Especialidade</InputLabel>
@@ -155,74 +120,42 @@ export default function MedicosPage() {
         </Box>
       ) : (
         <>
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
             {paginaAtual.map((m) => {
               const cor = corEspecialidade(m.especialidade);
               return (
-                <Box key={m.id} sx={{ flex: '1 1 260px', maxWidth: { xs: '100%', sm: 'calc(50% - 8px)', md: 'calc(33.33% - 11px)' } }}>
-                  <Card sx={{
-                    borderRadius: 3, height: '100%', overflow: 'hidden',
-                    border: `1px solid ${alpha(cor, 0.2)}`,
-                    borderTop: `4px solid ${cor}`,
-                    transition: '0.2s', '&:hover': { boxShadow: 4, transform: 'translateY(-2px)' }
-                  }}>
-                    <CardContent sx={{ p: 2.5 }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-                        <Avatar sx={{
-                          bgcolor: cor, width: 56, height: 56,
-                          fontSize: 18, fontWeight: 800,
-                          border: `3px solid ${alpha(cor, 0.2)}`,
-                        }}>
-                          {iniciais(m.nome)}
-                        </Avatar>
-                        <Box sx={{ flex: 1, minWidth: 0 }}>
-                          <Typography variant="body1" sx={{
-                            fontWeight: 700,
-                            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'
-                          }}>
-                            {m.nome}
-                          </Typography>
-                          <Chip
-                            label={m.especialidade}
-                            size="small"
-                            sx={{ mt: 0.5, bgcolor: alpha(cor, 0.12), color: cor, fontWeight: 600, fontSize: 11 }}
-                          />
-                        </Box>
-                      </Box>
-
-                      <Divider sx={{ mb: 1.5 }} />
-
-                      <Box sx={{
-                        display: 'flex', alignItems: 'center', gap: 1,
-                        p: 1.5, borderRadius: 2,
-                        bgcolor: isDark ? 'grey.800' : 'grey.50',
-                      }}>
-                        <BadgeIcon sx={{ fontSize: 16, color: 'text.disabled' }} />
-                        <Box>
-                          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', lineHeight: 1 }}>
-                            CRM
-                          </Typography>
-                          <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                            {m.crm}
-                          </Typography>
-                        </Box>
-                      </Box>
-                    </CardContent>
-                  </Card>
-                </Box>
+                <Paper key={m.id} variant="outlined" sx={{
+                  p: 1.5, px: 2, borderRadius: 2, display: 'flex', alignItems: 'center', gap: 2,
+                  borderLeft: `4px solid ${cor}`,
+                }}>
+                  <Avatar sx={{ bgcolor: cor, width: 40, height: 40, fontSize: 14, fontWeight: 700, flexShrink: 0 }}>
+                    {iniciais(m.nome)}
+                  </Avatar>
+                  <Box sx={{ flex: 1, minWidth: 0 }}>
+                    <Typography variant="body2" sx={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {m.nome}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">CRM: {m.crm}</Typography>
+                  </Box>
+                  <Chip
+                    label={m.especialidade}
+                    size="small"
+                    sx={{ bgcolor: alpha(cor, 0.12), color: cor, fontWeight: 600, fontSize: 11, flexShrink: 0 }}
+                  />
+                </Paper>
               );
             })}
           </Box>
 
           {totalPaginas > 1 && (
             <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 2, mt: 3 }}>
-              <IconButton onClick={() => setPagina(p => Math.max(1, p - 1))} disabled={pagina === 1}>
+              <IconButton onClick={() => setPagina(n => Math.max(1, n - 1))} disabled={pagina === 1}>
                 <NavigateBeforeIcon />
               </IconButton>
               <Typography variant="body2" color="text.secondary">
                 Página {pagina} de {totalPaginas} · {filtrados.length} médico(s)
               </Typography>
-              <IconButton onClick={() => setPagina(p => Math.min(totalPaginas, p + 1))} disabled={pagina === totalPaginas}>
+              <IconButton onClick={() => setPagina(n => Math.min(totalPaginas, n + 1))} disabled={pagina === totalPaginas}>
                 <NavigateNextIcon />
               </IconButton>
             </Box>

@@ -32,6 +32,7 @@ import Layout from '../../components/layout/Layout';
 import AcompanhamentoVencimento from '../../components/receitas/AcompanhamentoVencimento';
 import api from '../../services/api';
 import ConfirmDialog from '../../components/ConfirmDialog';
+import FabNovo from '../../components/FabNovo';
 import { Consulta, Medico, Paciente, Medicamento } from '../../types';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -152,14 +153,32 @@ export default function ConsultasPage() {
   useEffect(() => {
     carregar();
     if (usuario?.perfil === 'Recepcionista') { carregarPacientes(); carregarMedicos(); }
-    else { carregarMedicos(); } // médicos para o filtro
+    const intervalo = setInterval(carregar, 30000);
+    return () => clearInterval(intervalo);
   }, []);
 
-  async function carregar() { const r = await api.get('/api/consultas'); setConsultas(r.data); }
+  async function carregar() {
+    try {
+      const r = await api.get('/api/consultas');
+      setConsultas(usuario?.perfil === 'Medico'
+        ? r.data.filter((c: Consulta) => c.medicoId === usuario.medicoId)
+        : r.data);
+    } catch { /* mantém a lista atual se uma atualização automática falhar */ }
+  }
   async function carregarPacientes() { const r = await api.get('/api/Paciente'); setPacientes(r.data); }
   async function carregarMedicos() { const r = await api.get('/api/medicos'); setMedicos(r.data); }
 
-  function abrirDrawer(c: Consulta) { setConsultaDrawer(c); setDrawerAberto(true); }
+  function temAcoes(c: Consulta) {
+    const perfil = usuario?.perfil;
+    // Médico e enfermeiro sempre podem abrir o prontuário; a recepção só age em consultas não encerradas
+    if (perfil === 'Medico' || perfil === 'Enfermeiro') return true;
+    return perfil === 'Recepcionista' && !['Finalizada', 'Cancelada'].includes(c.status);
+  }
+
+  function abrirDrawer(c: Consulta) {
+    if (!temAcoes(c)) return;
+    setConsultaDrawer(c); setDrawerAberto(true);
+  }
   function fecharDrawer() { setDrawerAberto(false); }
 
   const temFiltroAtivo = filtroMedico !== '' || filtroStatus !== '' || filtroDataInicio !== '' || filtroDataFim !== '';
@@ -355,9 +374,9 @@ export default function ConsultasPage() {
                       onClick={() => abrirDrawer(c)}
                       sx={{
                         display: 'flex', alignItems: 'center', gap: 2, px: 2, py: 1.5,
-                        cursor: 'pointer', borderLeft: `4px solid ${cor}`,
+                        cursor: temAcoes(c) ? 'pointer' : 'default', borderLeft: `4px solid ${cor}`,
                         opacity: c.status === 'Cancelada' ? 0.55 : 1,
-                        transition: '0.15s', '&:hover': { bgcolor: 'action.hover' },
+                        transition: '0.15s', '&:hover': temAcoes(c) ? { bgcolor: 'action.hover' } : {},
                       }}
                     >
                       <Typography variant="body2" sx={{ fontWeight: 700, width: 48, flexShrink: 0, color: cor }}>
@@ -376,7 +395,7 @@ export default function ConsultasPage() {
                         label={statusLabels[c.status]} size="small"
                         sx={{ bgcolor: alpha(cor, 0.12), color: cor, fontWeight: 700, fontSize: 11, flexShrink: 0 }}
                       />
-                      <ChevronRightIcon sx={{ color: 'text.disabled', fontSize: 18, flexShrink: 0 }} />
+                      {temAcoes(c) && <ChevronRightIcon sx={{ color: 'text.disabled', fontSize: 18, flexShrink: 0 }} />}
                     </Box>
                     {i < g.itens.length - 1 && <Divider />}
                   </Box>
@@ -397,11 +416,6 @@ export default function ConsultasPage() {
           <Typography variant="h5" sx={{ fontWeight: 'bold' }}>Consultas</Typography>
           <Chip label={consultasAtivas.length} size="small" color="primary" />
         </Box>
-        {usuario?.perfil === 'Recepcionista' && (
-          <Button variant="contained" startIcon={<AddIcon />} onClick={() => setModalNova(true)} sx={{ borderRadius: 2 }}>
-            Nova Consulta
-          </Button>
-        )}
       </Box>
 
       <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
@@ -434,13 +448,15 @@ export default function ConsultasPage() {
       {filtrosVisiveis && (
         <Paper variant="outlined" sx={{ p: 2, mb: 3, borderRadius: 2 }}>
           <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
-            <FormControl sx={{ minWidth: 200 }} size="small">
+            {usuario?.perfil !== 'Medico' && (
+              <FormControl sx={{ minWidth: 200 }} size="small">
               <InputLabel>Médico</InputLabel>
               <Select value={filtroMedico} label="Médico" onChange={(e) => setFiltroMedico(e.target.value)}>
                 <MenuItem value="">Todos</MenuItem>
                 {medicosNasConsultas.map(m => <MenuItem key={m} value={m}>{m}</MenuItem>)}
               </Select>
             </FormControl>
+            )}
             <FormControl sx={{ minWidth: 180 }} size="small">
               <InputLabel>Status</InputLabel>
               <Select value={filtroStatus} label="Status" onChange={(e) => setFiltroStatus(e.target.value)}>
@@ -466,7 +482,11 @@ export default function ConsultasPage() {
         </Paper>
       )}
 
-      {renderCards(consultasFiltradas)}
+      <Box sx={{ pb: 8 }}>{renderCards(consultasFiltradas)}</Box>
+
+      {usuario?.perfil === 'Recepcionista' && (
+        <FabNovo label="Nova Consulta" onClick={() => setModalNova(true)} />
+      )}
 
       {/* Drawer de Ações */}
       <Drawer anchor="right" open={drawerAberto} onClose={fecharDrawer}
