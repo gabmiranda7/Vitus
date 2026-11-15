@@ -55,7 +55,7 @@ export default function AppRoutes() {
         } />
 
         <Route path="/dashboard" element={
-          <PrivateRoute perfis={['Recepcionista', 'Enfermeiro', 'Medico']}>
+          <PrivateRoute perfis={['Recepcionista', 'Enfermeiro', 'Medico', 'Administrador']}>
             <DashboardPage />
           </PrivateRoute>
         } />
