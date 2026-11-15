@@ -18,17 +18,20 @@ import {
   Divider,
   IconButton,
   Button,
+  Snackbar,
   useTheme,
 } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
+import * as Clipboard from 'expo-clipboard';
 import api from '../../services/api';
 import { AuditoriaLog } from '../../types';
 import { cores } from '../../theme';
 import { acaoIcones, acaoCores, acaoLabel } from '../../utils/auditoria';
 
 type PeriodoFiltro = 'todos' | 'hoje' | '7dias' | 'mes';
+const TAMANHO_PAGINA = 20;
 
 function escaparHtml(valor: string): string {
   return valor
@@ -45,16 +48,23 @@ export default function AuditoriaScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [exportando, setExportando] = useState(false);
   const [erro, setErro] = useState('');
+  const [copiadoMsg, setCopiadoMsg] = useState('');
 
   const [busca, setBusca] = useState('');
   const [filtrosAbertos, setFiltrosAbertos] = useState(false);
   const [periodo, setPeriodo] = useState<PeriodoFiltro>('todos');
   const [filtroAcao, setFiltroAcao] = useState('');
   const [expandidoId, setExpandidoId] = useState<string | null>(null);
+  const [limiteExibido, setLimiteExibido] = useState(TAMANHO_PAGINA);
 
   useEffect(() => {
     carregar();
   }, []);
+
+  // Reseta a paginação sempre que os filtros mudarem
+  useEffect(() => {
+    setLimiteExibido(TAMANHO_PAGINA);
+  }, [busca, periodo, filtroAcao]);
 
   async function carregar() {
     try {
@@ -89,6 +99,11 @@ export default function AuditoriaScreen() {
     setBusca('');
     setPeriodo('todos');
     setFiltroAcao('');
+  }
+
+  async function copiarId(label: string, valor: string) {
+    await Clipboard.setStringAsync(valor);
+    setCopiadoMsg(`${label} copiado para a área de transferência!`);
   }
 
   const logsOrdenados = useMemo(
@@ -136,6 +151,11 @@ export default function AuditoriaScreen() {
       );
     });
   }, [logsOrdenados, busca, periodo, filtroAcao]);
+
+  const visiveis = useMemo(
+    () => filtrados.slice(0, limiteExibido),
+    [filtrados, limiteExibido]
+  );
 
   const hojeStr = new Date().toDateString();
   const logsHoje = logs.filter(l => new Date(l.dataHora).toDateString() === hojeStr).length;
@@ -336,7 +356,7 @@ export default function AuditoriaScreen() {
               </Button>
             )}
             <Text variant="labelSmall" style={{ color: theme.colors.onSurfaceVariant }}>
-              {filtrados.length} de {logs.length}
+              {visiveis.length} de {filtrados.length}
             </Text>
           </View>
         </View>
@@ -402,124 +422,184 @@ export default function AuditoriaScreen() {
           </Card>
         )}
 
-        {/* Lista de logs */}
-        {filtrados.length === 0 ? (
+        {/* Lista paginada de logs */}
+        {visiveis.length === 0 ? (
           <Text style={[styles.textoVazio, { color: theme.colors.onSurfaceVariant }]}>
             {temAlgumFiltro ? 'Nenhum registro encontrado com os filtros atuais' : 'Nenhum registro de auditoria'}
           </Text>
         ) : (
-          filtrados.map((log) => {
-            const cor = acaoCores[log.acao] ?? cores.textoSecundario;
-            const icone = acaoIcones[log.acao] ?? 'information';
-            const label = acaoLabel[log.acao] ?? log.acao;
-            const expandido = expandidoId === log.id;
+          <>
+            {visiveis.map((log) => {
+              const cor = acaoCores[log.acao] ?? cores.textoSecundario;
+              const icone = acaoIcones[log.acao] ?? 'information';
+              const label = acaoLabel[log.acao] ?? log.acao;
+              const expandido = expandidoId === log.id;
 
-            return (
-              <TouchableOpacity key={log.id} onPress={() => alternarExpansao(log.id)} activeOpacity={0.7}>
-                <Card style={[styles.card, { borderLeftColor: cor, borderLeftWidth: 4 }]}>
-                  <Card.Content>
-                    <View style={styles.cardContent}>
-                      <MaterialCommunityIcons name={icone as any} size={24} color={cor} style={styles.icone} />
-                      <View style={styles.info}>
-                        <View style={styles.tituloRow}>
-                          <Text variant="titleSmall" style={styles.titulo}>{label}</Text>
-                          <MaterialCommunityIcons
-                            name={expandido ? 'chevron-up' : 'chevron-down'}
-                            size={20}
-                            color={theme.colors.onSurfaceVariant}
-                          />
+              return (
+                <TouchableOpacity key={log.id} onPress={() => alternarExpansao(log.id)} activeOpacity={0.7}>
+                  <Card style={[styles.card, { borderLeftColor: cor, borderLeftWidth: 4 }]}>
+                    <Card.Content>
+                      <View style={styles.cardContent}>
+                        <MaterialCommunityIcons name={icone as any} size={24} color={cor} style={styles.icone} />
+                        <View style={styles.info}>
+                          <View style={styles.tituloRow}>
+                            <Text variant="titleSmall" style={styles.titulo}>{label}</Text>
+                            <MaterialCommunityIcons
+                              name={expandido ? 'chevron-up' : 'chevron-down'}
+                              size={20}
+                              color={theme.colors.onSurfaceVariant}
+                            />
+                          </View>
+                          <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant, marginTop: 2 }}>
+                            {log.usuarioNome} · {log.entidadeAfetada}
+                          </Text>
+                          <Text variant="bodySmall" style={[styles.data, { color: theme.colors.onSurfaceVariant }]}>
+                            {new Date(log.dataHora).toLocaleString('pt-BR')}
+                          </Text>
                         </View>
-                        <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant, marginTop: 2 }}>
-                          {log.usuarioNome} · {log.entidadeAfetada}
-                        </Text>
-                        <Text variant="bodySmall" style={[styles.data, { color: theme.colors.onSurfaceVariant }]}>
-                          {new Date(log.dataHora).toLocaleString('pt-BR')}
-                        </Text>
                       </View>
-                    </View>
 
-                    {expandido && (
-                      <View style={styles.detalhes}>
-                        <Divider style={styles.divider} />
-                        <View style={styles.detalheLinha}>
-                          <Text variant="bodySmall" style={[styles.detalheLabel, { color: theme.colors.onSurfaceVariant }]}>
-                            Ação
-                          </Text>
-                          <Chip
-                            compact
-                            style={{ backgroundColor: cor + (theme.dark ? '33' : '20') }}
-                            textStyle={[styles.chipTexto, { color: theme.dark ? '#e8eef5' : cor }]}
-                          >
-                            {log.acao}
-                          </Chip>
-                        </View>
-                        <View style={styles.detalheLinha}>
-                          <Text variant="bodySmall" style={[styles.detalheLabel, { color: theme.colors.onSurfaceVariant }]}>
-                            Entidade Afetada
-                          </Text>
-                          <Text variant="bodySmall" style={styles.detalheValor}>{log.entidadeAfetada}</Text>
-                        </View>
-                        <View style={styles.detalheLinha}>
-                          <Text variant="bodySmall" style={[styles.detalheLabel, { color: theme.colors.onSurfaceVariant }]}>
-                            ID da Entidade
-                          </Text>
-                          <Text variant="bodySmall" style={[styles.detalheValorMono, { color: theme.colors.onSurfaceVariant }]}>
-                            {log.entidadeId}
-                          </Text>
-                        </View>
-                        <View style={styles.detalheLinha}>
-                          <Text variant="bodySmall" style={[styles.detalheLabel, { color: theme.colors.onSurfaceVariant }]}>
-                            Usuário
-                          </Text>
-                          <Text variant="bodySmall" style={styles.detalheValor}>{log.usuarioNome}</Text>
-                        </View>
-                        <View style={styles.detalheLinha}>
-                          <Text variant="bodySmall" style={[styles.detalheLabel, { color: theme.colors.onSurfaceVariant }]}>
-                            ID do Usuário
-                          </Text>
-                          <Text variant="bodySmall" style={[styles.detalheValorMono, { color: theme.colors.onSurfaceVariant }]}>
-                            {log.usuarioId}
-                          </Text>
-                        </View>
-                        <View style={styles.detalheLinha}>
-                          <Text variant="bodySmall" style={[styles.detalheLabel, { color: theme.colors.onSurfaceVariant }]}>
-                            Data e Hora
-                          </Text>
-                          <Text variant="bodySmall" style={styles.detalheValor}>
-                            {new Date(log.dataHora).toLocaleString('pt-BR', {
-                              dateStyle: 'long',
-                              timeStyle: 'medium',
-                            })}
-                          </Text>
-                        </View>
-                        {log.detalhes && (
-                          <View style={styles.detalhesTexto}>
+                      {expandido && (
+                        <View style={styles.detalhes}>
+                          <Divider style={styles.divider} />
+                          <View style={styles.detalheLinha}>
                             <Text variant="bodySmall" style={[styles.detalheLabel, { color: theme.colors.onSurfaceVariant }]}>
-                              Detalhes
+                              Ação
                             </Text>
-                            <Text
-                              variant="bodySmall"
-                              style={[
-                                styles.detalheTextoLivre,
-                                {
-                                  backgroundColor: theme.colors.surfaceVariant,
-                                  color: theme.colors.onSurfaceVariant,
-                                },
-                              ]}
+                            <Chip
+                              compact
+                              style={{ backgroundColor: cor + (theme.dark ? '33' : '20') }}
+                              textStyle={[styles.chipTexto, { color: theme.dark ? '#e8eef5' : cor }]}
                             >
-                              {log.detalhes}
+                              {log.acao}
+                            </Chip>
+                          </View>
+                          <View style={styles.detalheLinha}>
+                            <Text variant="bodySmall" style={[styles.detalheLabel, { color: theme.colors.onSurfaceVariant }]}>
+                              Entidade Afetada
+                            </Text>
+                            <Text variant="bodySmall" style={styles.detalheValor}>{log.entidadeAfetada}</Text>
+                          </View>
+
+                          {/* ID da Entidade clicável para copiar */}
+                          <TouchableOpacity
+                            onPress={() => copiarId('ID da Entidade', log.entidadeId)}
+                            activeOpacity={0.6}
+                            style={styles.detalheLinha}
+                          >
+                            <Text variant="bodySmall" style={[styles.detalheLabel, { color: theme.colors.onSurfaceVariant }]}>
+                              ID da Entidade
+                            </Text>
+                            <View style={styles.copyRow}>
+                              <Text
+                                variant="bodySmall"
+                                style={[styles.detalheValorMono, { color: theme.colors.onSurfaceVariant }]}
+                                numberOfLines={1}
+                              >
+                                {log.entidadeId}
+                              </Text>
+                              <MaterialCommunityIcons
+                                name="content-copy"
+                                size={14}
+                                color={cores.primaria}
+                                style={{ marginLeft: 6 }}
+                              />
+                            </View>
+                          </TouchableOpacity>
+
+                          <View style={styles.detalheLinha}>
+                            <Text variant="bodySmall" style={[styles.detalheLabel, { color: theme.colors.onSurfaceVariant }]}>
+                              Usuário
+                            </Text>
+                            <Text variant="bodySmall" style={styles.detalheValor}>{log.usuarioNome}</Text>
+                          </View>
+
+                          {/* ID do Usuário clicável para copiar */}
+                          <TouchableOpacity
+                            onPress={() => copiarId('ID do Usuário', log.usuarioId)}
+                            activeOpacity={0.6}
+                            style={styles.detalheLinha}
+                          >
+                            <Text variant="bodySmall" style={[styles.detalheLabel, { color: theme.colors.onSurfaceVariant }]}>
+                              ID do Usuário
+                            </Text>
+                            <View style={styles.copyRow}>
+                              <Text
+                                variant="bodySmall"
+                                style={[styles.detalheValorMono, { color: theme.colors.onSurfaceVariant }]}
+                                numberOfLines={1}
+                              >
+                                {log.usuarioId}
+                              </Text>
+                              <MaterialCommunityIcons
+                                name="content-copy"
+                                size={14}
+                                color={cores.primaria}
+                                style={{ marginLeft: 6 }}
+                              />
+                            </View>
+                          </TouchableOpacity>
+
+                          <View style={styles.detalheLinha}>
+                            <Text variant="bodySmall" style={[styles.detalheLabel, { color: theme.colors.onSurfaceVariant }]}>
+                              Data e Hora
+                            </Text>
+                            <Text variant="bodySmall" style={styles.detalheValor}>
+                              {new Date(log.dataHora).toLocaleString('pt-BR', {
+                                dateStyle: 'long',
+                                timeStyle: 'medium',
+                              })}
                             </Text>
                           </View>
-                        )}
-                      </View>
-                    )}
-                  </Card.Content>
-                </Card>
-              </TouchableOpacity>
-            );
-          })
+                          {log.detalhes && (
+                            <View style={styles.detalhesTexto}>
+                              <Text variant="bodySmall" style={[styles.detalheLabel, { color: theme.colors.onSurfaceVariant }]}>
+                                Detalhes
+                              </Text>
+                              <Text
+                                variant="bodySmall"
+                                style={[
+                                  styles.detalheTextoLivre,
+                                  {
+                                    backgroundColor: theme.colors.surfaceVariant,
+                                    color: theme.colors.onSurfaceVariant,
+                                  },
+                                ]}
+                              >
+                                {log.detalhes}
+                              </Text>
+                            </View>
+                          )}
+                        </View>
+                      )}
+                    </Card.Content>
+                  </Card>
+                </TouchableOpacity>
+              );
+            })}
+
+            {/* Botão de paginação progressiva */}
+            {visiveis.length < filtrados.length && (
+              <Button
+                mode="outlined"
+                icon="chevron-down"
+                onPress={() => setLimiteExibido(prev => prev + TAMANHO_PAGINA)}
+                style={styles.carregarMaisBtn}
+              >
+                Carregar mais ({filtrados.length - visiveis.length} restantes)
+              </Button>
+            )}
+          </>
         )}
       </ScrollView>
+
+      <Snackbar
+        visible={!!copiadoMsg}
+        onDismiss={() => setCopiadoMsg('')}
+        duration={2000}
+      >
+        {copiadoMsg}
+      </Snackbar>
     </View>
   );
 }
@@ -536,7 +616,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   busca: { flex: 1 },
-  conteudo: { padding: 16, paddingTop: 6, paddingBottom: 28 },
+  conteudo: { padding: 16, paddingTop: 6, paddingBottom: 32 },
 
   statsRow: { flexDirection: 'row', gap: 8, marginBottom: 12 },
   statCard: { flex: 1, borderRadius: 10, borderLeftWidth: 4 },
@@ -600,9 +680,16 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingVertical: 6,
+    gap: 12,
   },
   detalheLabel: { fontWeight: '600' },
   detalheValor: { fontWeight: '500', flexShrink: 1, textAlign: 'right' },
+  copyRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexShrink: 1,
+    maxWidth: '62%',
+  },
   detalheValorMono: {
     fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
     fontSize: 11,
@@ -614,5 +701,9 @@ const styles = StyleSheet.create({
     marginTop: 4,
     padding: 10,
     borderRadius: 8,
+  },
+  carregarMaisBtn: {
+    marginTop: 6,
+    borderRadius: 10,
   },
 });
