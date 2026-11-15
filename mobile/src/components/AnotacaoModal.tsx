@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet } from 'react-native';
-import { Text, TextInput, Button } from 'react-native-paper';
+import { Text, TextInput, Button, Chip, useTheme } from 'react-native-paper';
 import api from '../services/api';
+import { cores } from '../theme';
+import CabecalhoGradiente from './CabecalhoGradiente';
 import ModalComTeclado from './ModalComTeclado';
 
 interface Props {
@@ -12,7 +14,16 @@ interface Props {
   onSucesso: () => void;
 }
 
+const SECOES_RAPIDAS = [
+  'Queixa principal',
+  'História clínica',
+  'Exame físico',
+  'Hipótese diagnóstica',
+  'Conduta',
+];
+
 export default function AnotacaoModal({ visible, consultaId, anotacaoAtual, onClose, onSucesso }: Props) {
+  const theme = useTheme();
   const [texto, setTexto] = useState('');
   const [erro, setErro] = useState('');
   const [loading, setLoading] = useState(false);
@@ -23,6 +34,11 @@ export default function AnotacaoModal({ visible, consultaId, anotacaoAtual, onCl
       setErro('');
     }
   }, [visible, anotacaoAtual]);
+
+  function inserirSecao(titulo: string) {
+    const prefixo = texto.trim().length > 0 ? '\n\n' : '';
+    setTexto(atual => `${atual.trimEnd()}${prefixo}${titulo}:\n`);
+  }
 
   async function salvar() {
     if (!consultaId) return;
@@ -44,43 +60,84 @@ export default function AnotacaoModal({ visible, consultaId, anotacaoAtual, onCl
 
   return (
     <ModalComTeclado visible={visible} onDismiss={onClose}>
-      <Text variant="titleLarge" style={styles.titulo}>Anotações Clínicas</Text>
+      <CabecalhoGradiente
+        icone="note-edit"
+        titulo="Anotações Clínicas"
+        cores={cores.gradienteAzul}
+      />
+
       {erro ? <Text style={styles.erro}>{erro}</Text> : null}
+
+      <Text variant="labelMedium" style={[styles.labelAtalhos, { color: theme.colors.onSurfaceVariant }]}>
+        Inserir tópico rápido:
+      </Text>
+      <View style={styles.atalhosRow}>
+        {SECOES_RAPIDAS.map((secao) => (
+          <Chip
+            key={secao}
+            compact
+            icon="plus"
+            onPress={() => inserirSecao(secao)}
+            style={styles.chipAtalho}
+          >
+            {secao}
+          </Chip>
+        ))}
+      </View>
+
       <TextInput
-        label="Anotações da consulta"
+        label="Evolução e conduta clínica"
+        placeholder="Descreva os sintomas, exame físico, diagnóstico e orientações..."
         value={texto}
         onChangeText={setTexto}
         multiline
-        numberOfLines={8}
+        numberOfLines={10}
         mode="outlined"
         style={styles.input}
       />
-      <View style={styles.botoes}>
-        <Button onPress={onClose} disabled={loading}>Cancelar</Button>
-        <Button mode="contained" onPress={salvar} loading={loading} disabled={loading}>
-          Salvar
-        </Button>
+
+      <View style={styles.rodape}>
+        <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
+          {texto.trim().length} caracteres
+        </Text>
+        <View style={styles.botoes}>
+          <Button onPress={onClose} disabled={loading}>Cancelar</Button>
+          <Button mode="contained" icon="content-save" onPress={salvar} loading={loading} disabled={loading}>
+            Salvar
+          </Button>
+        </View>
       </View>
     </ModalComTeclado>
   );
 }
 
 const styles = StyleSheet.create({
-  titulo: {
-    marginBottom: 16,
-    fontWeight: 'bold',
+  labelAtalhos: {
+    marginBottom: 6,
   },
-  input: {
+  atalhosRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
     marginBottom: 12,
+  },
+  chipAtalho: {},
+  input: {
+    minHeight: 160,
+    marginBottom: 10,
+  },
+  rodape: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 4,
   },
   botoes: {
     flexDirection: 'row',
-    justifyContent: 'flex-end',
     gap: 8,
-    marginTop: 8,
   },
   erro: {
-    color: '#d32f2f',
+    color: cores.erro,
     marginBottom: 12,
   },
 });

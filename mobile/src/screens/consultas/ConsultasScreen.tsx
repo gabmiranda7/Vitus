@@ -1,6 +1,7 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { View, ScrollView, StyleSheet, RefreshControl } from 'react-native';
 import { Text, Card, Chip, ActivityIndicator, Avatar, Button, Portal, Modal, SegmentedButtons, Searchbar, FAB, useTheme } from 'react-native-paper';
+import { useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '../../contexts/AuthContext';
 import api from '../../services/api';
 import { Consulta, statusCores, statusLabels } from '../../types';
@@ -55,23 +56,31 @@ export default function ConsultasScreen() {
 
   const ehMedico = usuario?.perfil === 'Medico';
 
-  useEffect(() => {
-    carregar();
-  }, []);
-
-  async function carregar() {
+  const carregar = useCallback(async (silencioso = false) => {
     try {
       const response = await api.get('/api/consultas');
       setConsultas(response.data);
     } finally {
-      setLoading(false);
+      if (!silencioso) setLoading(false);
       setRefreshing(false);
     }
-  }
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      carregar(true);
+      const interval = setInterval(() => carregar(true), 15000);
+      return () => clearInterval(interval);
+    }, [carregar])
+  );
+
+  useEffect(() => {
+    carregar(false);
+  }, [carregar]);
 
   function onRefresh() {
     setRefreshing(true);
-    carregar();
+    carregar(true);
   }
 
   function limparFiltros() {
@@ -150,7 +159,7 @@ export default function ConsultasScreen() {
       return c.status === 'Agendada' || c.status === 'EmTriagem';
     }
     if (usuario?.perfil === 'Recepcionista') {
-      return true; // Pode cancelar consulta ativa
+      return true;
     }
     if (usuario?.perfil === 'Medico') {
       const minha = !!usuario.medicoId && c.medicoId === usuario.medicoId;
@@ -176,7 +185,7 @@ export default function ConsultasScreen() {
   function onSucessoAcao() {
     fecharTudo();
     setConsultaSelecionada(null);
-    carregar();
+    carregar(true);
   }
 
   function pedirConfirmacao(acao: string, cor: string, titulo: string) {
@@ -191,7 +200,7 @@ export default function ConsultasScreen() {
     setModalConfirm(false);
     setConfirmAcao(null);
     setConsultaSelecionada(null);
-    carregar();
+    carregar(true);
   }
 
   async function acaoRapida(acao: string) {
@@ -199,7 +208,7 @@ export default function ConsultasScreen() {
     await api.patch(`/api/consultas/${consultaSelecionada.id}/${acao}`);
     setModalAcoes(false);
     setConsultaSelecionada(null);
-    carregar();
+    carregar(true);
   }
 
   const ehMinhaConsulta =
@@ -443,7 +452,7 @@ export default function ConsultasScreen() {
         onSucesso={() => {
           setModalNova(false);
           setAba('ativas');
-          carregar();
+          carregar(true);
         }}
       />
     </View>

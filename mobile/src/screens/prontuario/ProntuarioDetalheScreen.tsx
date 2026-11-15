@@ -88,6 +88,7 @@ export default function ProntuarioDetalheScreen() {
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState('');
 
+  const [tratamentosAbertos, setTratamentosAbertos] = useState(false);
   const [receitasAbertas, setReceitasAbertas] = useState(false);
   const [examesAbertos, setExamesAbertos] = useState(false);
   const [baixandoId, setBaixandoId] = useState<string | null>(null);
@@ -170,6 +171,7 @@ export default function ProntuarioDetalheScreen() {
   const grupos = agruparPorDia(prontuario.consultas, prontuario.triagens);
   const chipBg = theme.colors.surfaceVariant;
   const chipTextColor = theme.colors.primary;
+  const tratamentos = prontuario.tratamentos ?? [];
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.conteudo}>
@@ -189,16 +191,16 @@ export default function ProntuarioDetalheScreen() {
           </View>
 
           <View style={styles.statsRow}>
-            <Chip icon="calendar" compact style={{ backgroundColor: chipBg }} textStyle={{ color: chipTextColor }}>
+            <Chip icon="calendar" compact style={{ backgroundColor: chipBg }} textStyle={[styles.chipTexto, { color: chipTextColor }]}>
               {prontuario.consultas.length} consultas
             </Chip>
-            <Chip icon="stethoscope" compact style={{ backgroundColor: chipBg }} textStyle={{ color: chipTextColor }}>
+            <Chip icon="stethoscope" compact style={{ backgroundColor: chipBg }} textStyle={[styles.chipTexto, { color: chipTextColor }]}>
               {prontuario.triagens.length} triagens
             </Chip>
-            <Chip icon="pill" compact style={{ backgroundColor: chipBg }} textStyle={{ color: chipTextColor }}>
+            <Chip icon="pill" compact style={{ backgroundColor: chipBg }} textStyle={[styles.chipTexto, { color: chipTextColor }]}>
               {prontuario.receitas.length} receitas
             </Chip>
-            <Chip icon="flask" compact style={{ backgroundColor: chipBg }} textStyle={{ color: chipTextColor }}>
+            <Chip icon="flask" compact style={{ backgroundColor: chipBg }} textStyle={[styles.chipTexto, { color: chipTextColor }]}>
               {exames.length} exames
             </Chip>
           </View>
@@ -260,8 +262,8 @@ export default function ProntuarioDetalheScreen() {
             </View>
           )}
 
-          {(prontuario.tratamentos?.length ?? 0) > 0 && (() => {
-            const proximo = prontuario.tratamentos[0];
+          {tratamentos.length > 0 && (() => {
+            const proximo = tratamentos[0];
             const s = situacaoVencimento(proximo.diasRestantes);
             return (
               <View style={[styles.alertaVencimento, { backgroundColor: s.cor + (theme.dark ? '28' : '15'), borderColor: s.cor }]}>
@@ -275,32 +277,55 @@ export default function ProntuarioDetalheScreen() {
         </Card.Content>
       </Card>
 
-      {(prontuario.tratamentos?.length ?? 0) > 0 && (
-        <View style={styles.listaSecao}>
-          <Text variant="titleMedium" style={styles.tituloTratamentos}>Tratamentos acompanhados</Text>
-          {prontuario.tratamentos.map((t) => {
-            const s = situacaoVencimento(t.diasRestantes);
-            return (
-              <Card key={`${t.receitaId}-${t.medicamento}`} style={[styles.cardItem, { borderLeftColor: s.cor, borderLeftWidth: 4 }]}>
-                <Card.Content>
-                  <View style={styles.tratamentoTopo}>
-                    <Text variant="titleSmall" style={styles.tratamentoNome}>{t.medicamento}</Text>
-                    <Chip
-                      compact
-                      style={{ backgroundColor: s.cor + (theme.dark ? '33' : '20') }}
-                      textStyle={{ color: theme.dark ? '#ffb74d' : s.cor, fontSize: 11 }}
-                    >
-                      {capitalizar(s.label)}
-                    </Chip>
-                  </View>
-                  <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
-                    Emitida em {new Date(t.dataEmissao).toLocaleDateString('pt-BR')} · validade de {t.validadeDias} dias · vence em {dataVencimentoBr(t.dataVencimento)}
-                  </Text>
-                </Card.Content>
-              </Card>
-            );
-          })}
-        </View>
+      {/* Seção Tratamentos Acompanhados (minimizável) */}
+      {tratamentos.length > 0 && (
+        <>
+          <TouchableOpacity onPress={() => setTratamentosAbertos(v => !v)}>
+            <Card style={styles.cardSecao}>
+              <Card.Content style={styles.secaoHeader}>
+                <View style={styles.secaoHeaderEsquerda}>
+                  <MaterialCommunityIcons name="alarm" size={20} color={cores.aviso} />
+                  <Text variant="titleMedium" style={styles.secaoHeaderTitulo}>Tratamentos acompanhados</Text>
+                  <Chip compact style={{ backgroundColor: chipBg }} textStyle={[styles.chipTextoNegrito, { color: chipTextColor }]}>
+                    {tratamentos.length}
+                  </Chip>
+                </View>
+                <MaterialCommunityIcons
+                  name={tratamentosAbertos ? 'chevron-up' : 'chevron-down'}
+                  size={22}
+                  color={theme.colors.onSurfaceVariant}
+                />
+              </Card.Content>
+            </Card>
+          </TouchableOpacity>
+
+          {tratamentosAbertos && (
+            <View style={styles.listaSecao}>
+              {tratamentos.map((t) => {
+                const s = situacaoVencimento(t.diasRestantes);
+                return (
+                  <Card key={`${t.receitaId}-${t.medicamento}`} style={[styles.cardItem, { borderLeftColor: s.cor, borderLeftWidth: 4 }]}>
+                    <Card.Content>
+                      <View style={styles.tratamentoTopo}>
+                        <Text variant="titleSmall" style={styles.tratamentoNome}>{t.medicamento}</Text>
+                        <Chip
+                          compact
+                          style={{ backgroundColor: s.cor + (theme.dark ? '33' : '20') }}
+                          textStyle={[styles.chipTextoNegrito, { color: theme.dark ? '#ffb74d' : s.cor }]}
+                        >
+                          {capitalizar(s.label)}
+                        </Chip>
+                      </View>
+                      <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
+                        Emitida em {new Date(t.dataEmissao).toLocaleDateString('pt-BR')} · validade de {t.validadeDias} dias · vence em {dataVencimentoBr(t.dataVencimento)}
+                      </Text>
+                    </Card.Content>
+                  </Card>
+                );
+              })}
+            </View>
+          )}
+        </>
       )}
 
       {/* Seção Receitas */}
@@ -310,7 +335,7 @@ export default function ProntuarioDetalheScreen() {
             <View style={styles.secaoHeaderEsquerda}>
               <MaterialCommunityIcons name="pill" size={20} color={cores.sucesso} />
               <Text variant="titleMedium" style={styles.secaoHeaderTitulo}>Receitas</Text>
-              <Chip compact style={[styles.chipContagem, { backgroundColor: chipBg }]} textStyle={{ color: chipTextColor }}>
+              <Chip compact style={{ backgroundColor: chipBg }} textStyle={[styles.chipTextoNegrito, { color: chipTextColor }]}>
                 {prontuario.receitas.length}
               </Chip>
             </View>
@@ -360,7 +385,7 @@ export default function ProntuarioDetalheScreen() {
             <View style={styles.secaoHeaderEsquerda}>
               <MaterialCommunityIcons name="flask" size={20} color={cores.secundaria} />
               <Text variant="titleMedium" style={styles.secaoHeaderTitulo}>Exames</Text>
-              <Chip compact style={[styles.chipContagem, { backgroundColor: chipBg }]} textStyle={{ color: chipTextColor }}>
+              <Chip compact style={{ backgroundColor: chipBg }} textStyle={[styles.chipTextoNegrito, { color: chipTextColor }]}>
                 {exames.length}
               </Chip>
             </View>
@@ -388,7 +413,7 @@ export default function ProntuarioDetalheScreen() {
                     <Chip
                       compact
                       style={{ backgroundColor: cor + (theme.dark ? '33' : '20') }}
-                      textStyle={{ color: theme.dark ? '#e8eef5' : cor, fontSize: 11 }}
+                      textStyle={[styles.chipTexto, { color: theme.dark ? '#e8eef5' : cor }]}
                     >
                       {categoriaLabel[e.categoria] ?? e.categoria}
                     </Chip>
@@ -454,7 +479,7 @@ export default function ProntuarioDetalheScreen() {
                       <Text variant="titleSmall">{consulta.nomeMedico}</Text>
                       <Chip
                         style={{ backgroundColor: cor + (theme.dark ? '33' : '20') }}
-                        textStyle={{ color: theme.dark ? '#e8eef5' : cor, fontSize: 11 }}
+                        textStyle={[styles.chipTexto, { color: theme.dark ? '#e8eef5' : cor }]}
                         compact
                       >
                         {statusLabels[consulta.status]}
@@ -529,6 +554,9 @@ const styles = StyleSheet.create({
   alertaTitulo: { fontWeight: 'bold', marginBottom: 8, fontSize: 11, letterSpacing: 0.5 },
   alertaTexto: { padding: 10, borderRadius: 8 },
 
+  chipTexto: { fontSize: 12, lineHeight: 16, marginVertical: 2 },
+  chipTextoNegrito: { fontSize: 12, lineHeight: 16, fontWeight: '700', marginVertical: 2 },
+
   alertaVencimento: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -539,7 +567,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   alertaVencimentoTexto: { flex: 1, fontWeight: '700' },
-  tituloTratamentos: { fontWeight: 'bold', marginBottom: 4 },
   tratamentoTopo: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 },
   tratamentoNome: { fontWeight: '600', flex: 1, marginRight: 8 },
 
@@ -547,7 +574,6 @@ const styles = StyleSheet.create({
   secaoHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   secaoHeaderEsquerda: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   secaoHeaderTitulo: { fontWeight: 'bold' },
-  chipContagem: { height: 24 },
   listaSecao: { marginBottom: 16, gap: 8 },
   cardItem: { borderRadius: 10 },
   itemData: { marginBottom: 6 },

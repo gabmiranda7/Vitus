@@ -1,7 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { View, ScrollView, StyleSheet, RefreshControl } from 'react-native';
 import { Text, Card, Chip, ActivityIndicator, Avatar, Button, ProgressBar, useTheme } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
 import api from '../../services/api';
 import { Consulta } from '../../types';
 import { corAvatar, iniciais, cores } from '../../theme';
@@ -33,32 +34,38 @@ export default function TriagemScreen() {
   const [modalTriagem, setModalTriagem] = useState(false);
   const [consultaSelecionada, setConsultaSelecionada] = useState<Consulta | null>(null);
 
-  useEffect(() => {
-    carregar();
-    const interval = setInterval(carregar, 60000);
-    return () => clearInterval(interval);
-  }, []);
-
-  async function carregar() {
+  const carregar = useCallback(async (silencioso = false) => {
     try {
       const response = await api.get('/api/consultas');
       setConsultas(response.data.filter((c: Consulta) =>
         ['Agendada', 'EmTriagem', 'AguardandoAtendimento'].includes(c.status)
       ));
     } finally {
-      setLoading(false);
+      if (!silencioso) setLoading(false);
       setRefreshing(false);
     }
-  }
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      carregar(true);
+      const interval = setInterval(() => carregar(true), 15000);
+      return () => clearInterval(interval);
+    }, [carregar])
+  );
+
+  useEffect(() => {
+    carregar(false);
+  }, [carregar]);
 
   function onRefresh() {
     setRefreshing(true);
-    carregar();
+    carregar(true);
   }
 
   async function aguardarAtendimento(id: string) {
     await api.patch(`/api/consultas/${id}/aguardar-atendimento`);
-    carregar();
+    carregar(true);
   }
 
   function abrirTriagem(c: Consulta) {
@@ -73,7 +80,7 @@ export default function TriagemScreen() {
 
   function onSucessoTriagem() {
     fecharModal();
-    carregar();
+    carregar(true);
   }
 
   const agendadas = consultas.filter(c => c.status === 'Agendada');
