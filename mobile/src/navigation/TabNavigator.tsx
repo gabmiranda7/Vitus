@@ -1,5 +1,5 @@
 import React from 'react';
-import { TouchableOpacity } from 'react-native';
+import { TouchableOpacity, View, Image, Text, useColorScheme } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import AprovacoesScreen from '../screens/aprovacoes/AprovacoesScreen';
@@ -11,22 +11,43 @@ import PerfilScreen from '../screens/perfil/PerfilScreen';
 import { useAuth } from '../contexts/AuthContext';
 import AvatarUsuario from '../components/AvatarUsuario';
 import AgendaScreen from '../screens/agenda/AgendaScreen';
-import MedicosScreen from '../screens//medicos/MedicosScreen';
+import MedicosScreen from '../screens/medicos/MedicosScreen';
 import ReceitasStack from './ReceitasStack';
 import AuditoriaScreen from '../screens/auditoria/AuditoriaScreen';
-import TriagemScreen from '../screens/triagem/TriagemScreen'; // NOVO
+import TriagemScreen from '../screens/triagem/TriagemScreen';
+import { cores } from '../theme';
 
 const Tab = createBottomTabNavigator();
 
+function TituloVitus() {
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+      <Image
+        source={require('../../assets/icon.png')}
+        style={{ width: 26, height: 26, borderRadius: 6 }}
+      />
+      <Text style={{ color: '#fff', fontSize: 19, fontWeight: '800', letterSpacing: 0.3 }}>
+        Vitus
+      </Text>
+    </View>
+  );
+}
+
 export default function TabNavigator() {
   const { usuario } = useAuth();
+  const isDark = useColorScheme() === 'dark';
 
   return (
     <Tab.Navigator
       screenOptions={({ navigation }) => ({
-        headerStyle: { backgroundColor: '#1976d2' },
+        headerStyle: { backgroundColor: isDark ? '#0d47a1' : cores.primaria },
         headerTintColor: '#fff',
-        tabBarActiveTintColor: '#1976d2',
+        tabBarActiveTintColor: isDark ? cores.primariaClara : cores.primaria,
+        tabBarInactiveTintColor: isDark ? cores.textoSecundarioEscuro : cores.textoSecundario,
+        tabBarStyle: {
+          backgroundColor: isDark ? cores.superficieEscura : cores.superficie,
+          borderTopColor: isDark ? '#253140' : '#d3dce6',
+        },
         headerRight: () => (
           <TouchableOpacity onPress={() => navigation.navigate('Perfil')} style={{ marginRight: 12 }}>
             <AvatarUsuario size={32} cor="rgba(255,255,255,0.25)" />
@@ -38,13 +59,10 @@ export default function TabNavigator() {
         name="Dashboard"
         component={DashboardScreen}
         options={{
-          title: 'Vitus',
+          title: 'Início',
+          headerTitle: () => <TituloVitus />,
           tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons
-              name="view-dashboard"
-              color={color}
-              size={size}
-            />
+            <MaterialCommunityIcons name="view-dashboard" color={color} size={size} />
           ),
         }}
       />
@@ -68,11 +86,7 @@ export default function TabNavigator() {
           component={AuditoriaScreen}
           options={{
             tabBarIcon: ({ color, size }) => (
-              <MaterialCommunityIcons
-                name="shield-search"
-                color={color}
-                size={size}
-              />
+              <MaterialCommunityIcons name="shield-search" color={color} size={size} />
             ),
           }}
         />
@@ -97,11 +111,7 @@ export default function TabNavigator() {
           component={ConsultasScreen}
           options={{
             tabBarIcon: ({ color, size }) => (
-              <MaterialCommunityIcons
-                name="calendar-clock"
-                color={color}
-                size={size}
-              />
+              <MaterialCommunityIcons name="calendar-clock" color={color} size={size} />
             ),
           }}
         />
@@ -113,11 +123,7 @@ export default function TabNavigator() {
           component={PacientesScreen}
           options={{
             tabBarIcon: ({ color, size }) => (
-              <MaterialCommunityIcons
-                name="account-multiple"
-                color={color}
-                size={size}
-              />
+              <MaterialCommunityIcons name="account-multiple" color={color} size={size} />
             ),
           }}
         />
@@ -128,29 +134,21 @@ export default function TabNavigator() {
           name="Medicos"
           component={MedicosScreen}
           options={{
+            title: 'Médicos',
             tabBarIcon: ({ color, size }) => (
-              <MaterialCommunityIcons
-                name="doctor"
-                color={color}
-                size={size}
-              />
+              <MaterialCommunityIcons name="doctor" color={color} size={size} />
             ),
           }}
         />
       )}
 
-      {/* Apenas Enfermeiro pode acessar Triagem */}
       {usuario?.perfil === 'Enfermeiro' && (
         <Tab.Screen
           name="Triagem"
           component={TriagemScreen}
           options={{
             tabBarIcon: ({ color, size }) => (
-              <MaterialCommunityIcons
-                name="stethoscope"
-                color={color}
-                size={size}
-              />
+              <MaterialCommunityIcons name="stethoscope" color={color} size={size} />
             ),
           }}
         />
@@ -164,11 +162,7 @@ export default function TabNavigator() {
             headerShown: false,
             title: 'Prontuários',
             tabBarIcon: ({ color, size }) => (
-              <MaterialCommunityIcons
-                name="folder-account"
-                color={color}
-                size={size}
-              />
+              <MaterialCommunityIcons name="folder-account" color={color} size={size} />
             ),
           }}
         />
@@ -181,28 +175,20 @@ export default function TabNavigator() {
           options={{
             headerShown: false,
             tabBarIcon: ({ color, size }) => (
-              <MaterialCommunityIcons
-                name="pill"
-                color={color}
-                size={size}
-              />
+              <MaterialCommunityIcons name="pill" color={color} size={size} />
             ),
           }}
         />
       )}
 
+      {/* Rota oculta na barra inferior — acessada pelo avatar no canto superior direito */}
       <Tab.Screen
         name="Perfil"
         component={PerfilScreen}
         options={{
+          tabBarButton: () => null,
+          tabBarItemStyle: { display: 'none' },
           headerRight: () => null,
-          tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons
-              name="account"
-              color={color}
-              size={size}
-            />
-          ),
         }}
       />
     </Tab.Navigator>

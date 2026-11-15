@@ -1,12 +1,18 @@
 import React from 'react';
+import { ActivityIndicator, View, useColorScheme } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { PaperProvider } from 'react-native-paper';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { ActivityIndicator, View } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
 import { AuthProvider, useAuth } from './src/contexts/AuthContext';
 import AuthStack from './src/navigation/AuthStack';
 import TabNavigator from './src/navigation/TabNavigator';
-import { theme } from './src/theme';
+import {
+  lightTheme,
+  darkTheme,
+  navigationLightTheme,
+  navigationDarkTheme,
+} from './src/theme';
 
 function Rotas() {
   const { usuario, loading } = useAuth();
@@ -27,11 +33,15 @@ function Rotas() {
 }
 
 export default function App() {
+  const colorScheme = useColorScheme();
+  const isDark = colorScheme === 'dark';
+
   return (
     <SafeAreaProvider>
-      <PaperProvider theme={theme}>
+      <PaperProvider theme={isDark ? darkTheme : lightTheme}>
         <AuthProvider>
-          <NavigationContainer>
+          <NavigationContainer theme={isDark ? navigationDarkTheme : navigationLightTheme}>
+            <StatusBar style="light" backgroundColor={isDark ? '#0d47a1' : '#1565c0'} />
             <Rotas />
           </NavigationContainer>
         </AuthProvider>
