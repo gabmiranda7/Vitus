@@ -4,7 +4,7 @@ import {
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
   Paper, Alert, MenuItem, Select, FormControl, InputLabel, LinearProgress,
   Button, Dialog, DialogTitle, DialogContent, DialogActions, Divider,
-  Pagination
+  Pagination, IconButton, Tooltip
 } from '@mui/material';
 import HistoryIcon from '@mui/icons-material/History';
 import SearchIcon from '@mui/icons-material/Search';
@@ -12,6 +12,11 @@ import VisibilityIcon from '@mui/icons-material/Visibility';
 import TodayIcon from '@mui/icons-material/Today';
 import PeopleIcon from '@mui/icons-material/People';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import CheckIcon from '@mui/icons-material/Check';
+import DownloadIcon from '@mui/icons-material/Download';
+import ClearIcon from '@mui/icons-material/Clear';
+import ExcelJS from 'exceljs';
 import Layout from '../../components/layout/Layout';
 import api from '../../services/api';
 import { AuditoriaLog } from '../../types';
@@ -42,7 +47,12 @@ const acaoCores: Record<string, string> = {
   CriacaoPaciente: '#6a1b9a',
   EdicaoPaciente: '#5d4037',
   ExclusaoPaciente: '#b71c1c',
-  AtualizacaoPerfil: '#00838f'
+  RegistroExame: '#00796b',
+  AnexoExame: '#0097a7',
+  DownloadExame: '#455a64',
+  AprovacaoCadastro: '#388e3c',
+  RecusaCadastro: '#c62828',
+  AtualizacaoPerfil: '#00838f',
 };
 
 const POR_PAGINA = 10;
@@ -52,6 +62,13 @@ function dataHoraCompleta(data: string) {
     day: '2-digit', month: '2-digit', year: 'numeric',
     hour: '2-digit', minute: '2-digit', second: '2-digit'
   });
+}
+
+function formatarDataBr(data: Date): string {
+  const d = String(data.getDate()).padStart(2, '0');
+  const m = String(data.getMonth() + 1).padStart(2, '0');
+  const a = data.getFullYear();
+  return `${d}/${m}/${a}`;
 }
 
 function aplicarMascaraData(valor: string): string {
@@ -76,6 +93,14 @@ function parseDataBr(valor: string): Date | null {
   return data;
 }
 
+function escaparHtml(valor: string): string {
+  return valor
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
 export default function AuditoriaPage() {
   const [logs, setLogs] = useState<AuditoriaLog[]>([]);
   const [busca, setBusca] = useState('');
@@ -86,20 +111,32 @@ export default function AuditoriaPage() {
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState('');
   const [logSelecionado, setLogSelecionado] = useState<AuditoriaLog | null>(null);
+  const [copiadoCampo, setCopiadoCampo] = useState<string | null>(null);
 
   useEffect(() => { carregar(); }, []);
+  useEffect(() => { setPagina(1); }, [busca, filtroAcao]);
 
-  async function carregar() {
+  const inicioInvalida = dataInicio.length === 10 && !parseDataBr(dataInicio);
+  const fimInvalida = dataFim.length === 10 && !parseDataBr(dataFim);
+
+  async function carregar(overrideInicio?: string, overrideFim?: string) {
+    const iniStr = overrideInicio !== undefined ? overrideInicio : dataInicio;
+    const fimStr = overrideFim !== undefined ? overrideFim : dataFim;
+
+    if ((iniStr && !parseDataBr(iniStr)) || (fimStr && !parseDataBr(fimStr))) {
+      setErro('Informe datas válidas no formato dd/mm/aaaa.');
+      return;
+    }
+
+    setErro('');
     setLoading(true);
     try {
       const params: Record<string, string> = {};
 
-      const inicio = parseDataBr(dataInicio);
-      if (inicio) {
-        params.dataInicio = inicio.toISOString();
-      }
+      const inicio = parseDataBr(iniStr);
+      if (inicio) params.dataInicio = inicio.toISOString();
 
-      const fim = parseDataBr(dataFim);
+      const fim = parseDataBr(fimStr);
       if (fim) {
         fim.setHours(23, 59, 59, 999);
         params.dataFim = fim.toISOString();
@@ -113,6 +150,154 @@ export default function AuditoriaPage() {
     } finally {
       setLoading(false);
     }
+  }
+
+  function aplicarAtalhoPeriodo(diasAtras: number | 'mes') {
+    const agora = new Date();
+    const inicio = new Date(agora);
+    if (diasAtras === 'mes') {
+      inicio.setDate(1);
+    } else {
+      inicio.setDate(agora.getDate() - diasAtras);
+    }
+    const iniStr = formatarDataBr(inicio);
+    const fimStr = formatarDataBr(agora);
+    setDataInicio(iniStr);
+    setDataFim(fimStr);
+    carregar(iniStr, fimStr);
+  }
+
+  function limparFiltros() {
+    setBusca('');
+    setFiltroAcao('');
+    setDataInicio('');
+    setDataFim('');
+    carregar('', '');
+  }
+
+async function exportarPlanilha() {
+    const workbook = new ExcelJS.Workbook();
+    workbook.creator = 'Sistema Vitus';
+    workbook.created = new Date();
+
+    const sheet = workbook.addWorksheet('Auditoria Vitus', {
+      views: [{ state: 'frozen', ySplit: 4 }], // Congela título, subtítulo e cabeçalho
+    });
+
+    const emitidoEm = dataHoraCompleta(new Date().toISOString());
+    const periodoTexto = dataInicio || dataFim
+      ? `${dataInicio || 'Início'} até ${dataFim || 'Hoje'}`
+      : 'Todos os períodos';
+
+    // Linha 1: Título
+    sheet.mergeCells('A1:F1');
+    const titleCell = sheet.getCell('A1');
+    titleCell.value = 'Relatório de Auditoria — Sistema Vitus';
+    titleCell.font = { name: 'Calibri', size: 15, bold: true, color: { argb: 'FF0F172A' } };
+    titleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE2E8F0' } };
+    titleCell.alignment = { vertical: 'middle', horizontal: 'left', indent: 1 };
+    sheet.getRow(1).height = 28;
+
+    // Linha 2: Metadados do filtro
+    sheet.mergeCells('A2:F2');
+    const subCell = sheet.getCell('A2');
+    subCell.value = `Emitido em: ${emitidoEm}   |   Período: ${periodoTexto}   |   Registros: ${filtrados.length}`;
+    subCell.font = { name: 'Calibri', size: 10, color: { argb: 'FF475569' } };
+    subCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8FAFC' } };
+    subCell.alignment = { vertical: 'middle', horizontal: 'left', indent: 1 };
+    sheet.getRow(2).height = 22;
+
+    // Linha 3: Espaço em branco
+    sheet.getRow(3).height = 8;
+
+    // Definição das colunas
+    sheet.columns = [
+      { key: 'dataHora', width: 22 },
+      { key: 'usuario', width: 28 },
+      { key: 'acao', width: 28 },
+      { key: 'entidade', width: 20 },
+      { key: 'entidadeId', width: 38 },
+      { key: 'detalhes', width: 52 },
+    ];
+
+    // Linha 4: Cabeçalho da tabela
+    const headerRow = sheet.getRow(4);
+    headerRow.values = ['Data / Hora', 'Usuário', 'Ação', 'Entidade Afetada', 'ID da Entidade', 'Detalhes'];
+    headerRow.height = 26;
+    headerRow.eachCell((cell) => {
+      cell.font = { name: 'Calibri', size: 11, bold: true, color: { argb: 'FFFFFFFF' } };
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1976D2' } };
+      cell.alignment = { vertical: 'middle', horizontal: 'center' };
+      cell.border = {
+        top: { style: 'thin', color: { argb: 'FF1565C0' } },
+        bottom: { style: 'medium', color: { argb: 'FF0D47A1' } },
+        left: { style: 'thin', color: { argb: 'FF1565C0' } },
+        right: { style: 'thin', color: { argb: 'FF1565C0' } },
+      };
+    });
+
+    // Filtro automático no cabeçalho
+    sheet.autoFilter = {
+      from: { row: 4, column: 1 },
+      to: { row: 4, column: 6 },
+    };
+
+    // Linhas de dados
+    filtrados.forEach((l, idx) => {
+      const detalhesTexto = (l.detalhes ?? '—').replace(/\r?\n/g, ' ');
+      const row = sheet.addRow({
+        dataHora: dataHoraCompleta(l.dataHora),
+        usuario: l.usuarioNome,
+        acao: acaoLabels[l.acao] ?? l.acao,
+        entidade: l.entidadeAfetada,
+        entidadeId: l.entidadeId,
+        detalhes: detalhesTexto,
+      });
+
+      // Ajusta altura automaticamente se o texto de detalhes for longo
+      const linhasEstimadas = Math.max(1, Math.ceil(detalhesTexto.length / 48));
+      row.height = Math.max(22, linhasEstimadas * 16);
+
+      const bgColor = idx % 2 === 0 ? 'FFFFFFFF' : 'FFF8FAFC';
+
+      row.eachCell((cell, colNumber) => {
+        cell.font = {
+          name: colNumber === 5 ? 'Consolas' : 'Calibri',
+          size: colNumber === 5 ? 10 : 11,
+          bold: colNumber === 3,
+          color: { argb: colNumber === 5 ? 'FF475569' : 'FF1E293B' },
+        };
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bgColor } };
+        cell.alignment = {
+          vertical: 'middle',
+          horizontal: colNumber === 1 || colNumber === 4 ? 'center' : 'left',
+          wrapText: colNumber === 6,
+        };
+        cell.border = {
+          top: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+          bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+          left: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+          right: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+        };
+      });
+    });
+
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `auditoria_vitus_${new Date().toISOString().slice(0, 10)}.xlsx`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function copiarTexto(campo: string, valor: string) {
+    navigator.clipboard.writeText(valor);
+    setCopiadoCampo(campo);
+    setTimeout(() => setCopiadoCampo(null), 1500);
   }
 
   const acoesDisponiveis = useMemo(() =>
@@ -130,7 +315,6 @@ export default function AuditoriaPage() {
     );
   }, [logs, busca, filtroAcao]);
 
-  // --- Estatísticas ---
   const hoje = new Date().toDateString();
   const logsHoje = logs.filter(l => new Date(l.dataHora).toDateString() === hoje).length;
   const usuariosUnicos = new Set(logs.map(l => l.usuarioId)).size;
@@ -144,15 +328,16 @@ export default function AuditoriaPage() {
 
   const totalPaginas = Math.max(1, Math.ceil(filtrados.length / POR_PAGINA));
   const paginaAtual = filtrados.slice((pagina - 1) * POR_PAGINA, pagina * POR_PAGINA);
+  const temFiltroAtivo = Boolean(busca || filtroAcao || dataInicio || dataFim);
 
   const statCards = [
-    { label: 'Total de Registros', valor: logs.length, icon: <HistoryIcon />, cor: '#1976d2' },
-    { label: 'Hoje', valor: logsHoje, icon: <TodayIcon />, cor: '#2e7d32' },
-    { label: 'Usuários Únicos', valor: usuariosUnicos, icon: <PeopleIcon />, cor: '#6a1b9a' },
+    { label: 'Total de Registros', valor: logs.length, icon: <HistoryIcon fontSize="small" />, cor: '#1976d2' },
+    { label: 'Hoje', valor: logsHoje, icon: <TodayIcon fontSize="small" />, cor: '#2e7d32' },
+    { label: 'Usuários Únicos', valor: usuariosUnicos, icon: <PeopleIcon fontSize="small" />, cor: '#6a1b9a' },
     {
       label: 'Ação Mais Frequente',
       valor: acaoMaisFrequente ? (acaoLabels[acaoMaisFrequente] ?? acaoMaisFrequente) : '—',
-      icon: <TrendingUpIcon />, cor: '#ed6c02', texto: true
+      icon: <TrendingUpIcon fontSize="small" />, cor: '#ed6c02', texto: true
     },
   ];
 
@@ -162,51 +347,90 @@ export default function AuditoriaPage() {
         <LinearProgress sx={{ position: 'fixed', top: 64, left: 0, right: 0, zIndex: 9999 }} />
       )}
 
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 3 }}>
-        <HistoryIcon color="primary" />
-        <Typography variant="h5" sx={{ fontWeight: 'bold' }}>Auditoria</Typography>
-        <Chip label={logs.length} size="small" color="primary" />
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1, mb: 2 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <HistoryIcon color="primary" />
+          <Typography variant="h5" sx={{ fontWeight: 'bold' }}>Auditoria</Typography>
+          <Chip label={`${filtrados.length} de ${logs.length}`} size="small" color="primary" />
+        </Box>
+        <Button
+          variant="outlined"
+          size="small"
+          startIcon={<DownloadIcon />}
+          onClick={exportarPlanilha}
+          disabled={filtrados.length === 0}
+        >
+          Exportar Excel
+        </Button>
       </Box>
 
-      {erro && <Alert severity="error" sx={{ mb: 2 }}>{erro}</Alert>}
+      {erro && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setErro('')}>{erro}</Alert>}
 
-      {/* Cards de resumo */}
-      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, mb: 3 }}>
+      {/* Cards de resumo compactos */}
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5, mb: 2.5 }}>
         {statCards.map((s) => (
-          <Box key={s.label} sx={{ flex: '1 1 180px' }}>
-            <Card sx={{ borderRadius: 3, borderTop: `4px solid ${s.cor}` }}>
-              <CardContent sx={{ p: 2.5 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
-                  <Box sx={{ p: 1, borderRadius: 2, bgcolor: `${s.cor}18`, color: s.cor, display: 'flex' }}>
+          <Box key={s.label} sx={{ flex: '1 1 170px' }}>
+            <Card sx={{ borderRadius: 2, borderLeft: `4px solid ${s.cor}` }}>
+              <CardContent sx={{ py: 1.25, px: 1.75, '&:last-child': { pb: 1.25 } }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
+                  <Box sx={{ p: 0.75, borderRadius: 1.5, bgcolor: `${s.cor}18`, color: s.cor, display: 'flex', flexShrink: 0 }}>
                     {s.icon}
                   </Box>
-                  <Typography variant={s.texto ? 'body2' : 'h4'} sx={{ fontWeight: 800, color: s.cor, textAlign: 'right' }}>
-                    {s.valor}
-                  </Typography>
+                  <Box sx={{ minWidth: 0, flex: 1 }}>
+                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', lineHeight: 1.2 }} noWrap>
+                      {s.label}
+                    </Typography>
+                    <Typography
+                      variant={s.texto ? 'body2' : 'h6'}
+                      sx={{ fontWeight: 800, color: s.cor, lineHeight: 1.25, mt: 0.25 }}
+                      noWrap
+                    >
+                      {s.valor}
+                    </Typography>
+                  </Box>
                 </Box>
-                <Typography variant="body2" sx={{ fontWeight: 600 }}>{s.label}</Typography>
               </CardContent>
             </Card>
           </Box>
         ))}
       </Box>
 
+      {/* Atalhos rápidos de período */}
+      <Box sx={{ display: 'flex', gap: 1, mb: 1.5, flexWrap: 'wrap', alignItems: 'center' }}>
+        <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
+          Período rápido:
+        </Typography>
+        <Chip label="Hoje" size="small" variant="outlined" onClick={() => aplicarAtalhoPeriodo(0)} />
+        <Chip label="Últimos 7 dias" size="small" variant="outlined" onClick={() => aplicarAtalhoPeriodo(7)} />
+        <Chip label="Este mês" size="small" variant="outlined" onClick={() => aplicarAtalhoPeriodo('mes')} />
+        {temFiltroAtivo && (
+          <Chip
+            label="Limpar filtros"
+            size="small"
+            color="default"
+            icon={<ClearIcon />}
+            onClick={limparFiltros}
+          />
+        )}
+      </Box>
+
       {/* Filtros */}
-      <Box sx={{ display: 'flex', gap: 2, mb: 3, flexWrap: 'wrap', alignItems: 'flex-end' }}>
+      <Box sx={{ display: 'flex', gap: 1.5, mb: 2.5, flexWrap: 'wrap', alignItems: 'flex-start' }}>
         <TextField
-          sx={{ flex: '2 1 280px' }}
+          size="small"
+          sx={{ flex: '2 1 260px' }}
           placeholder="Buscar por usuário, entidade ou ID..."
           value={busca}
           onChange={(e) => setBusca(e.target.value)}
           slotProps={{
             input: {
               startAdornment: (
-                <InputAdornment position="start"><SearchIcon color="action" /></InputAdornment>
+                <InputAdornment position="start"><SearchIcon color="action" fontSize="small" /></InputAdornment>
               )
             }
           }}
         />
-        <FormControl sx={{ flex: '1 1 200px' }}>
+        <FormControl size="small" sx={{ flex: '1 1 190px' }}>
           <InputLabel>Ação</InputLabel>
           <Select value={filtroAcao} label="Ação" onChange={(e) => setFiltroAcao(e.target.value)}>
             <MenuItem value="">Todas</MenuItem>
@@ -216,22 +440,28 @@ export default function AuditoriaPage() {
           </Select>
         </FormControl>
         <TextField
+          size="small"
           label="De"
           placeholder="dd/mm/aaaa"
           value={dataInicio}
+          error={inicioInvalida}
+          helperText={inicioInvalida ? 'Data inválida' : undefined}
           onChange={(e) => setDataInicio(aplicarMascaraData(e.target.value))}
-          sx={{ flex: '1 1 150px' }}
+          sx={{ flex: '1 1 140px' }}
           slotProps={{ inputLabel: { shrink: true } }}
         />
         <TextField
+          size="small"
           label="Até"
           placeholder="dd/mm/aaaa"
           value={dataFim}
+          error={fimInvalida}
+          helperText={fimInvalida ? 'Data inválida' : undefined}
           onChange={(e) => setDataFim(aplicarMascaraData(e.target.value))}
-          sx={{ flex: '1 1 150px' }}
+          sx={{ flex: '1 1 140px' }}
           slotProps={{ inputLabel: { shrink: true } }}
         />
-        <Button variant="contained" onClick={carregar} sx={{ height: 56 }}>
+        <Button variant="contained" onClick={() => carregar()} sx={{ height: 40 }}>
           Filtrar
         </Button>
       </Box>
@@ -264,7 +494,7 @@ export default function AuditoriaPage() {
                         {new Date(log.dataHora).toLocaleDateString('pt-BR')}
                       </Typography>
                       <Typography variant="caption" color="text.secondary">
-                        {new Date(log.dataHora).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                        {new Date(log.dataHora).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
                       </Typography>
                     </TableCell>
                     <TableCell>{log.usuarioNome}</TableCell>
@@ -333,12 +563,23 @@ export default function AuditoriaPage() {
                     borderColor: 'divider',
                   }}>
                     <Typography variant="body2" color="text.secondary">{item.label}</Typography>
-                    <Typography
-                      variant="body2"
-                      sx={{ fontWeight: 600, fontFamily: item.mono ? 'monospace' : 'inherit', textAlign: 'right' }}
-                    >
-                      {item.value}
-                    </Typography>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                      <Typography
+                        variant="body2"
+                        sx={{ fontWeight: 600, fontFamily: item.mono ? 'monospace' : 'inherit', textAlign: 'right', wordBreak: 'break-all' }}
+                      >
+                        {item.value}
+                      </Typography>
+                      {item.mono && (
+                        <Tooltip title={copiadoCampo === item.label ? 'Copiado!' : 'Copiar ID'}>
+                          <IconButton size="small" onClick={() => copiarTexto(item.label, item.value)}>
+                            {copiadoCampo === item.label
+                              ? <CheckIcon fontSize="inherit" color="success" />
+                              : <ContentCopyIcon fontSize="inherit" />}
+                          </IconButton>
+                        </Tooltip>
+                      )}
+                    </Box>
                   </Box>
                 ))}
 
