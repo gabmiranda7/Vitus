@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { View, ScrollView, StyleSheet } from 'react-native';
-import { Modal, Portal, Text, TextInput, Button, Menu } from 'react-native-paper';
+import { View, StyleSheet } from 'react-native';
+import { Text, TextInput, Button, Menu } from 'react-native-paper';
 import * as DocumentPicker from 'expo-document-picker';
 import api from '../services/api';
+import ModalComTeclado from './ModalComTeclado';
 
 interface Props {
   visible: boolean;
@@ -13,8 +14,12 @@ interface Props {
 
 const CATEGORIAS = ['Sangue', 'Imagem', 'Urina', 'Cardiologico', 'Fisico', 'Outro'];
 const categoriaLabel: Record<string, string> = {
-  Sangue: 'Sangue', Imagem: 'Imagem', Urina: 'Urina',
-  Cardiologico: 'Cardiológico', Fisico: 'Físico', Outro: 'Outro',
+  Sangue: 'Sangue',
+  Imagem: 'Imagem',
+  Urina: 'Urina',
+  Cardiologico: 'Cardiológico',
+  Fisico: 'Físico',
+  Outro: 'Outro',
 };
 
 export default function ExameModal({ visible, consultaId, onClose, onSucesso }: Props) {
@@ -29,8 +34,13 @@ export default function ExameModal({ visible, consultaId, onClose, onSucesso }: 
   const [loading, setLoading] = useState(false);
 
   function limpar() {
-    setCategoria('Sangue'); setNome(''); setDescricao(''); setMedicoSolicitante('');
-    setObservacoes(''); setArquivo(null); setErro('');
+    setCategoria('Sangue');
+    setNome('');
+    setDescricao('');
+    setMedicoSolicitante('');
+    setObservacoes('');
+    setArquivo(null);
+    setErro('');
   }
 
   async function escolherArquivo() {
@@ -91,68 +101,57 @@ export default function ExameModal({ visible, consultaId, onClose, onSucesso }: 
   }
 
   return (
-    <Portal>
-      <Modal visible={visible} onDismiss={onClose} contentContainerStyle={styles.modal}>
-        <ScrollView>
-          <Text variant="titleLarge" style={styles.titulo}>Registrar Exame</Text>
-          {erro ? <Text style={styles.erro}>{erro}</Text> : null}
+    <ModalComTeclado visible={visible} onDismiss={onClose}>
+      <Text variant="titleLarge" style={styles.titulo}>Registrar Exame</Text>
+      {erro ? <Text style={styles.erro}>{erro}</Text> : null}
 
-          <Menu
-            visible={menuAberto}
-            onDismiss={() => setMenuAberto(false)}
-            anchor={
-              <Button mode="outlined" onPress={() => setMenuAberto(true)} style={styles.input}>
-                Categoria: {categoriaLabel[categoria]}
-              </Button>
-            }
-          >
-            {CATEGORIAS.map((c) => (
-              <Menu.Item key={c} title={categoriaLabel[c]} onPress={() => { setCategoria(c); setMenuAberto(false); }} />
-            ))}
-          </Menu>
-
-          <TextInput label="Nome do exame *" value={nome} onChangeText={setNome} mode="outlined" style={styles.input} />
-          <TextInput label="Médico solicitante *" value={medicoSolicitante} onChangeText={setMedicoSolicitante} mode="outlined" style={styles.input} />
-          <TextInput label="Descrição" value={descricao} onChangeText={setDescricao} mode="outlined" style={styles.input} />
-          <TextInput
-            label="Observações / valores relevantes"
-            value={observacoes}
-            onChangeText={setObservacoes}
-            multiline
-            numberOfLines={3}
-            mode="outlined"
-            style={styles.input}
-          />
-
-          <Button
-            mode="outlined"
-            icon="paperclip"
-            onPress={escolherArquivo}
-            style={styles.input}
-          >
-            {arquivo ? arquivo.name : 'Anexar arquivo (opcional)'}
+      <Menu
+        visible={menuAberto}
+        onDismiss={() => setMenuAberto(false)}
+        anchor={
+          <Button mode="outlined" onPress={() => setMenuAberto(true)} style={styles.input}>
+            Categoria: {categoriaLabel[categoria]}
           </Button>
+        }
+      >
+        {CATEGORIAS.map((c) => (
+          <Menu.Item key={c} title={categoriaLabel[c]} onPress={() => { setCategoria(c); setMenuAberto(false); }} />
+        ))}
+      </Menu>
 
-          <View style={styles.botoes}>
-            <Button onPress={onClose} disabled={loading}>Cancelar</Button>
-            <Button mode="contained" onPress={salvar} loading={loading} disabled={loading}>
-              Registrar
-            </Button>
-          </View>
-        </ScrollView>
-      </Modal>
-    </Portal>
+      <TextInput label="Nome do exame *" value={nome} onChangeText={setNome} mode="outlined" style={styles.input} />
+      <TextInput label="Médico solicitante *" value={medicoSolicitante} onChangeText={setMedicoSolicitante} mode="outlined" style={styles.input} />
+      <TextInput label="Descrição" value={descricao} onChangeText={setDescricao} mode="outlined" style={styles.input} />
+      <TextInput
+        label="Observações / valores relevantes"
+        value={observacoes}
+        onChangeText={setObservacoes}
+        multiline
+        numberOfLines={3}
+        mode="outlined"
+        style={styles.input}
+      />
+
+      <Button
+        mode="outlined"
+        icon="paperclip"
+        onPress={escolherArquivo}
+        style={styles.input}
+      >
+        {arquivo ? arquivo.name : 'Anexar arquivo (opcional)'}
+      </Button>
+
+      <View style={styles.botoes}>
+        <Button onPress={onClose} disabled={loading}>Cancelar</Button>
+        <Button mode="contained" onPress={salvar} loading={loading} disabled={loading}>
+          Registrar
+        </Button>
+      </View>
+    </ModalComTeclado>
   );
 }
 
 const styles = StyleSheet.create({
-  modal: {
-    backgroundColor: 'white',
-    margin: 20,
-    padding: 20,
-    borderRadius: 16,
-    maxHeight: '85%',
-  },
   titulo: {
     marginBottom: 16,
     fontWeight: 'bold',

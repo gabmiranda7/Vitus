@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { View, StyleSheet } from 'react-native';
-import { Modal, Portal, Text, TextInput, Button } from 'react-native-paper';
+import { Text, TextInput, Button } from 'react-native-paper';
 import api from '../services/api';
 import CabecalhoGradiente from './CabecalhoGradiente';
 import { cores } from '../theme';
+import ModalComTeclado from './ModalComTeclado';
 
 interface Props {
   visible: boolean;
@@ -20,7 +21,10 @@ export default function TriagemModal({ visible, consultaId, onClose, onSucesso }
   const [loading, setLoading] = useState(false);
 
   function limpar() {
-    setPressao(''); setTemperatura(''); setObservacoes(''); setErro('');
+    setPressao('');
+    setTemperatura('');
+    setObservacoes('');
+    setErro('');
   }
 
   async function salvar() {
@@ -36,7 +40,7 @@ export default function TriagemModal({ visible, consultaId, onClose, onSucesso }
       await api.post('/api/triagens', {
         consultaId,
         pressaoArterial: pressao,
-        temperatura: parseFloat(temperatura),
+        temperatura: parseFloat(temperatura.replace(',', '.')),
         observacoes,
       });
       await api.patch(`/api/consultas/${consultaId}/aguardar-atendimento`);
@@ -50,62 +54,50 @@ export default function TriagemModal({ visible, consultaId, onClose, onSucesso }
   }
 
   return (
-    <Portal>
-      <Modal visible={visible} onDismiss={onClose} contentContainerStyle={styles.modal}>
-        <CabecalhoGradiente
+    <ModalComTeclado visible={visible} onDismiss={onClose}>
+      <CabecalhoGradiente
         icone="stethoscope"
         titulo="Triagem"
         cores={cores.gradienteLaranja}
       />
-        {erro ? <Text style={styles.erro}>{erro}</Text> : null}
-        <TextInput
-          label="Pressão Arterial"
-          value={pressao}
-          onChangeText={setPressao}
-          placeholder="ex: 120/80"
-          mode="outlined"
-          style={styles.input}
-        />
-        <TextInput
-          label="Temperatura (°C)"
-          value={temperatura}
-          onChangeText={setTemperatura}
-          placeholder="ex: 36.5"
-          keyboardType="numeric"
-          mode="outlined"
-          style={styles.input}
-        />
-        <TextInput
-          label="Observações"
-          value={observacoes}
-          onChangeText={setObservacoes}
-          multiline
-          numberOfLines={3}
-          mode="outlined"
-          style={styles.input}
-        />
-        <View style={styles.botoes}>
-          <Button onPress={onClose} disabled={loading}>Cancelar</Button>
-          <Button mode="contained" onPress={salvar} loading={loading} disabled={loading}>
-            Registrar
-          </Button>
-        </View>
-      </Modal>
-    </Portal>
+      {erro ? <Text style={styles.erro}>{erro}</Text> : null}
+      <TextInput
+        label="Pressão Arterial"
+        value={pressao}
+        onChangeText={setPressao}
+        placeholder="ex: 120/80"
+        mode="outlined"
+        style={styles.input}
+      />
+      <TextInput
+        label="Temperatura (°C)"
+        value={temperatura}
+        onChangeText={setTemperatura}
+        placeholder="ex: 36.5"
+        keyboardType="numeric"
+        mode="outlined"
+        style={styles.input}
+      />
+      <TextInput
+        label="Observações"
+        value={observacoes}
+        onChangeText={setObservacoes}
+        multiline
+        numberOfLines={3}
+        mode="outlined"
+        style={styles.input}
+      />
+      <View style={styles.botoes}>
+        <Button onPress={onClose} disabled={loading}>Cancelar</Button>
+        <Button mode="contained" onPress={salvar} loading={loading} disabled={loading}>
+          Registrar
+        </Button>
+      </View>
+    </ModalComTeclado>
   );
 }
 
 const styles = StyleSheet.create({
-  modal: {
-    backgroundColor: 'white',
-    margin: 20,
-    padding: 20,
-    borderRadius: 16,
-  },
-  titulo: {
-    marginBottom: 16,
-    fontWeight: 'bold',
-  },
   input: {
     marginBottom: 12,
   },

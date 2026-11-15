@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, StyleSheet, Platform } from 'react-native';
-import { Text, Button, Searchbar, List, Chip } from 'react-native-paper';
+import { Text, Button, Searchbar, List, Chip, useTheme } from 'react-native-paper';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import api from '../services/api';
 import { Medico, Paciente } from '../types';
@@ -20,6 +20,7 @@ function sugestaoHorario() {
 }
 
 export default function NovaConsultaModal({ visible, onClose, onSucesso }: Props) {
+  const theme = useTheme();
   const [pacientes, setPacientes] = useState<Paciente[]>([]);
   const [medicos, setMedicos] = useState<Medico[]>([]);
   const [busca, setBusca] = useState('');
@@ -96,7 +97,9 @@ export default function NovaConsultaModal({ visible, onClose, onSucesso }: Props
       <Text variant="titleLarge" style={styles.titulo}>Nova Consulta</Text>
       {erro ? <Text style={styles.erro}>{erro}</Text> : null}
 
-      <Text variant="labelLarge" style={styles.rotulo}>Paciente</Text>
+      <Text variant="labelLarge" style={[styles.rotulo, { color: theme.colors.onSurfaceVariant }]}>
+        Paciente
+      </Text>
       {pacienteSelecionado ? (
         <Chip icon="account" onClose={() => setPacienteId('')} style={styles.chipSelecionado}>
           {pacienteSelecionado.nome}
@@ -110,7 +113,9 @@ export default function NovaConsultaModal({ visible, onClose, onSucesso }: Props
             style={styles.busca}
           />
           {resultados.length === 0 ? (
-            <Text style={styles.vazio}>Nenhum paciente encontrado</Text>
+            <Text style={{ color: theme.colors.onSurfaceVariant, paddingVertical: 8 }}>
+              Nenhum paciente encontrado
+            </Text>
           ) : (
             resultados.map(p => (
               <List.Item
@@ -125,7 +130,9 @@ export default function NovaConsultaModal({ visible, onClose, onSucesso }: Props
         </>
       )}
 
-      <Text variant="labelLarge" style={styles.rotulo}>Médico</Text>
+      <Text variant="labelLarge" style={[styles.rotulo, { color: theme.colors.onSurfaceVariant }]}>
+        Médico
+      </Text>
       <View style={styles.chips}>
         {medicos.map(m => (
           <Chip
@@ -139,7 +146,9 @@ export default function NovaConsultaModal({ visible, onClose, onSucesso }: Props
         ))}
       </View>
 
-      <Text variant="labelLarge" style={styles.rotulo}>Data e horário</Text>
+      <Text variant="labelLarge" style={[styles.rotulo, { color: theme.colors.onSurfaceVariant }]}>
+        Data e horário
+      </Text>
       <View style={styles.linha}>
         <Button
           mode="outlined" icon="calendar" style={styles.flex1}
@@ -178,9 +187,8 @@ export default function NovaConsultaModal({ visible, onClose, onSucesso }: Props
 const styles = StyleSheet.create({
   titulo: { fontWeight: 'bold', marginBottom: 12 },
   erro: { color: cores.erro, marginBottom: 12 },
-  rotulo: { marginTop: 12, marginBottom: 8, color: cores.textoSecundario },
+  rotulo: { marginTop: 12, marginBottom: 8 },
   busca: { marginBottom: 4 },
-  vazio: { color: cores.textoDesabilitado, paddingVertical: 8 },
   chipSelecionado: { alignSelf: 'flex-start' },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   linha: { flexDirection: 'row', gap: 8 },

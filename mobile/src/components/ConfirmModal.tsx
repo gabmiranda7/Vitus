@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
-import { Modal, Portal, Text, Button } from 'react-native-paper';
+import { Modal, Portal, Text, Button, useTheme } from 'react-native-paper';
 
 interface Props {
   visible: boolean;
@@ -13,11 +13,19 @@ interface Props {
 }
 
 export default function ConfirmModal({ visible, titulo, mensagem, corBotao, onClose, onConfirmar, loading }: Props) {
+  const theme = useTheme();
+
   return (
     <Portal>
-      <Modal visible={visible} onDismiss={onClose} contentContainerStyle={styles.modal}>
+      <Modal
+        visible={visible}
+        onDismiss={onClose}
+        contentContainerStyle={[styles.modal, { backgroundColor: theme.colors.surface }]}
+      >
         <Text variant="titleLarge" style={styles.titulo}>{titulo}</Text>
-        <Text variant="bodyMedium" style={styles.mensagem}>{mensagem}</Text>
+        <Text variant="bodyMedium" style={[styles.mensagem, { color: theme.colors.onSurfaceVariant }]}>
+          {mensagem}
+        </Text>
         <View style={styles.botoes}>
           <Button onPress={onClose} disabled={loading}>Voltar</Button>
           <Button mode="contained" buttonColor={corBotao} onPress={onConfirmar} loading={loading} disabled={loading}>
@@ -31,7 +39,6 @@ export default function ConfirmModal({ visible, titulo, mensagem, corBotao, onCl
 
 const styles = StyleSheet.create({
   modal: {
-    backgroundColor: 'white',
     margin: 20,
     padding: 20,
     borderRadius: 16,
@@ -41,7 +48,6 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   mensagem: {
-    color: '#555',
     marginBottom: 20,
   },
   botoes: {
