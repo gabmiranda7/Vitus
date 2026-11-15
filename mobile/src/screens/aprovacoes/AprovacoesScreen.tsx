@@ -1,6 +1,16 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { View, ScrollView, StyleSheet, RefreshControl } from 'react-native';
-import { Text, Card, Chip, Avatar, Button, ActivityIndicator } from 'react-native-paper';
+import {
+  Text,
+  Card,
+  Chip,
+  Avatar,
+  Button,
+  ActivityIndicator,
+  Searchbar,
+  Snackbar,
+  useTheme,
+} from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import api from '../../services/api';
 import { cores, corAvatar, iniciais } from '../../theme';
@@ -28,10 +38,15 @@ const perfilCor: Record<string, string> = {
 type Acao = 'aprovar' | 'recusar';
 
 export default function AprovacoesScreen() {
+  const theme = useTheme();
   const [pendentes, setPendentes] = useState<UsuarioPendente[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [erro, setErro] = useState('');
+  const [feedback, setFeedback] = useState('');
+
+  const [busca, setBusca] = useState('');
+  const [filtroPerfil, setFiltroPerfil] = useState('');
 
   const [selecionado, setSelecionado] = useState<UsuarioPendente | null>(null);
   const [acao, setAcao] = useState<Acao | null>(null);
@@ -59,6 +74,14 @@ export default function AprovacoesScreen() {
     carregar();
   }
 
+  const filtrados = useMemo(() => {
+    const q = busca.toLowerCase();
+    return pendentes.filter(u =>
+      (filtroPerfil === '' || u.perfil === filtroPerfil) &&
+      (q === '' || u.nome.toLowerCase().includes(q) || u.email.toLowerCase().includes(q))
+    );
+  }, [pendentes, busca, filtroPerfil]);
+
   function pedirConfirmacao(usuario: UsuarioPendente, tipo: Acao) {
     setSelecionado(usuario);
     setAcao(tipo);
@@ -72,11 +95,18 @@ export default function AprovacoesScreen() {
 
   async function confirmar() {
     if (!selecionado || !acao) return;
+    const nomeAlvo = selecionado.nome;
+    const tipoAcao = acao;
     setProcessando(true);
     try {
-      await api.patch(`/api/auth/${selecionado.id}/${acao}`);
+      await api.patch(`/api/auth/${selecionado.id}/${tipoAcao}`);
       setSelecionado(null);
       setAcao(null);
+      setFeedback(
+        tipoAcao === 'aprovar'
+          ? `Cadastro de ${nomeAlvo} aprovado.`
+          : `Cadastro de ${nomeAlvo} recusado.`
+      );
       await carregar();
     } catch (e: any) {
       setErro(e.mensagemBack ?? 'Erro ao processar a solicitação');
@@ -105,23 +135,72 @@ export default function AprovacoesScreen() {
       >
         <View style={styles.cabecalho}>
           <Text variant="titleLarge" style={styles.titulo}>Cadastros pendentes</Text>
-          <Chip compact style={{ backgroundColor: cores.aviso + '20' }} textStyle={{ color: cores.aviso, fontWeight: 'bold' }}>
+          <Chip
+            compact
+            style={{ backgroundColor: cores.aviso + (theme.dark ? '33' : '20') }}
+            textStyle={[styles.chipTextoNegrito, { color: theme.dark ? '#ffb74d' : cores.aviso }]}
+          >
             {pendentes.length}
           </Chip>
         </View>
 
         {erro ? <Text style={styles.erro}>{erro}</Text> : null}
 
+        {pendentes.length > 0 && (
+          <View style={styles.filtrosBox}>
+            <Searchbar
+              placeholder="Buscar por nome ou e-mail..."
+              value={busca}
+              onChangeText={setBusca}
+              style={styles.busca}
+            />
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipsScroll}>
+              <Chip
+                compact
+                selected={filtroPerfil === ''}
+                onPress={() => setFiltroPerfil('')}
+                textStyle={styles.chipTexto}
+              >
+                Todos
+              </Chip>
+              {Object.entries(perfilLabel).map(([key, label]) => (
+                <Chip
+                  key={key}
+                  compact
+                  selected={filtroPerfil === key}
+                  onPress={() => setFiltroPerfil(filtroPerfil === key ? '' : key)}
+                  textStyle={styles.chipTexto}
+                >
+                  {label}
+                </Chip>
+              ))}
+            </ScrollView>
+          </View>
+        )}
+
         {pendentes.length === 0 ? (
           <View style={styles.vazio}>
-            <MaterialCommunityIcons name="account-check-outline" size={64} color={cores.textoDesabilitado} />
-            <Text style={styles.textoVazio}>Nenhum cadastro aguardando aprovação</Text>
-            <Text variant="bodySmall" style={styles.textoVazioSub}>
+            <MaterialCommunityIcons
+              name="account-check-outline"
+              size={64}
+              color={theme.colors.onSurfaceVariant}
+              style={{ opacity: 0.3 }}
+            />
+            <Text style={[styles.textoVazio, { color: theme.colors.onSurfaceVariant }]}>
+              Nenhum cadastro aguardando aprovação
+            </Text>
+            <Text variant="bodySmall" style={[styles.textoVazioSub, { color: theme.colors.onSurfaceVariant }]}>
               Puxe a tela para baixo para atualizar a lista.
             </Text>
           </View>
+        ) : filtrados.length === 0 ? (
+          <View style={styles.vazio}>
+            <Text style={[styles.textoVazio, { color: theme.colors.onSurfaceVariant }]}>
+              Nenhum cadastro corresponde ao filtro
+            </Text>
+          </View>
         ) : (
-          pendentes.map((u) => {
+          filtrados.map((u) => {
             const cor = perfilCor[u.perfil] ?? cores.textoSecundario;
             return (
               <Card key={u.id} style={[styles.card, { borderLeftColor: cor, borderLeftWidth: 4 }]}>
@@ -130,11 +209,13 @@ export default function AprovacoesScreen() {
                     <Avatar.Text size={44} label={iniciais(u.nome)} style={{ backgroundColor: corAvatar(u.nome) }} />
                     <View style={styles.info}>
                       <Text variant="titleMedium">{u.nome}</Text>
-                      <Text variant="bodySmall" style={styles.email}>{u.email}</Text>
+                      <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant, marginTop: 2 }}>
+                        {u.email}
+                      </Text>
                       <Chip
                         compact
-                        style={[styles.chipPerfil, { backgroundColor: cor + '20' }]}
-                        textStyle={{ color: cor, fontSize: 11 }}
+                        style={[styles.chipPerfil, { backgroundColor: cor + (theme.dark ? '33' : '20') }]}
+                        textStyle={[styles.chipTexto, { color: theme.dark ? '#e8eef5' : cor }]}
                       >
                         {perfilLabel[u.perfil] ?? u.perfil}
                       </Chip>
@@ -143,14 +224,18 @@ export default function AprovacoesScreen() {
 
                   <View style={styles.botoes}>
                     <Button
-                      mode="outlined" textColor={cores.erro} icon="close-circle"
+                      mode="outlined"
+                      textColor={cores.erro}
+                      icon="close-circle"
                       onPress={() => pedirConfirmacao(u, 'recusar')}
                       style={[styles.botao, { borderColor: cores.erro }]}
                     >
                       Recusar
                     </Button>
                     <Button
-                      mode="contained" buttonColor={cores.sucesso} icon="check-circle"
+                      mode="contained"
+                      buttonColor={cores.sucesso}
+                      icon="check-circle"
                       onPress={() => pedirConfirmacao(u, 'aprovar')}
                       style={styles.botao}
                     >
@@ -177,6 +262,14 @@ export default function AprovacoesScreen() {
         onConfirmar={confirmar}
         loading={processando}
       />
+
+      <Snackbar
+        visible={!!feedback}
+        onDismiss={() => setFeedback('')}
+        duration={3000}
+      >
+        {feedback}
+      </Snackbar>
     </View>
   );
 }
@@ -184,18 +277,24 @@ export default function AprovacoesScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: 'transparent' },
   centro: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  conteudo: { padding: 16 },
-  cabecalho: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 },
+  conteudo: { padding: 16, paddingBottom: 32 },
+  cabecalho: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 },
   titulo: { fontWeight: 'bold' },
   erro: { color: cores.erro, marginBottom: 12 },
+
+  filtrosBox: { marginBottom: 12 },
+  busca: { marginBottom: 8 },
+  chipsScroll: { gap: 6 },
+  chipTexto: { fontSize: 12, lineHeight: 16, marginVertical: 2 },
+  chipTextoNegrito: { fontSize: 12, lineHeight: 16, fontWeight: '700', marginVertical: 2 },
+
   card: { marginBottom: 12, borderRadius: 12 },
   linhaUsuario: { flexDirection: 'row', alignItems: 'center', marginBottom: 14 },
   info: { marginLeft: 12, flex: 1 },
-  email: { color: cores.textoSecundario, marginTop: 2 },
   chipPerfil: { alignSelf: 'flex-start', marginTop: 6 },
   botoes: { flexDirection: 'row', gap: 8 },
   botao: { flex: 1, borderRadius: 8 },
   vazio: { alignItems: 'center', marginTop: 60 },
-  textoVazio: { color: cores.textoDesabilitado, marginTop: 12, fontSize: 16, textAlign: 'center' },
-  textoVazioSub: { color: cores.textoDesabilitado, marginTop: 6, textAlign: 'center' },
+  textoVazio: { marginTop: 12, fontSize: 16, textAlign: 'center' },
+  textoVazioSub: { marginTop: 6, textAlign: 'center', opacity: 0.7 },
 });
