@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, ScrollView, StyleSheet, RefreshControl } from 'react-native';
-import { Text, Card, Chip, ActivityIndicator, Avatar, Button, ProgressBar } from 'react-native-paper';
+import { Text, Card, Chip, ActivityIndicator, Avatar, Button, useTheme } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../../contexts/AuthContext';
@@ -16,6 +16,7 @@ function hora(data: string) {
 export default function AgendaScreen() {
   const { usuario } = useAuth();
   const navigation = useNavigation<any>();
+  const theme = useTheme();
   const [consultas, setConsultas] = useState<Consulta[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -80,9 +81,7 @@ export default function AgendaScreen() {
     .filter(c => c.medicoId === usuario?.medicoId && new Date(c.dataConsulta).toDateString() === hoje)
     .sort((a, b) => new Date(a.dataConsulta).getTime() - new Date(b.dataConsulta).getTime());
 
-  const validas = minhas.filter(c => c.status !== 'Cancelada');
   const finalizadas = minhas.filter(c => c.status === 'Finalizada').length;
-  const progresso = validas.length > 0 ? finalizadas / validas.length : 0;
 
   const proxima = minhas.find(c => ['AguardandoAtendimento', 'EmAtendimento'].includes(c.status));
   const emAtendimento = proxima?.status === 'EmAtendimento';
@@ -96,7 +95,7 @@ export default function AgendaScreen() {
 
   if (loading) {
     return (
-      <View style={styles.centro}>
+      <View style={[styles.centro, { backgroundColor: theme.colors.background }]}>
         <ActivityIndicator size="large" />
       </View>
     );
@@ -104,19 +103,21 @@ export default function AgendaScreen() {
 
   if (!usuario?.medicoId) {
     return (
-      <View style={styles.centro}>
-        <Text style={styles.textoVazio}>Seu usuário não está vinculado a um cadastro de médico.</Text>
+      <View style={[styles.centro, { backgroundColor: theme.colors.background }]}>
+        <Text style={{ color: theme.colors.onSurfaceVariant, textAlign: 'center' }}>
+          Seu usuário não está vinculado a um cadastro de médico.
+        </Text>
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <ScrollView
         contentContainerStyle={styles.conteudo}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
-        <Text variant="titleMedium" style={styles.data}>
+        <Text variant="titleMedium" style={[styles.data, { color: theme.colors.onSurface }]}>
           {new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}
         </Text>
 
@@ -124,15 +125,15 @@ export default function AgendaScreen() {
 
         <View style={styles.statsRow}>
           {stats.map(s => (
-            <Chip key={s.label} compact style={{ backgroundColor: s.cor + '20' }} textStyle={{ color: s.cor }}>
+            <Chip
+              key={s.label}
+              compact
+              style={{ backgroundColor: s.cor + (theme.dark ? '33' : '1A') }}
+              textStyle={{ color: theme.dark ? '#e8eef5' : s.cor, fontWeight: '600' }}
+            >
               {s.valor} {s.label}
             </Chip>
           ))}
-        </View>
-
-        <View style={styles.progressoLinha}>
-          <ProgressBar progress={progresso} color={cores.sucesso} style={styles.barra} />
-          <Text variant="labelSmall" style={styles.progressoTexto}>{Math.round(progresso * 100)}%</Text>
         </View>
 
         {proxima && (
@@ -150,18 +151,42 @@ export default function AgendaScreen() {
               </View>
               <View style={styles.destaqueBotoes}>
                 {proxima.status === 'AguardandoAtendimento' ? (
-                  <Button mode="contained" buttonColor="white" textColor="#0288d1" icon="account"
-                    onPress={() => mudarStatus(proxima.id, 'iniciar-atendimento')}>
+                  <Button
+                    mode="contained"
+                    buttonColor="white"
+                    textColor="#0288d1"
+                    icon="account"
+                    onPress={() => mudarStatus(proxima.id, 'iniciar-atendimento')}
+                  >
                     Iniciar
                   </Button>
                 ) : (
                   <>
-                    <Button mode="outlined" textColor="white" icon="folder-account"
-                      style={styles.botaoBorda} onPress={() => abrirProntuario(proxima)}>
+                    <Button
+                      mode="outlined"
+                      textColor="white"
+                      icon="folder-account"
+                      style={styles.botaoBorda}
+                      onPress={() => abrirProntuario(proxima)}
+                    >
                       Prontuário
                     </Button>
-                    <Button mode="contained" buttonColor="white" textColor={cores.sucesso} icon="check-circle"
-                      onPress={() => setFinalizando(proxima)}>
+                    <Button
+                      mode="outlined"
+                      textColor="white"
+                      icon="note-edit"
+                      style={styles.botaoBorda}
+                      onPress={() => navigation.navigate('Consultas')}
+                    >
+                      Anotar
+                    </Button>
+                    <Button
+                      mode="contained"
+                      buttonColor="white"
+                      textColor={cores.sucesso}
+                      icon="check-circle"
+                      onPress={() => setFinalizando(proxima)}
+                    >
                       Finalizar
                     </Button>
                   </>
@@ -171,12 +196,14 @@ export default function AgendaScreen() {
           </Card>
         )}
 
-        <Text variant="titleMedium" style={styles.titulo}>Agenda completa</Text>
+        <Text variant="titleMedium" style={[styles.titulo, { color: theme.colors.onSurface }]}>
+          Agenda completa
+        </Text>
 
         {minhas.length === 0 ? (
           <View style={styles.vazio}>
-            <MaterialCommunityIcons name="calendar-blank" size={56} color={cores.textoDesabilitado} />
-            <Text style={styles.textoVazio}>Nenhuma consulta hoje</Text>
+            <MaterialCommunityIcons name="calendar-blank" size={56} color={theme.colors.onSurfaceVariant} />
+            <Text style={{ color: theme.colors.onSurfaceVariant, marginTop: 8 }}>Nenhuma consulta hoje</Text>
           </View>
         ) : (
           minhas.map((c) => {
@@ -189,8 +216,12 @@ export default function AgendaScreen() {
                 <Card.Content>
                   <View style={styles.cardTopo}>
                     <Text variant="titleSmall" style={{ color: cor, fontWeight: 'bold' }}>{hora(c.dataConsulta)}</Text>
-                    <Chip compact style={{ backgroundColor: cor + '20' }} textStyle={{ color: cor, fontSize: 11 }}>
-                      {statusLabels[c.status]}
+                    <Chip
+                      compact
+                      style={{ backgroundColor: cor + (theme.dark ? '33' : '20') }}
+                      textStyle={{ color: theme.dark ? '#e8eef5' : cor, fontSize: 11 }}
+                    >
+                      {statusLabels[c.status] ?? c.status}
                     </Chip>
                   </View>
                   <View style={styles.cardPaciente}>
@@ -199,8 +230,13 @@ export default function AgendaScreen() {
                   </View>
 
                   {c.status === 'AguardandoAtendimento' && (
-                    <Button mode="contained" compact icon="account" style={styles.acao}
-                      onPress={() => mudarStatus(c.id, 'iniciar-atendimento')}>
+                    <Button
+                      mode="contained"
+                      compact
+                      icon="account"
+                      style={styles.acao}
+                      onPress={() => mudarStatus(c.id, 'iniciar-atendimento')}
+                    >
                       Iniciar
                     </Button>
                   )}
@@ -212,15 +248,25 @@ export default function AgendaScreen() {
                       <Button mode="outlined" compact icon="note-edit" onPress={() => navigation.navigate('Consultas')}>
                         Anotar
                       </Button>
-                      <Button mode="contained" compact buttonColor={cores.sucesso} icon="check-circle"
-                        onPress={() => setFinalizando(c)}>
+                      <Button
+                        mode="contained"
+                        compact
+                        buttonColor={cores.sucesso}
+                        icon="check-circle"
+                        onPress={() => setFinalizando(c)}
+                      >
                         Finalizar
                       </Button>
                     </View>
                   )}
                   {c.status === 'Finalizada' && (
-                    <Button mode="outlined" compact icon="folder-account" style={styles.acao}
-                      onPress={() => abrirProntuario(c)}>
+                    <Button
+                      mode="outlined"
+                      compact
+                      icon="folder-account"
+                      style={styles.acao}
+                      onPress={() => abrirProntuario(c)}
+                    >
                       Prontuário
                     </Button>
                   )}
@@ -245,15 +291,12 @@ export default function AgendaScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: cores.fundo },
+  container: { flex: 1 },
   centro: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
   conteudo: { padding: 16 },
   data: { fontWeight: 'bold', textTransform: 'capitalize', marginBottom: 12 },
   erro: { color: cores.erro, marginBottom: 12 },
-  statsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 12 },
-  progressoLinha: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 16 },
-  barra: { flex: 1, height: 6, borderRadius: 3 },
-  progressoTexto: { color: cores.textoSecundario, fontWeight: '700' },
+  statsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 16 },
   destaque: { borderRadius: 16, marginBottom: 20 },
   destaqueRotulo: { color: 'rgba(255,255,255,0.75)', fontWeight: 'bold', letterSpacing: 1, marginBottom: 10 },
   destaqueLinha: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
@@ -261,7 +304,7 @@ const styles = StyleSheet.create({
   destaqueInfo: { marginLeft: 12, flex: 1 },
   destaqueNome: { color: 'white', fontWeight: 'bold' },
   destaqueHora: { color: 'rgba(255,255,255,0.8)' },
-  destaqueBotoes: { flexDirection: 'row', gap: 8 },
+  destaqueBotoes: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   botaoBorda: { borderColor: 'rgba(255,255,255,0.6)' },
   titulo: { fontWeight: 'bold', marginBottom: 10 },
   card: { marginBottom: 10, borderRadius: 12 },
@@ -271,5 +314,4 @@ const styles = StyleSheet.create({
   acao: { marginTop: 10, alignSelf: 'flex-start' },
   acoes: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 10 },
   vazio: { alignItems: 'center', marginTop: 40 },
-  textoVazio: { color: cores.textoDesabilitado, marginTop: 8, textAlign: 'center' },
 });

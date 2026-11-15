@@ -1,15 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import { View, ScrollView, StyleSheet, RefreshControl } from 'react-native';
-import { Text, Card, Chip, ActivityIndicator, Avatar } from 'react-native-paper';
+import { Text, Card, Chip, ActivityIndicator, Avatar, useTheme } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAuth } from '../../contexts/AuthContext';
 import api from '../../services/api';
 import { Consulta, AuditoriaLog, statusCores, statusLabels } from '../../types';
 import { cores, iniciais } from '../../theme';
-import { acaoIcones, acaoCores } from '../../utils/auditoria';
+import { acaoIcones, acaoCores, acaoLabel } from '../../utils/auditoria';
 
 export default function DashboardScreen() {
   const { usuario } = useAuth();
+  const theme = useTheme();
   const isAdmin = usuario?.perfil === 'Administrador';
 
   const [consultas, setConsultas] = useState<Consulta[]>([]);
@@ -75,7 +76,7 @@ export default function DashboardScreen() {
       <Text variant="headlineSmall" style={styles.saudacao}>
         Olá, {usuario?.nome?.split(' ')[0]} 👋
       </Text>
-      <Text variant="bodyMedium" style={styles.subtitulo}>
+      <Text variant="bodyMedium" style={[styles.subtitulo, { color: theme.colors.onSurfaceVariant }]}>
         {isAdmin
           ? 'Resumo de auditoria do sistema'
           : usuario?.perfil === 'Medico' ? 'Minhas consultas ativas' : 'Consultas ativas'}
@@ -84,17 +85,20 @@ export default function DashboardScreen() {
       {isAdmin ? (
         <>
           <View style={styles.statsRow}>
-            {Object.entries(contagemPorAcao).map(([acao, count]) => (
-              <Chip
-                key={acao}
-                icon={acaoIcones[acao] ?? 'information'}
-                compact
-                style={[styles.statChip, { backgroundColor: (acaoCores[acao] ?? cores.textoSecundario) + '20' }]}
-                textStyle={{ color: acaoCores[acao] ?? cores.textoSecundario }}
-              >
-                {count}
-              </Chip>
-            ))}
+            {Object.entries(contagemPorAcao).map(([acao, count]) => {
+              const cor = acaoCores[acao] ?? cores.textoSecundario;
+              return (
+                <Chip
+                  key={acao}
+                  icon={acaoIcones[acao] ?? 'information'}
+                  compact
+                  style={[styles.statChip, { backgroundColor: cor + (theme.dark ? '33' : '20') }]}
+                  textStyle={{ color: theme.dark ? '#e8eef5' : cor }}
+                >
+                  {acaoLabel[acao] ?? acao}: {count}
+                </Chip>
+              );
+            })}
           </View>
 
           <Text variant="titleMedium" style={styles.tituloSecao}>Atividade Recente</Text>
@@ -102,7 +106,9 @@ export default function DashboardScreen() {
           {logsRecentes.length === 0 ? (
             <Card style={styles.cardVazio}>
               <Card.Content>
-                <Text style={styles.textoVazio}>Nenhum registro de auditoria</Text>
+                <Text style={[styles.textoVazio, { color: theme.colors.onSurfaceVariant }]}>
+                  Nenhum registro de auditoria
+                </Text>
               </Card.Content>
             </Card>
           ) : (
@@ -114,11 +120,11 @@ export default function DashboardScreen() {
                   <Card.Content style={styles.logContent}>
                     <MaterialCommunityIcons name={icone as any} size={22} color={cor} style={styles.logIcone} />
                     <View style={styles.logInfo}>
-                      <Text variant="titleSmall">{log.acao}</Text>
-                      <Text variant="bodySmall" style={styles.textoSecundario}>
+                      <Text variant="titleSmall">{acaoLabel[log.acao] ?? log.acao}</Text>
+                      <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
                         {log.usuarioNome} · {log.entidadeAfetada}
                       </Text>
-                      <Text variant="bodySmall" style={styles.dataLog}>
+                      <Text variant="bodySmall" style={[styles.dataLog, { color: theme.colors.onSurfaceVariant }]}>
                         {new Date(log.dataHora).toLocaleString('pt-BR')}
                       </Text>
                     </View>
@@ -132,7 +138,9 @@ export default function DashboardScreen() {
         minhasConsultas.length === 0 ? (
           <Card style={styles.cardVazio}>
             <Card.Content>
-              <Text style={styles.textoVazio}>Nenhuma consulta ativa no momento</Text>
+              <Text style={[styles.textoVazio, { color: theme.colors.onSurfaceVariant }]}>
+                Nenhuma consulta ativa no momento
+              </Text>
             </Card.Content>
           </Card>
         ) : (
@@ -149,14 +157,15 @@ export default function DashboardScreen() {
                     />
                     <View style={styles.cardInfo}>
                       <Text variant="titleMedium">{c.nomePaciente}</Text>
-                      <Text variant="bodySmall" style={styles.textoSecundario}>
+                      <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
                         {c.nomeMedico} · {new Date(c.dataConsulta).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
                       </Text>
                     </View>
                   </View>
                   <Chip
-                    style={{ backgroundColor: cor + '20' }}
-                    textStyle={{ color: cor, fontWeight: 'bold' }}
+                    compact
+                    style={{ backgroundColor: cor + (theme.dark ? '33' : '20') }}
+                    textStyle={{ color: theme.dark ? '#e8eef5' : cor, fontWeight: 'bold', fontSize: 11 }}
                   >
                     {statusLabels[c.status]}
                   </Chip>
@@ -171,23 +180,22 @@ export default function DashboardScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: cores.fundo },
+  container: { flex: 1, backgroundColor: 'transparent' },
   conteudo: { padding: 16 },
   centro: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   saudacao: { fontWeight: 'bold', marginBottom: 4 },
-  subtitulo: { color: cores.textoSecundario, marginBottom: 16 },
+  subtitulo: { marginBottom: 16 },
   statsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 20 },
   statChip: {},
   tituloSecao: { fontWeight: 'bold', marginBottom: 12 },
   card: { marginBottom: 12, borderRadius: 12 },
-  cardContent: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  cardContent: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 8 },
   cardHeader: { flexDirection: 'row', alignItems: 'center', flex: 1 },
   cardInfo: { marginLeft: 12, flex: 1 },
   logContent: { flexDirection: 'row', alignItems: 'flex-start' },
   logIcone: { marginRight: 10, marginTop: 2 },
   logInfo: { flex: 1 },
-  dataLog: { color: cores.textoDesabilitado, marginTop: 2, fontSize: 11 },
-  textoSecundario: { color: cores.textoSecundario },
+  dataLog: { marginTop: 2, fontSize: 11 },
   cardVazio: { borderRadius: 12 },
-  textoVazio: { textAlign: 'center', color: cores.textoDesabilitado, paddingVertical: 20 },
+  textoVazio: { textAlign: 'center', paddingVertical: 20 },
 });

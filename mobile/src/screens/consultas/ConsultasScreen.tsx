@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { View, ScrollView, StyleSheet, RefreshControl } from 'react-native';
-import { Text, Card, Chip, ActivityIndicator, Avatar, Button, Portal, Modal, SegmentedButtons, Searchbar, FAB } from 'react-native-paper';
+import { Text, Card, Chip, ActivityIndicator, Avatar, Button, Portal, Modal, SegmentedButtons, Searchbar, FAB, useTheme } from 'react-native-paper';
 import { useAuth } from '../../contexts/AuthContext';
 import api from '../../services/api';
 import { Consulta, statusCores, statusLabels } from '../../types';
@@ -32,6 +32,7 @@ function rotuloDia(data: string) {
 
 export default function ConsultasScreen() {
   const { usuario } = useAuth();
+  const theme = useTheme();
   const [consultas, setConsultas] = useState<Consulta[]>([]);
   const [aba, setAba] = useState('ativas');
   const [loading, setLoading] = useState(true);
@@ -51,6 +52,8 @@ export default function ConsultasScreen() {
   const [modalConfirm, setModalConfirm] = useState(false);
   const [modalNova, setModalNova] = useState(false);
   const [confirmAcao, setConfirmAcao] = useState<{ acao: string; cor: string; titulo: string } | null>(null);
+
+  const ehMedico = usuario?.perfil === 'Medico';
 
   useEffect(() => {
     carregar();
@@ -82,17 +85,24 @@ export default function ConsultasScreen() {
     limparFiltros();
   }
 
+  const consultasVisiveis = useMemo(() => {
+    if (ehMedico && usuario?.medicoId) {
+      return consultas.filter(c => c.medicoId === usuario.medicoId);
+    }
+    return consultas;
+  }, [consultas, ehMedico, usuario?.medicoId]);
+
   const consultasAtivas = useMemo(() =>
-    consultas
+    consultasVisiveis
       .filter(c => statusAtivos.includes(c.status))
       .sort((a, b) => new Date(a.dataConsulta).getTime() - new Date(b.dataConsulta).getTime()),
-    [consultas]);
+    [consultasVisiveis]);
 
   const consultasHistorico = useMemo(() =>
-    consultas
+    consultasVisiveis
       .filter(c => statusHistorico.includes(c.status))
       .sort((a, b) => new Date(b.dataConsulta).getTime() - new Date(a.dataConsulta).getTime()),
-    [consultas]);
+    [consultasVisiveis]);
 
   const listaAba = aba === 'ativas' ? consultasAtivas : consultasHistorico;
   const statusNaAba = aba === 'ativas' ? statusAtivos : statusHistorico;
@@ -105,16 +115,18 @@ export default function ConsultasScreen() {
 
   const consultasFiltradas = useMemo(() => {
     const q = busca.trim().toLowerCase();
-    return listaAba.filter(c => {
-      const buscaOk = !q ||
-        c.nomePaciente.toLowerCase().includes(q) ||
-        c.nomeMedico.toLowerCase().includes(q) ||
-        new Date(c.dataConsulta).toLocaleDateString('pt-BR').includes(q) ||
-        (statusLabels[c.status] ?? '').toLowerCase().includes(q);
-      return buscaOk &&
-        (filtroMedico === '' || c.nomeMedico === filtroMedico) &&
-        (filtroStatus === '' || c.status === filtroStatus);
-    });
+    return listaAba
+      .filter(c => {
+        const buscaOk = !q ||
+          c.nomePaciente.toLowerCase().includes(q) ||
+          c.nomeMedico.toLowerCase().includes(q) ||
+          new Date(c.dataConsulta).toLocaleDateString('pt-BR').includes(q) ||
+          (statusLabels[c.status] ?? '').toLowerCase().includes(q);
+        return buscaOk &&
+          (filtroMedico === '' || c.nomeMedico === filtroMedico) &&
+          (filtroStatus === '' || c.status === filtroStatus);
+      })
+      .sort((a, b) => new Date(b.dataConsulta).getTime() - new Date(a.dataConsulta).getTime());
   }, [listaAba, busca, filtroMedico, filtroStatus]);
 
   const grupos = useMemo(() => {
@@ -131,7 +143,24 @@ export default function ConsultasScreen() {
     return lista;
   }, [consultasFiltradas]);
 
+  function temAcoesDisponiveis(c: Consulta): boolean {
+    if (['Finalizada', 'Cancelada'].includes(c.status)) return false;
+
+    if (usuario?.perfil === 'Enfermeiro') {
+      return c.status === 'Agendada' || c.status === 'EmTriagem';
+    }
+    if (usuario?.perfil === 'Recepcionista') {
+      return true; // Pode cancelar consulta ativa
+    }
+    if (usuario?.perfil === 'Medico') {
+      const minha = !!usuario.medicoId && c.medicoId === usuario.medicoId;
+      return minha && ['Agendada', 'EmTriagem', 'AguardandoAtendimento', 'EmAtendimento'].includes(c.status);
+    }
+    return false;
+  }
+
   function abrirAcoes(c: Consulta) {
+    if (!temAcoesDisponiveis(c)) return;
     setConsultaSelecionada(c);
     setModalAcoes(true);
   }
@@ -174,8 +203,8 @@ export default function ConsultasScreen() {
   }
 
   const ehMinhaConsulta =
-    usuario?.perfil === 'Medico' &&
-    !!usuario.medicoId &&
+    ehMedico &&
+    !!usuario?.medicoId &&
     consultaSelecionada?.medicoId === usuario.medicoId;
 
   if (loading) {
@@ -201,7 +230,7 @@ export default function ConsultasScreen() {
 
       <View style={styles.buscaLinha}>
         <Searchbar
-          placeholder="Paciente, médico, data ou status..."
+          placeholder={ehMedico ? 'Paciente, data ou status...' : 'Paciente, médico, data ou status...'}
           value={busca}
           onChangeText={setBusca}
           style={styles.buscaInput}
@@ -217,8 +246,10 @@ export default function ConsultasScreen() {
       </View>
 
       {filtrosVisiveis && (
-        <View style={styles.painelFiltros}>
-          <Text variant="labelLarge" style={styles.painelTitulo}>Status</Text>
+        <View style={[styles.painelFiltros, { backgroundColor: theme.colors.surface }]}>
+          <Text variant="labelLarge" style={[styles.painelTitulo, { color: theme.colors.onSurfaceVariant }]}>
+            Status
+          </Text>
           <View style={styles.chips}>
             {statusNaAba.map((s) => (
               <Chip
@@ -232,22 +263,28 @@ export default function ConsultasScreen() {
             ))}
           </View>
 
-          <Text variant="labelLarge" style={[styles.painelTitulo, { marginTop: 12 }]}>Médico</Text>
-          <View style={styles.chips}>
-            {medicosNaAba.map((m) => (
-              <Chip
-                key={m}
-                compact
-                selected={filtroMedico === m}
-                onPress={() => setFiltroMedico(filtroMedico === m ? '' : m)}
-              >
-                {m}
-              </Chip>
-            ))}
-          </View>
+          {!ehMedico && medicosNaAba.length > 0 && (
+            <>
+              <Text variant="labelLarge" style={[styles.painelTitulo, { color: theme.colors.onSurfaceVariant, marginTop: 12 }]}>
+                Médico
+              </Text>
+              <View style={styles.chips}>
+                {medicosNaAba.map((m) => (
+                  <Chip
+                    key={m}
+                    compact
+                    selected={filtroMedico === m}
+                    onPress={() => setFiltroMedico(filtroMedico === m ? '' : m)}
+                  >
+                    {m}
+                  </Chip>
+                ))}
+              </View>
+            </>
+          )}
 
           <View style={styles.painelRodape}>
-            <Text variant="bodySmall" style={styles.textoSecundario}>
+            <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
               {consultasFiltradas.length} de {listaAba.length} consulta(s)
             </Text>
             {qtdFiltros > 0 && (
@@ -262,15 +299,18 @@ export default function ConsultasScreen() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
         {grupos.length === 0 ? (
-          <Text style={styles.textoVazio}>Nenhuma consulta encontrada</Text>
+          <Text style={[styles.textoVazio, { color: theme.colors.onSurfaceVariant }]}>
+            Nenhuma consulta encontrada
+          </Text>
         ) : (
           grupos.map((g) => (
             <View key={g.chave} style={styles.grupo}>
-              <Text variant="labelLarge" style={styles.grupoTitulo}>
+              <Text variant="labelLarge" style={[styles.grupoTitulo, { color: theme.colors.onSurfaceVariant }]}>
                 {g.rotulo} · {g.itens.length}
               </Text>
               {g.itens.map((c) => {
                 const cor = statusCores[c.status] ?? cores.primaria;
+                const clicavel = temAcoesDisponiveis(c);
                 return (
                   <Card
                     key={c.id}
@@ -278,16 +318,22 @@ export default function ConsultasScreen() {
                       styles.card,
                       { borderLeftColor: cor, borderLeftWidth: 4, opacity: c.status === 'Cancelada' ? 0.55 : 1 },
                     ]}
-                    onPress={() => abrirAcoes(c)}
+                    onPress={clicavel ? () => abrirAcoes(c) : undefined}
                   >
                     <Card.Content style={styles.cardLinha}>
                       <Text variant="titleSmall" style={[styles.hora, { color: cor }]}>{hora(c.dataConsulta)}</Text>
                       <Avatar.Text size={36} label={iniciais(c.nomePaciente)} style={{ backgroundColor: cor }} />
                       <View style={styles.cardInfo}>
                         <Text variant="titleSmall" numberOfLines={1}>{c.nomePaciente}</Text>
-                        <Text variant="bodySmall" style={styles.textoSecundario} numberOfLines={1}>{c.nomeMedico}</Text>
+                        <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }} numberOfLines={1}>
+                          {c.nomeMedico}
+                        </Text>
                       </View>
-                      <Chip compact style={{ backgroundColor: cor + '20' }} textStyle={{ color: cor, fontSize: 11, fontWeight: 'bold' }}>
+                      <Chip
+                        compact
+                        style={{ backgroundColor: cor + (theme.dark ? '33' : '20') }}
+                        textStyle={{ color: theme.dark ? '#e8eef5' : cor, fontSize: 11, fontWeight: 'bold' }}
+                      >
                         {statusLabels[c.status]}
                       </Chip>
                     </Card.Content>
@@ -301,9 +347,15 @@ export default function ConsultasScreen() {
 
       {/* Modal de ações */}
       <Portal>
-        <Modal visible={modalAcoes} onDismiss={() => setModalAcoes(false)} contentContainerStyle={styles.modalAcoes}>
+        <Modal
+          visible={modalAcoes}
+          onDismiss={() => setModalAcoes(false)}
+          contentContainerStyle={[styles.modalAcoes, { backgroundColor: theme.colors.surface }]}
+        >
           <Text variant="titleLarge" style={styles.tituloModal}>{consultaSelecionada?.nomePaciente}</Text>
-          <Text variant="bodyMedium" style={styles.subtituloModal}>{consultaSelecionada?.nomeMedico}</Text>
+          <Text variant="bodyMedium" style={[styles.subtituloModal, { color: theme.colors.onSurfaceVariant }]}>
+            {consultaSelecionada?.nomeMedico}
+          </Text>
 
           <View style={styles.acoesLista}>
             {usuario?.perfil === 'Enfermeiro' && consultaSelecionada?.status === 'Agendada' && (
@@ -340,12 +392,6 @@ export default function ConsultasScreen() {
                 <Button mode="outlined" textColor={cores.erro} icon="close-circle" onPress={() => pedirConfirmacao('cancelar', cores.erro, 'Cancelar Consulta')}>
                   Cancelar Consulta
                 </Button>
-              )}
-            {usuario?.perfil === 'Medico' && consultaSelecionada && !ehMinhaConsulta &&
-              !['Finalizada', 'Cancelada'].includes(consultaSelecionada.status) && (
-                <Text variant="bodySmall" style={styles.textoSecundario}>
-                  Esta consulta é do(a) {consultaSelecionada.nomeMedico}. Só o médico responsável pode atendê-la.
-                </Text>
               )}
           </View>
 
@@ -407,7 +453,7 @@ export default function ConsultasScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: cores.fundo,
+    backgroundColor: 'transparent',
   },
   centro: {
     flex: 1,
@@ -429,14 +475,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   painelFiltros: {
-    backgroundColor: 'white',
     borderRadius: 12,
     padding: 12,
     marginHorizontal: 16,
     marginBottom: 8,
   },
   painelTitulo: {
-    color: cores.textoSecundario,
     marginBottom: 8,
   },
   chips: {
@@ -465,7 +509,6 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   grupoTitulo: {
-    color: cores.textoSecundario,
     textTransform: 'capitalize',
     marginBottom: 8,
   },
@@ -485,16 +528,11 @@ const styles = StyleSheet.create({
   cardInfo: {
     flex: 1,
   },
-  textoSecundario: {
-    color: cores.textoSecundario,
-  },
   textoVazio: {
     textAlign: 'center',
-    color: cores.textoDesabilitado,
     marginTop: 40,
   },
   modalAcoes: {
-    backgroundColor: 'white',
     margin: 20,
     padding: 20,
     borderRadius: 16,
@@ -503,7 +541,6 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   subtituloModal: {
-    color: cores.textoSecundario,
     marginBottom: 16,
   },
   acoesLista: {
