@@ -16,13 +16,21 @@ import { useAuth } from '../../contexts/AuthContext';
 import { Consulta } from '../../types';
 
 const statusCores: Record<string, string> = {
-  Agendada: '#1976d2', AguardandoAtendimento: '#0288d1',
-  EmAtendimento: '#7b1fa2', Finalizada: '#2e7d32', Cancelada: '#d32f2f',
+  Agendada: '#1976d2',
+  EmTriagem: '#ed6c02',
+  AguardandoAtendimento: '#0288d1',
+  EmAtendimento: '#7b1fa2',
+  Finalizada: '#2e7d32',
+  Cancelada: '#d32f2f',
 };
 
 const statusLabels: Record<string, string> = {
-  Agendada: 'Agendada', AguardandoAtendimento: 'Aguardando',
-  EmAtendimento: 'Em Atendimento', Finalizada: 'Finalizada', Cancelada: 'Cancelada',
+  Agendada: 'Agendada',
+  EmTriagem: 'Em Triagem',
+  AguardandoAtendimento: 'Aguardando',
+  EmAtendimento: 'Em Atendimento',
+  Finalizada: 'Finalizada',
+  Cancelada: 'Cancelada',
 };
 
 function iniciais(nome: string) {
@@ -86,9 +94,6 @@ export default function AgendaPage() {
     .sort((a, b) => new Date(a.dataConsulta).getTime() - new Date(b.dataConsulta).getTime());
 
   const finalizadas = minhasConsultas.filter(c => c.status === 'Finalizada').length;
-  const progresso = minhasConsultas.length > 0
-    ? Math.round((finalizadas / minhasConsultas.length) * 100)
-    : 0;
 
   const proxima = minhasConsultas.find(c =>
     ['AguardandoAtendimento', 'EmAtendimento'].includes(c.status)
@@ -96,10 +101,10 @@ export default function AgendaPage() {
   const isEmAtendimento = proxima?.status === 'EmAtendimento';
 
   const miniStats = [
-    { label: 'Total',          valor: minhasConsultas.length,                                                               cor: '#1976d2' },
-    { label: 'Aguardando',     valor: minhasConsultas.filter(c => c.status === 'AguardandoAtendimento').length,             cor: '#0288d1' },
-    { label: 'Em Atendimento', valor: minhasConsultas.filter(c => c.status === 'EmAtendimento').length,                     cor: '#7b1fa2' },
-    { label: 'Finalizadas',    valor: finalizadas,                                                                          cor: '#2e7d32' },
+    { label: 'Total', valor: minhasConsultas.length, cor: '#1976d2' },
+    { label: 'Aguardando', valor: minhasConsultas.filter(c => c.status === 'AguardandoAtendimento').length, cor: '#0288d1' },
+    { label: 'Em Atendimento', valor: minhasConsultas.filter(c => c.status === 'EmAtendimento').length, cor: '#7b1fa2' },
+    { label: 'Finalizadas', valor: finalizadas, cor: '#2e7d32' },
   ];
 
   return (
@@ -108,7 +113,7 @@ export default function AgendaPage() {
         <LinearProgress sx={{ position: 'fixed', top: 64, left: 0, right: 0, zIndex: 9999 }} />
       )}
 
-      {erro && <Alert severity="error" sx={{ mb: 2 }}>{erro}</Alert>}
+      {erro && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setErro('')}>{erro}</Alert>}
 
       {/* Cabeçalho */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 3 }}>
@@ -127,56 +132,67 @@ export default function AgendaPage() {
         </Button>
       </Box>
 
-      {/* Mini chips de stat + barra de progresso — linha única compacta */}
+      {/* Mini chips de stat — sem barra de progresso */}
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap', mb: 3 }}>
         {miniStats.map(s => (
-          <Box key={s.label} sx={{
-            display: 'flex', alignItems: 'center', gap: 0.75,
-            px: 1.25, py: 0.5, borderRadius: 2,
-            bgcolor: alpha(s.cor, isDark ? 0.15 : 0.08),
-            border: `1px solid ${alpha(s.cor, 0.2)}`,
-          }}>
+          <Box
+            key={s.label}
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 0.75,
+              px: 1.25,
+              py: 0.5,
+              borderRadius: 2,
+              bgcolor: alpha(s.cor, isDark ? 0.15 : 0.08),
+              border: `1px solid ${alpha(s.cor, 0.2)}`,
+            }}
+          >
             <Typography variant="body2" sx={{ fontWeight: 700, color: s.cor }}>{s.valor}</Typography>
             <Typography variant="caption" color="text.secondary">{s.label}</Typography>
           </Box>
         ))}
-
-        <Box sx={{ flex: 1, minWidth: 160, display: 'flex', alignItems: 'center', gap: 1.5, ml: 1 }}>
-          <LinearProgress
-            variant="determinate"
-            value={progresso}
-            sx={{ flex: 1, height: 6, borderRadius: 3 }}
-          />
-          <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.secondary', whiteSpace: 'nowrap' }}>
-            {progresso}%
-          </Typography>
-        </Box>
       </Box>
 
-      {/* Card próxima / em atendimento — destaque */}
+      {/* Card próxima / em atendimento — destaque com ações diretas */}
       {proxima && (
-        <Card sx={{
-          borderRadius: 3, mb: 3,
-          background: isEmAtendimento
-            ? 'linear-gradient(135deg, #6a1b9a 0%, #7b1fa2 100%)'
-            : 'linear-gradient(135deg, #0277bd 0%, #0288d1 100%)',
-        }}>
+        <Card
+          sx={{
+            borderRadius: 3,
+            mb: 3,
+            background: isEmAtendimento
+              ? 'linear-gradient(135deg, #6a1b9a 0%, #7b1fa2 100%)'
+              : 'linear-gradient(135deg, #0277bd 0%, #0288d1 100%)',
+          }}
+        >
           <CardContent sx={{ p: 2.5 }}>
-            <Typography variant="caption" sx={{
-              color: 'rgba(255,255,255,0.75)',
-              textTransform: 'uppercase', letterSpacing: 1, fontWeight: 700,
-              display: 'block', mb: 1.5,
-            }}>
+            <Typography
+              variant="caption"
+              sx={{
+                color: 'rgba(255,255,255,0.75)',
+                textTransform: 'uppercase',
+                letterSpacing: 1,
+                fontWeight: 700,
+                display: 'block',
+                mb: 1.5,
+              }}
+            >
               {isEmAtendimento ? '🩺 Em Atendimento Agora' : '⏭️ Próxima Consulta'}
             </Typography>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-              <Avatar sx={{
-                bgcolor: 'rgba(255,255,255,0.2)', width: 48, height: 48,
-                fontSize: 16, fontWeight: 700, border: '2px solid rgba(255,255,255,0.35)',
-              }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
+              <Avatar
+                sx={{
+                  bgcolor: 'rgba(255,255,255,0.2)',
+                  width: 48,
+                  height: 48,
+                  fontSize: 16,
+                  fontWeight: 700,
+                  border: '2px solid rgba(255,255,255,0.35)',
+                }}
+              >
                 {iniciais(proxima.nomePaciente)}
               </Avatar>
-              <Box sx={{ flex: 1 }}>
+              <Box sx={{ flex: 1, minWidth: 160 }}>
                 <Typography variant="h6" sx={{ color: 'white', fontWeight: 700, lineHeight: 1.2 }}>
                   {proxima.nomePaciente}
                 </Typography>
@@ -185,27 +201,45 @@ export default function AgendaPage() {
                   {horaFormatada(proxima.dataConsulta)}
                 </Typography>
               </Box>
-              <Box sx={{ display: 'flex', gap: 1, flexShrink: 0 }}>
+              <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', flexShrink: 0 }}>
                 {proxima.status === 'AguardandoAtendimento' && (
-                  <Button size="small" variant="contained"
+                  <Button
+                    size="small"
+                    variant="contained"
                     sx={{ bgcolor: 'white', color: '#0288d1', fontWeight: 600, borderRadius: 2, '&:hover': { bgcolor: 'rgba(255,255,255,0.9)' } }}
                     startIcon={<PersonIcon />}
-                    onClick={() => mudarStatus(proxima.id, 'iniciar-atendimento')}>
+                    onClick={() => mudarStatus(proxima.id, 'iniciar-atendimento')}
+                  >
                     Iniciar
                   </Button>
                 )}
                 {proxima.status === 'EmAtendimento' && (
                   <>
-                    <Button size="small" variant="outlined"
+                    <Button
+                      size="small"
+                      variant="outlined"
                       sx={{ borderColor: 'rgba(255,255,255,0.5)', color: 'white', borderRadius: 2, '&:hover': { borderColor: 'white', bgcolor: 'rgba(255,255,255,0.08)' } }}
                       startIcon={<FolderSharedIcon />}
-                      onClick={() => navigate(`/prontuario/${proxima.id}`)}>
+                      onClick={() => navigate(`/prontuario/${proxima.id}`)}
+                    >
                       Prontuário
                     </Button>
-                    <Button size="small" variant="contained"
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      sx={{ borderColor: 'rgba(255,255,255,0.5)', color: 'white', borderRadius: 2, '&:hover': { borderColor: 'white', bgcolor: 'rgba(255,255,255,0.08)' } }}
+                      startIcon={<EditNoteIcon />}
+                      onClick={() => navigate('/consultas')}
+                    >
+                      Anotar
+                    </Button>
+                    <Button
+                      size="small"
+                      variant="contained"
                       sx={{ bgcolor: 'white', color: '#2e7d32', fontWeight: 600, borderRadius: 2, '&:hover': { bgcolor: 'rgba(255,255,255,0.9)' } }}
                       startIcon={<CheckCircleIcon />}
-                      onClick={() => mudarStatus(proxima.id, 'finalizar')}>
+                      onClick={() => mudarStatus(proxima.id, 'finalizar')}
+                    >
                       Finalizar
                     </Button>
                   </>
@@ -238,28 +272,41 @@ export default function AgendaPage() {
 
                 return (
                   <Box key={c.id}>
-                    <Box sx={{
-                      display: 'flex', alignItems: 'center', gap: 2.5,
-                      py: 2.5, opacity: cancelada ? 0.4 : 1,
-                    }}>
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 2.5,
+                        py: 2.5,
+                        opacity: cancelada ? 0.4 : 1,
+                        flexWrap: { xs: 'wrap', sm: 'nowrap' },
+                      }}
+                    >
                       {/* Horário */}
                       <Box sx={{ width: 48, textAlign: 'right', flexShrink: 0 }}>
-                        <Typography variant="body2" sx={{
-                          fontWeight: 700, fontSize: 13,
-                          color: finalizada || cancelada ? 'text.disabled' : cor,
-                        }}>
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            fontWeight: 700,
+                            fontSize: 13,
+                            color: finalizada || cancelada ? 'text.disabled' : cor,
+                          }}
+                        >
                           {horaFormatada(c.dataConsulta)}
                         </Typography>
                       </Box>
 
                       {/* Dot */}
                       <Box sx={{ width: 16, display: 'flex', justifyContent: 'center', flexShrink: 0 }}>
-                        <Box sx={{
-                          width: finalizada ? 10 : 14, height: finalizada ? 10 : 14,
-                          borderRadius: '50%',
-                          bgcolor: finalizada ? '#2e7d32' : cancelada ? '#d32f2f' : cor,
-                          boxShadow: !finalizada && !cancelada ? `0 0 0 3px ${alpha(cor, 0.2)}` : 'none',
-                        }} />
+                        <Box
+                          sx={{
+                            width: finalizada ? 10 : 14,
+                            height: finalizada ? 10 : 14,
+                            borderRadius: '50%',
+                            bgcolor: finalizada ? '#2e7d32' : cancelada ? '#d32f2f' : cor,
+                            boxShadow: !finalizada && !cancelada ? `0 0 0 3px ${alpha(cor, 0.2)}` : 'none',
+                          }}
+                        />
                       </Box>
 
                       {/* Avatar */}
@@ -269,57 +316,90 @@ export default function AgendaPage() {
 
                       {/* Info */}
                       <Box sx={{ flex: 1, minWidth: 0 }}>
-                        <Typography variant="body2" sx={{
-                          fontWeight: 600,
-                          textDecoration: cancelada ? 'line-through' : 'none',
-                          color: finalizada ? 'text.secondary' : 'text.primary',
-                          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                        }}>
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            fontWeight: 600,
+                            textDecoration: cancelada ? 'line-through' : 'none',
+                            color: finalizada ? 'text.secondary' : 'text.primary',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
                           {c.nomePaciente}
                         </Typography>
                         <Chip
-                          label={statusLabels[c.status]}
+                          label={statusLabels[c.status] ?? c.status}
                           size="small"
                           sx={{
-                            mt: 0.5, height: 20, fontSize: 11,
+                            mt: 0.5,
+                            height: 20,
+                            fontSize: 11,
                             bgcolor: alpha(cor, isDark ? 0.2 : 0.1),
-                            color: cor, fontWeight: 600,
+                            color: cor,
+                            fontWeight: 600,
                           }}
                         />
                       </Box>
 
-                      {/* Ações */}
-                      <Box sx={{ display: 'flex', gap: 0.75, flexShrink: 0 }}>
+                      {/* Ações diretas */}
+                      <Box sx={{ display: 'flex', gap: 0.75, flexShrink: 0, flexWrap: 'wrap' }}>
                         {c.status === 'AguardandoAtendimento' && (
-                          <Button size="small" variant="contained" color="primary" sx={{ borderRadius: 2 }}
+                          <Button
+                            size="small"
+                            variant="contained"
+                            color="primary"
+                            sx={{ borderRadius: 2 }}
                             startIcon={<PersonIcon />}
-                            onClick={() => mudarStatus(c.id, 'iniciar-atendimento')}>
+                            onClick={() => mudarStatus(c.id, 'iniciar-atendimento')}
+                          >
                             Iniciar
                           </Button>
                         )}
                         {c.status === 'EmAtendimento' && (
                           <>
-                            <Button size="small" variant="outlined" color="secondary" sx={{ borderRadius: 2 }}
+                            <Button
+                              size="small"
+                              variant="outlined"
+                              color="secondary"
+                              sx={{ borderRadius: 2 }}
                               startIcon={<FolderSharedIcon />}
-                              onClick={() => navigate(`/prontuario/${c.id}`)}>
+                              onClick={() => navigate(`/prontuario/${c.id}`)}
+                            >
                               Prontuário
                             </Button>
-                            <Button size="small" variant="outlined" color="info" sx={{ borderRadius: 2 }}
+                            <Button
+                              size="small"
+                              variant="outlined"
+                              color="info"
+                              sx={{ borderRadius: 2 }}
                               startIcon={<EditNoteIcon />}
-                              onClick={() => navigate('/consultas')}>
+                              onClick={() => navigate('/consultas')}
+                            >
                               Anotar
                             </Button>
-                            <Button size="small" variant="contained" color="success" sx={{ borderRadius: 2 }}
+                            <Button
+                              size="small"
+                              variant="contained"
+                              color="success"
+                              sx={{ borderRadius: 2 }}
                               startIcon={<CheckCircleIcon />}
-                              onClick={() => mudarStatus(c.id, 'finalizar')}>
+                              onClick={() => mudarStatus(c.id, 'finalizar')}
+                            >
                               Finalizar
                             </Button>
                           </>
                         )}
                         {c.status === 'Finalizada' && (
-                          <Button size="small" variant="outlined" color="secondary" sx={{ borderRadius: 2 }}
+                          <Button
+                            size="small"
+                            variant="outlined"
+                            color="secondary"
+                            sx={{ borderRadius: 2 }}
                             startIcon={<FolderSharedIcon />}
-                            onClick={() => navigate(`/prontuario/${c.id}`)}>
+                            onClick={() => navigate(`/prontuario/${c.id}`)}
+                          >
                             Prontuário
                           </Button>
                         )}
