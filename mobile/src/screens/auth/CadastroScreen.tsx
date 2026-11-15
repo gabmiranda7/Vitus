@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, ScrollView, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
 import {
   Text, TextInput, Button, Surface, SegmentedButtons,
-  ProgressBar, Chip, HelperText
+  ProgressBar, Chip, HelperText, useTheme,
 } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
 import api from '../../services/api';
@@ -16,6 +16,7 @@ const PERFIS = [
 
 export default function CadastroScreen() {
   const navigation = useNavigation<any>();
+  const theme = useTheme();
   const [step, setStep] = useState(0);
 
   const [nome, setNome] = useState('');
@@ -80,17 +81,23 @@ export default function CadastroScreen() {
 
   return (
     <KeyboardAvoidingView
-      style={styles.container}
+      style={[styles.container, { backgroundColor: theme.colors.background }]}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
     >
       <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
         <Surface style={styles.card} elevation={2}>
-          <Text variant="headlineSmall" style={styles.titulo}>Criar conta</Text>
+          <Text variant="headlineSmall" style={[styles.titulo, { color: theme.colors.primary }]}>
+            Criar conta
+          </Text>
           <ProgressBar progress={(step + 1) / 3} style={styles.progresso} />
 
           {erro ? <Text style={styles.erro}>{erro}</Text> : null}
-          {sucesso ? <Text style={styles.sucesso}>Cadastro enviado! Aguarde a aprovação de um administrador para acessar o sistema.</Text> : null}
+          {sucesso ? (
+            <Text style={styles.sucesso}>
+              Cadastro enviado! Aguarde a aprovação de um administrador para acessar o sistema.
+            </Text>
+          ) : null}
 
           {step === 0 && (
             <View>
@@ -178,7 +185,7 @@ export default function CadastroScreen() {
 
           {step === 2 && (
             <View>
-              <Text variant="bodyMedium" style={styles.confirmacaoTexto}>
+              <Text variant="bodyMedium" style={[styles.confirmacaoTexto, { color: theme.colors.onSurfaceVariant }]}>
                 Confirme seus dados:
               </Text>
               <Chip icon="account" style={styles.chipInfo}>{nome}</Chip>
@@ -216,15 +223,15 @@ export default function CadastroScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#e3f2fd' },
+  container: { flex: 1 },
   scroll: { flexGrow: 1, justifyContent: 'center', padding: 20 },
   card: { padding: 24, borderRadius: 16 },
-  titulo: { fontWeight: 'bold', color: cores.primariaEscura, marginBottom: 12, textAlign: 'center' },
+  titulo: { fontWeight: 'bold', marginBottom: 12, textAlign: 'center' },
   progresso: { marginBottom: 20, borderRadius: 4 },
   label: { marginBottom: 8 },
   segmented: { marginBottom: 16 },
   input: { marginBottom: 8 },
-  confirmacaoTexto: { marginBottom: 12, color: cores.textoSecundario },
+  confirmacaoTexto: { marginBottom: 12 },
   chipInfo: { marginBottom: 8, alignSelf: 'flex-start' },
   botoes: { flexDirection: 'row', justifyContent: 'flex-end', gap: 8, marginTop: 16 },
   botaoPrincipal: { flex: 1 },

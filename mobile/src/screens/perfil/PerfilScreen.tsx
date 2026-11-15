@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, ActivityIndicator, TouchableOpacity } from 'react-native';
-import { Text, Button, Chip, TextInput } from 'react-native-paper';
+import { Text, Button, Chip, TextInput, useTheme } from 'react-native-paper';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import * as ImagePicker from 'expo-image-picker';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -11,19 +11,24 @@ import AvatarUsuario from '../../components/AvatarUsuario';
 import ConfirmModal from '../../components/ConfirmModal';
 
 const perfilLabels: Record<string, string> = {
-  Medico: 'Médico', Enfermeiro: 'Enfermeiro(a)',
-  Recepcionista: 'Recepcionista', Administrador: 'Administrador',
+  Medico: 'Médico',
+  Enfermeiro: 'Enfermeiro(a)',
+  Recepcionista: 'Recepcionista',
+  Administrador: 'Administrador',
 };
 
 const perfilCores: Record<string, string> = {
-  Medico: cores.primariaEscura, Enfermeiro: cores.sucesso,
-  Recepcionista: cores.secundaria, Administrador: '#37474f',
+  Medico: cores.primariaEscura,
+  Enfermeiro: cores.sucesso,
+  Recepcionista: cores.secundaria,
+  Administrador: '#37474f',
 };
 
 const TAMANHO_MAXIMO = 2 * 1024 * 1024;
 
 export default function PerfilScreen() {
   const { usuario, logout, atualizarUsuario, recarregarFoto } = useAuth();
+  const theme = useTheme();
   const [nome, setNome] = useState(usuario?.nome ?? '');
   const [salvando, setSalvando] = useState(false);
   const [enviandoFoto, setEnviandoFoto] = useState(false);
@@ -129,14 +134,12 @@ export default function PerfilScreen() {
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={styles.conteudo}
       >
-        <View style={[styles.faixa, { backgroundColor: cor }]} />
-
-        <View style={styles.cartao}>
+        <View style={[styles.cartao, { backgroundColor: theme.colors.surface }]}>
           <TouchableOpacity onPress={escolherFoto} disabled={enviandoFoto} style={styles.avatarArea}>
-            <View style={styles.avatarBorda}>
+            <View style={[styles.avatarBorda, { borderColor: theme.colors.surfaceVariant }]}>
               <AvatarUsuario size={112} cor={cor} />
             </View>
-            <View style={styles.cameraBadge}>
+            <View style={[styles.cameraBadge, { borderColor: theme.colors.surface }]}>
               {enviandoFoto
                 ? <ActivityIndicator size={14} color="white" />
                 : <MaterialCommunityIcons name="camera" size={16} color="white" />}
@@ -144,7 +147,9 @@ export default function PerfilScreen() {
           </TouchableOpacity>
 
           <Text variant="headlineSmall" style={styles.nome}>{usuario?.nome}</Text>
-          <Text variant="bodyMedium" style={styles.email}>{usuario?.email}</Text>
+          <Text variant="bodyMedium" style={[styles.email, { color: theme.colors.onSurfaceVariant }]}>
+            {usuario?.email}
+          </Text>
           <Chip compact style={[styles.chip, { backgroundColor: cor }]} textStyle={{ color: 'white', fontWeight: 'bold' }}>
             {perfilLabels[usuario?.perfil ?? ''] ?? usuario?.perfil}
           </Chip>
@@ -155,14 +160,18 @@ export default function PerfilScreen() {
             </Button>
             {usuario?.temFoto && (
               <Button
-                mode="outlined" icon="delete" compact textColor={cores.erro}
-                onPress={() => setConfirmarRemocao(true)} disabled={enviandoFoto}
+                mode="outlined"
+                icon="delete"
+                compact
+                textColor={cores.erro}
+                onPress={() => setConfirmarRemocao(true)}
+                disabled={enviandoFoto}
               >
                 Remover
               </Button>
             )}
           </View>
-          <Text variant="bodySmall" style={styles.dica}>
+          <Text variant="bodySmall" style={[styles.dica, { color: theme.colors.onSurfaceVariant }]}>
             Você poderá ajustar o enquadramento antes de salvar.
           </Text>
 
@@ -189,8 +198,11 @@ export default function PerfilScreen() {
               style={styles.input}
             />
             <Button
-              mode="contained" icon="content-save"
-              onPress={salvarNome} loading={salvando} disabled={!nomeAlterado || salvando}
+              mode="contained"
+              icon="content-save"
+              onPress={salvarNome}
+              loading={salvando}
+              disabled={!nomeAlterado || salvando}
             >
               Salvar alterações
             </Button>
@@ -198,8 +210,11 @@ export default function PerfilScreen() {
         </View>
 
         <Button
-          mode="outlined" icon="logout" textColor={cores.erro}
-          onPress={logout} style={styles.sair}
+          mode="outlined"
+          icon="logout"
+          textColor={cores.erro}
+          onPress={logout}
+          style={styles.sair}
         >
           Sair da conta
         </Button>
@@ -218,19 +233,17 @@ export default function PerfilScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: cores.fundo },
+  container: { flex: 1, backgroundColor: 'transparent' },
   conteudo: { padding: 16, paddingBottom: 32 },
-  faixa: { height: 90, borderTopLeftRadius: 20, borderTopRightRadius: 20 },
   cartao: {
-    backgroundColor: 'white',
-    borderBottomLeftRadius: 20,
-    borderBottomRightRadius: 20,
+    borderRadius: 20,
     paddingHorizontal: 20,
+    paddingTop: 24,
     paddingBottom: 24,
     alignItems: 'center',
   },
-  avatarArea: { marginTop: -56, marginBottom: 12 },
-  avatarBorda: { borderWidth: 4, borderColor: 'white', borderRadius: 60 },
+  avatarArea: { marginBottom: 12 },
+  avatarBorda: { borderWidth: 3, borderRadius: 60 },
   cameraBadge: {
     position: 'absolute',
     right: 2,
@@ -242,13 +255,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,
-    borderColor: 'white',
   },
   nome: { fontWeight: 'bold', textAlign: 'center' },
-  email: { color: cores.textoSecundario, marginTop: 2, marginBottom: 8, textAlign: 'center' },
+  email: { marginTop: 2, marginBottom: 8, textAlign: 'center' },
   chip: { alignSelf: 'center' },
   botoesFoto: { flexDirection: 'row', gap: 8, marginTop: 16 },
-  dica: { color: cores.textoDesabilitado, marginTop: 8, textAlign: 'center' },
+  dica: { marginTop: 8, textAlign: 'center' },
   erro: { color: cores.erro, marginTop: 12, textAlign: 'center' },
   sucesso: { color: cores.sucesso, marginTop: 12, textAlign: 'center' },
   form: { alignSelf: 'stretch', marginTop: 20 },

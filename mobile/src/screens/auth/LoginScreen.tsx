@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
-import { TextInput, Button, Text, Surface } from 'react-native-paper';
+import { StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
+import { TextInput, Button, Text, Surface, useTheme } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../../contexts/AuthContext';
 import { cores } from '../../theme';
@@ -12,6 +12,7 @@ export default function LoginScreen() {
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
   const navigation = useNavigation<any>();
+  const theme = useTheme();
 
   async function handleLogin() {
     setErro('');
@@ -31,13 +32,17 @@ export default function LoginScreen() {
 
   return (
     <KeyboardAvoidingView
-      style={styles.container}
+      style={[styles.container, { backgroundColor: theme.colors.background }]}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
     >
       <Surface style={styles.card} elevation={2}>
-        <Text variant="headlineMedium" style={styles.titulo}>Vitus</Text>
-        <Text variant="bodyMedium" style={styles.subtitulo}>Entre com sua conta</Text>
+        <Text variant="headlineMedium" style={[styles.titulo, { color: theme.colors.primary }]}>
+          Vitus
+        </Text>
+        <Text variant="bodyMedium" style={[styles.subtitulo, { color: theme.colors.onSurfaceVariant }]}>
+          Entre com sua conta
+        </Text>
 
         {erro ? <Text style={styles.erro}>{erro}</Text> : null}
 
@@ -82,8 +87,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     padding: 20,
-    backgroundColor: '#e3f2fd',
-    },
+  },
   card: {
     padding: 24,
     borderRadius: 16,
@@ -91,13 +95,11 @@ const styles = StyleSheet.create({
   titulo: {
     textAlign: 'center',
     fontWeight: 'bold',
-    color: cores.primariaEscura,
     marginBottom: 4,
   },
   subtitulo: {
     textAlign: 'center',
     marginBottom: 24,
-    color: cores.textoSecundario,
   },
   input: {
     marginBottom: 16,
