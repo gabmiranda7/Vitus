@@ -1,4 +1,3 @@
-
 import { ReactNode } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
@@ -23,13 +22,13 @@ import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import { useAuth } from '../../contexts/AuthContext';
 import AvatarUsuario from './AvatarUsuario';
 
-const DRAWER_WIDTH = 256;
+const DRAWER_WIDTH = 210;
 
 const menuItems = [
+  { label: 'Dashboard', path: '/dashboard', icon: <DashboardIcon />, perfis: ['Administrador', 'Recepcionista', 'Enfermeiro', 'Medico'] },
   { label: 'Auditoria', path: '/auditoria', icon: <HistoryIcon />, perfis: ['Administrador'] },
   { label: 'Aprovações', path: '/aprovacoes', icon: <FactCheckIcon />, perfis: ['Administrador'] },
   { label: 'Minha Agenda', path: '/agenda', icon: <CalendarTodayIcon />, perfis: ['Medico'] },
-  { label: 'Dashboard', path: '/dashboard', icon: <DashboardIcon />, perfis: ['Recepcionista', 'Enfermeiro', 'Medico'] },
   { label: 'Consultas', path: '/consultas', icon: <EventNoteIcon />, perfis: ['Recepcionista', 'Enfermeiro', 'Medico'] },
   { label: 'Triagem', path: '/triagem', icon: <MedicalServicesIcon />, perfis: ['Enfermeiro'] },
   { label: 'Receitas', path: '/receitas', icon: <MedicationIcon />, perfis: ['Medico'] },
@@ -192,7 +191,7 @@ export default function Layout({ children }: { children: ReactNode }) {
             <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
               Logado como
             </Typography>
-            <Typography variant="body2" sx={{ fontWeight: 600, color: 'text.primary' }}>
+            <Typography variant="body2" noWrap sx={{ fontWeight: 600, color: 'text.primary' }}>
               {usuario?.nome?.split(' ').slice(0, 2).join(' ')}
             </Typography>
             <Chip
