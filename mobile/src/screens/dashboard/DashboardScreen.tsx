@@ -1,7 +1,8 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { View, ScrollView, StyleSheet, RefreshControl } from 'react-native';
-import { Text, Card, Chip, ActivityIndicator, Avatar, useTheme } from 'react-native-paper';
+import { View, ScrollView, StyleSheet, RefreshControl, TouchableOpacity } from 'react-native';
+import { Text, Card, Chip, ActivityIndicator, Avatar, Button, useTheme } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../../contexts/AuthContext';
 import api from '../../services/api';
 import { Consulta, AuditoriaLog, statusCores, statusLabels } from '../../types';
@@ -11,6 +12,7 @@ import { acaoIcones, acaoCores, acaoLabel } from '../../utils/auditoria';
 export default function DashboardScreen() {
   const { usuario } = useAuth();
   const theme = useTheme();
+  const navigation = useNavigation<any>();
   const isAdmin = usuario?.perfil === 'Administrador';
 
   const [consultas, setConsultas] = useState<Consulta[]>([]);
@@ -91,24 +93,28 @@ export default function DashboardScreen() {
       valor: logs.length,
       icon: 'history',
       cor: cores.primaria,
+      rota: 'Auditoria',
     },
     {
       label: 'Registros Hoje',
       valor: logsHoje,
       icon: 'calendar-today',
       cor: cores.sucesso,
+      rota: 'Auditoria',
     },
     {
       label: 'Usuários Ativos',
       valor: usuariosUnicos,
       icon: 'account-group-outline',
       cor: cores.secundaria,
+      rota: 'Auditoria',
     },
     {
       label: 'Aprovações Pend.',
       valor: pendentesCount,
       icon: 'account-clock-outline',
       cor: pendentesCount > 0 ? cores.aviso : cores.textoSecundario,
+      rota: 'Aprovacoes',
     },
   ];
 
@@ -131,35 +137,45 @@ export default function DashboardScreen() {
 
       {isAdmin ? (
         <>
-          {/* Grid 2x2 uniforme de KPIs */}
+          {/* Grid 2x2 de KPIs clicáveis */}
           <View style={styles.kpiGrid}>
             {kpisAdmin.map((kpi) => (
-              <Card
+              <TouchableOpacity
                 key={kpi.label}
-                style={[styles.kpiCard, { borderLeftColor: kpi.cor, borderLeftWidth: 4 }]}
+                style={styles.kpiWrapper}
+                activeOpacity={0.75}
+                onPress={() => navigation.navigate(kpi.rota)}
               >
-                <Card.Content style={styles.kpiContent}>
-                  <View style={[styles.kpiIconBox, { backgroundColor: kpi.cor + '20' }]}>
-                    <MaterialCommunityIcons name={kpi.icon as any} size={20} color={kpi.cor} />
-                  </View>
-                  <View style={styles.kpiTexts}>
-                    <Text
-                      variant="labelSmall"
-                      style={{ color: theme.colors.onSurfaceVariant }}
-                      numberOfLines={1}
-                    >
-                      {kpi.label}
-                    </Text>
-                    <Text variant="titleLarge" style={[styles.kpiValor, { color: kpi.cor }]}>
-                      {kpi.valor}
-                    </Text>
-                  </View>
-                </Card.Content>
-              </Card>
+                <Card style={[styles.kpiCard, { borderLeftColor: kpi.cor, borderLeftWidth: 4 }]}>
+                  <Card.Content style={styles.kpiContent}>
+                    <View style={[styles.kpiIconBox, { backgroundColor: kpi.cor + '20' }]}>
+                      <MaterialCommunityIcons name={kpi.icon as any} size={20} color={kpi.cor} />
+                    </View>
+                    <View style={styles.kpiTexts}>
+                      <Text
+                        variant="labelSmall"
+                        style={{ color: theme.colors.onSurfaceVariant }}
+                        numberOfLines={1}
+                      >
+                        {kpi.label}
+                      </Text>
+                      <Text variant="titleLarge" style={[styles.kpiValor, { color: kpi.cor }]}>
+                        {kpi.valor}
+                      </Text>
+                    </View>
+                    <MaterialCommunityIcons
+                      name="chevron-right"
+                      size={18}
+                      color={theme.colors.onSurfaceVariant}
+                      style={{ opacity: 0.5 }}
+                    />
+                  </Card.Content>
+                </Card>
+              </TouchableOpacity>
             ))}
           </View>
 
-          {/* Resumo por tipo de ação em lista limpa */}
+          {/* Resumo por tipo de ação */}
           {topAcoes.length > 0 && (
             <>
               <Text variant="titleMedium" style={styles.tituloSecao}>
@@ -176,7 +192,6 @@ export default function DashboardScreen() {
                       <View
                         key={acao}
                         style={[
-                          styles.acaoLinha,
                           idx < topAcoes.length - 1 && {
                             borderBottomWidth: StyleSheet.hairlineWidth,
                             borderBottomColor: theme.colors.outlineVariant,
@@ -217,9 +232,21 @@ export default function DashboardScreen() {
             </>
           )}
 
-          <Text variant="titleMedium" style={styles.tituloSecao}>
-            Atividade Recente
-          </Text>
+          {/* Cabeçalho da Atividade Recente com atalho "Ver tudo" */}
+          <View style={styles.secaoHeaderRow}>
+            <Text variant="titleMedium" style={styles.tituloSecaoSemMargem}>
+              Atividade Recente
+            </Text>
+            <Button
+              compact
+              mode="text"
+              icon="arrow-right"
+              contentStyle={{ flexDirection: 'row-reverse' }}
+              onPress={() => navigation.navigate('Auditoria')}
+            >
+              Ver tudo
+            </Button>
+          </View>
 
           {logsRecentes.length === 0 ? (
             <Card style={styles.cardVazio}>
@@ -234,40 +261,46 @@ export default function DashboardScreen() {
               const cor = acaoCores[log.acao] ?? cores.textoSecundario;
               const icone = acaoIcones[log.acao] ?? 'information';
               return (
-                <Card key={log.id} style={[styles.card, { borderLeftColor: cor, borderLeftWidth: 4 }]}>
-                  <Card.Content style={styles.logContent}>
-                    <MaterialCommunityIcons
-                      name={icone as any}
-                      size={20}
-                      color={cor}
-                      style={styles.logIcone}
-                    />
-                    <View style={styles.logInfo}>
-                      <View style={styles.logHeaderRow}>
-                        <Text variant="titleSmall" style={{ flex: 1 }} numberOfLines={1}>
-                          {acaoLabel[log.acao] ?? log.acao}
-                        </Text>
+                <TouchableOpacity
+                  key={log.id}
+                  activeOpacity={0.75}
+                  onPress={() => navigation.navigate('Auditoria')}
+                >
+                  <Card style={[styles.card, { borderLeftColor: cor, borderLeftWidth: 4 }]}>
+                    <Card.Content style={styles.logContent}>
+                      <MaterialCommunityIcons
+                        name={icone as any}
+                        size={20}
+                        color={cor}
+                        style={styles.logIcone}
+                      />
+                      <View style={styles.logInfo}>
+                        <View style={styles.logHeaderRow}>
+                          <Text variant="titleSmall" style={{ flex: 1 }} numberOfLines={1}>
+                            {acaoLabel[log.acao] ?? log.acao}
+                          </Text>
+                          <Text
+                            variant="labelSmall"
+                            style={{ color: theme.colors.onSurfaceVariant, marginLeft: 8 }}
+                          >
+                            {new Date(log.dataHora).toLocaleTimeString('pt-BR', {
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            })}
+                          </Text>
+                        </View>
                         <Text
-                          variant="labelSmall"
-                          style={{ color: theme.colors.onSurfaceVariant, marginLeft: 8 }}
+                          variant="bodySmall"
+                          style={{ color: theme.colors.onSurfaceVariant, marginTop: 2 }}
+                          numberOfLines={1}
                         >
-                          {new Date(log.dataHora).toLocaleTimeString('pt-BR', {
-                            hour: '2-digit',
-                            minute: '2-digit',
-                          })}
+                          {log.usuarioNome} · {log.entidadeAfetada} ·{' '}
+                          {new Date(log.dataHora).toLocaleDateString('pt-BR')}
                         </Text>
                       </View>
-                      <Text
-                        variant="bodySmall"
-                        style={{ color: theme.colors.onSurfaceVariant, marginTop: 2 }}
-                        numberOfLines={1}
-                      >
-                        {log.usuarioNome} · {log.entidadeAfetada} ·{' '}
-                        {new Date(log.dataHora).toLocaleDateString('pt-BR')}
-                      </Text>
-                    </View>
-                  </Card.Content>
-                </Card>
+                    </Card.Content>
+                  </Card>
+                </TouchableOpacity>
               );
             })
           )}
@@ -338,20 +371,22 @@ const styles = StyleSheet.create({
     rowGap: 10,
     marginBottom: 20,
   },
-  kpiCard: {
+  kpiWrapper: {
     width: '48.5%',
+  },
+  kpiCard: {
     borderRadius: 12,
   },
   kpiContent: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 10,
-    paddingHorizontal: 12,
-    gap: 10,
+    paddingHorizontal: 10,
+    gap: 8,
   },
   kpiIconBox: {
-    width: 36,
-    height: 36,
+    width: 34,
+    height: 34,
     borderRadius: 10,
     justifyContent: 'center',
     alignItems: 'center',
@@ -360,10 +395,16 @@ const styles = StyleSheet.create({
   kpiValor: { fontWeight: '800', marginTop: 1 },
 
   tituloSecao: { fontWeight: 'bold', marginBottom: 10 },
+  secaoHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  tituloSecaoSemMargem: { fontWeight: 'bold' },
 
   resumoCard: { borderRadius: 12, marginBottom: 20 },
   resumoContent: { paddingVertical: 12 },
-  acaoLinha: {},
   acaoTopo: {
     flexDirection: 'row',
     justifyContent: 'space-between',
