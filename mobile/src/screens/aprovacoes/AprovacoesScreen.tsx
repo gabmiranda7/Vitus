@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   Searchbar,
   Snackbar,
+  SegmentedButtons,
   useTheme,
 } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -16,30 +17,35 @@ import api from '../../services/api';
 import { cores, corAvatar, iniciais } from '../../theme';
 import ConfirmModal from '../../components/ConfirmModal';
 
-interface UsuarioPendente {
+interface UsuarioItem {
   id: string;
   nome: string;
   email: string;
   perfil: string;
+  status?: string;
 }
 
 const perfilLabel: Record<string, string> = {
+  Administrador: 'Administrador',
   Medico: 'Médico',
   Enfermeiro: 'Enfermeiro(a)',
   Recepcionista: 'Recepcionista',
 };
 
 const perfilCor: Record<string, string> = {
+  Administrador: '#37474f',
   Medico: cores.primariaEscura,
   Enfermeiro: cores.sucesso,
   Recepcionista: cores.secundaria,
 };
 
-type Acao = 'aprovar' | 'recusar';
+type Acao = 'aprovar' | 'recusar' | 'desativar' | 'reativar';
 
 export default function AprovacoesScreen() {
   const theme = useTheme();
-  const [pendentes, setPendentes] = useState<UsuarioPendente[]>([]);
+  const [aba, setAba] = useState<'pendentes' | 'usuarios'>('pendentes');
+  const [pendentes, setPendentes] = useState<UsuarioItem[]>([]);
+  const [usuarios, setUsuarios] = useState<UsuarioItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [erro, setErro] = useState('');
@@ -48,7 +54,7 @@ export default function AprovacoesScreen() {
   const [busca, setBusca] = useState('');
   const [filtroPerfil, setFiltroPerfil] = useState('');
 
-  const [selecionado, setSelecionado] = useState<UsuarioPendente | null>(null);
+  const [selecionado, setSelecionado] = useState<UsuarioItem | null>(null);
   const [acao, setAcao] = useState<Acao | null>(null);
   const [processando, setProcessando] = useState(false);
 
@@ -58,11 +64,15 @@ export default function AprovacoesScreen() {
 
   async function carregar() {
     try {
-      const response = await api.get('/api/auth/pendentes');
-      setPendentes(response.data);
+      const [resPendentes, resUsuarios] = await Promise.all([
+        api.get('/api/auth/pendentes'),
+        api.get('/api/auth/usuarios'),
+      ]);
+      setPendentes(resPendentes.data);
+      setUsuarios(resUsuarios.data);
       setErro('');
     } catch (e: any) {
-      setErro(e.mensagemBack ?? 'Erro ao carregar cadastros pendentes');
+      setErro(e.mensagemBack ?? 'Erro ao carregar dados de usuários');
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -74,15 +84,17 @@ export default function AprovacoesScreen() {
     carregar();
   }
 
+  const listaAtual = aba === 'pendentes' ? pendentes : usuarios;
+
   const filtrados = useMemo(() => {
     const q = busca.toLowerCase();
-    return pendentes.filter(u =>
+    return listaAtual.filter(u =>
       (filtroPerfil === '' || u.perfil === filtroPerfil) &&
       (q === '' || u.nome.toLowerCase().includes(q) || u.email.toLowerCase().includes(q))
     );
-  }, [pendentes, busca, filtroPerfil]);
+  }, [listaAtual, busca, filtroPerfil]);
 
-  function pedirConfirmacao(usuario: UsuarioPendente, tipo: Acao) {
+  function pedirConfirmacao(usuario: UsuarioItem, tipo: Acao) {
     setSelecionado(usuario);
     setAcao(tipo);
   }
@@ -102,11 +114,13 @@ export default function AprovacoesScreen() {
       await api.patch(`/api/auth/${selecionado.id}/${tipoAcao}`);
       setSelecionado(null);
       setAcao(null);
-      setFeedback(
-        tipoAcao === 'aprovar'
-          ? `Cadastro de ${nomeAlvo} aprovado.`
-          : `Cadastro de ${nomeAlvo} recusado.`
-      );
+      const mensagens: Record<Acao, string> = {
+        aprovar: `Cadastro de ${nomeAlvo} aprovado.`,
+        recusar: `Cadastro de ${nomeAlvo} recusado.`,
+        desativar: `Acesso de ${nomeAlvo} desativado.`,
+        reativar: `Acesso de ${nomeAlvo} reativado.`,
+      };
+      setFeedback(mensagens[tipoAcao]);
       await carregar();
     } catch (e: any) {
       setErro(e.mensagemBack ?? 'Erro ao processar a solicitação');
@@ -125,7 +139,21 @@ export default function AprovacoesScreen() {
     );
   }
 
-  const aprovando = acao === 'aprovar';
+  const acaoPositiva = acao === 'aprovar' || acao === 'reativar';
+
+  const modalTitulos: Record<Acao, string> = {
+    aprovar: 'Aprovar cadastro',
+    recusar: 'Recusar cadastro',
+    desativar: 'Desativar acesso',
+    reativar: 'Reativar acesso',
+  };
+
+  const modalMensagens: Record<Acao, string> = {
+    aprovar: `${selecionado?.nome} poderá entrar no sistema com o email e a senha que cadastrou.`,
+    recusar: `${selecionado?.nome} não conseguirá entrar no sistema e verá que o cadastro não foi aprovado.`,
+    desativar: `${selecionado?.nome} perderá o acesso ao sistema até ser reativado.`,
+    reativar: `${selecionado?.nome} voltará a ter acesso normal ao sistema.`,
+  };
 
   return (
     <View style={styles.container}>
@@ -133,26 +161,38 @@ export default function AprovacoesScreen() {
         contentContainerStyle={styles.conteudo}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
-        <View style={styles.cabecalho}>
-          <Text variant="titleLarge" style={styles.titulo}>Cadastros pendentes</Text>
-          <Chip
-            compact
-            style={{ backgroundColor: cores.aviso + (theme.dark ? '33' : '20') }}
-            textStyle={[styles.chipTextoNegrito, { color: theme.dark ? '#ffb74d' : cores.aviso }]}
-          >
-            {pendentes.length}
-          </Chip>
-        </View>
+        <SegmentedButtons
+          density="small"
+          value={aba}
+          onValueChange={(v) => {
+            setAba(v as 'pendentes' | 'usuarios');
+            setFiltroPerfil('');
+          }}
+          buttons={[
+            {
+              value: 'pendentes',
+              label: `Pendentes (${pendentes.length})`,
+              icon: 'account-clock-outline',
+            },
+            {
+              value: 'usuarios',
+              label: `Usuários (${usuarios.length})`,
+              icon: 'account-group-outline',
+            },
+          ]}
+          style={{ marginBottom: 10 }}
+        />
 
         {erro ? <Text style={styles.erro}>{erro}</Text> : null}
 
-        {pendentes.length > 0 && (
+        {listaAtual.length > 0 && (
           <View style={styles.filtrosBox}>
             <Searchbar
               placeholder="Buscar por nome ou e-mail..."
               value={busca}
               onChangeText={setBusca}
               style={styles.busca}
+              inputStyle={styles.buscaInput}
             />
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipsScroll}>
               <Chip
@@ -163,84 +203,157 @@ export default function AprovacoesScreen() {
               >
                 Todos
               </Chip>
-              {Object.entries(perfilLabel).map(([key, label]) => (
-                <Chip
-                  key={key}
-                  compact
-                  selected={filtroPerfil === key}
-                  onPress={() => setFiltroPerfil(filtroPerfil === key ? '' : key)}
-                  textStyle={styles.chipTexto}
-                >
-                  {label}
-                </Chip>
-              ))}
+              {Object.entries(perfilLabel)
+                .filter(([key]) => aba === 'usuarios' || key !== 'Administrador')
+                .map(([key, label]) => (
+                  <Chip
+                    key={key}
+                    compact
+                    selected={filtroPerfil === key}
+                    onPress={() => setFiltroPerfil(filtroPerfil === key ? '' : key)}
+                    textStyle={styles.chipTexto}
+                  >
+                    {label}
+                  </Chip>
+                ))}
             </ScrollView>
           </View>
         )}
 
-        {pendentes.length === 0 ? (
+        {listaAtual.length === 0 ? (
           <View style={styles.vazio}>
             <MaterialCommunityIcons
               name="account-check-outline"
-              size={64}
+              size={52}
               color={theme.colors.onSurfaceVariant}
               style={{ opacity: 0.3 }}
             />
             <Text style={[styles.textoVazio, { color: theme.colors.onSurfaceVariant }]}>
-              Nenhum cadastro aguardando aprovação
-            </Text>
-            <Text variant="bodySmall" style={[styles.textoVazioSub, { color: theme.colors.onSurfaceVariant }]}>
-              Puxe a tela para baixo para atualizar a lista.
+              {aba === 'pendentes' ? 'Nenhum cadastro aguardando aprovação' : 'Nenhum usuário cadastrado'}
             </Text>
           </View>
         ) : filtrados.length === 0 ? (
           <View style={styles.vazio}>
             <Text style={[styles.textoVazio, { color: theme.colors.onSurfaceVariant }]}>
-              Nenhum cadastro corresponde ao filtro
+              Nenhum usuário corresponde ao filtro
             </Text>
           </View>
         ) : (
           filtrados.map((u) => {
             const cor = perfilCor[u.perfil] ?? cores.textoSecundario;
+            const isInativo = u.status === 'Inativo';
+            const isAdmin = u.perfil === 'Administrador';
+
             return (
-              <Card key={u.id} style={[styles.card, { borderLeftColor: cor, borderLeftWidth: 4 }]}>
-                <Card.Content>
+              <Card
+                key={u.id}
+                style={[
+                  styles.card,
+                  {
+                    borderLeftColor: isInativo ? '#9e9e9e' : cor,
+                    borderLeftWidth: 4,
+                    opacity: isInativo ? 0.78 : 1,
+                  },
+                ]}
+              >
+                <Card.Content style={styles.cardContent}>
                   <View style={styles.linhaUsuario}>
-                    <Avatar.Text size={44} label={iniciais(u.nome)} style={{ backgroundColor: corAvatar(u.nome) }} />
+                    <Avatar.Text
+                      size={36}
+                      label={iniciais(u.nome)}
+                      labelStyle={{ fontSize: 13, fontWeight: '700' }}
+                      style={{ backgroundColor: isInativo ? '#757575' : corAvatar(u.nome) }}
+                    />
                     <View style={styles.info}>
-                      <Text variant="titleMedium">{u.nome}</Text>
-                      <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant, marginTop: 2 }}>
+                      <Text variant="titleSmall" numberOfLines={1} style={{ fontWeight: '700' }}>
+                        {u.nome}
+                      </Text>
+                      <Text variant="bodySmall" numberOfLines={1} style={{ color: theme.colors.onSurfaceVariant, fontSize: 11.5 }}>
                         {u.email}
                       </Text>
-                      <Chip
-                        compact
-                        style={[styles.chipPerfil, { backgroundColor: cor + (theme.dark ? '33' : '20') }]}
-                        textStyle={[styles.chipTexto, { color: theme.dark ? '#e8eef5' : cor }]}
-                      >
-                        {perfilLabel[u.perfil] ?? u.perfil}
-                      </Chip>
+                      <View style={styles.chipsLinha}>
+                        <Chip
+                          compact
+                          style={[styles.chipPerfil, { backgroundColor: cor + (theme.dark ? '33' : '20') }]}
+                          textStyle={[styles.chipTexto, { color: theme.dark ? '#e8eef5' : cor }]}
+                        >
+                          {perfilLabel[u.perfil] ?? u.perfil}
+                        </Chip>
+                        {aba === 'usuarios' && (
+                          <Chip
+                            compact
+                            style={[
+                              styles.chipPerfil,
+                              {
+                                backgroundColor: isInativo
+                                  ? theme.colors.surfaceVariant
+                                  : cores.sucesso + (theme.dark ? '33' : '20'),
+                              },
+                            ]}
+                            textStyle={[
+                              styles.chipTexto,
+                              { color: isInativo ? theme.colors.onSurfaceVariant : cores.sucesso },
+                            ]}
+                          >
+                            {isInativo ? 'Inativo' : 'Ativo'}
+                          </Chip>
+                        )}
+                      </View>
                     </View>
-                  </View>
 
-                  <View style={styles.botoes}>
-                    <Button
-                      mode="outlined"
-                      textColor={cores.erro}
-                      icon="close-circle"
-                      onPress={() => pedirConfirmacao(u, 'recusar')}
-                      style={[styles.botao, { borderColor: cores.erro }]}
-                    >
-                      Recusar
-                    </Button>
-                    <Button
-                      mode="contained"
-                      buttonColor={cores.sucesso}
-                      icon="check-circle"
-                      onPress={() => pedirConfirmacao(u, 'aprovar')}
-                      style={styles.botao}
-                    >
-                      Aprovar
-                    </Button>
+                    {/* Botões compactos à direita */}
+                    {aba === 'pendentes' ? (
+                      <View style={styles.botoesDireita}>
+                        <Button
+                          compact
+                          mode="outlined"
+                          textColor={cores.erro}
+                          onPress={() => pedirConfirmacao(u, 'recusar')}
+                          labelStyle={styles.botaoLabel}
+                          style={[styles.botaoCompacto, { borderColor: cores.erro }]}
+                        >
+                          Recusar
+                        </Button>
+                        <Button
+                          compact
+                          mode="contained"
+                          buttonColor={cores.sucesso}
+                          onPress={() => pedirConfirmacao(u, 'aprovar')}
+                          labelStyle={styles.botaoLabel}
+                          style={styles.botaoCompacto}
+                        >
+                          Aprovar
+                        </Button>
+                      </View>
+                    ) : (
+                      !isAdmin && (
+                        isInativo ? (
+                          <Button
+                            compact
+                            mode="contained"
+                            buttonColor={cores.sucesso}
+                            icon="lock-open-outline"
+                            onPress={() => pedirConfirmacao(u, 'reativar')}
+                            labelStyle={styles.botaoLabel}
+                            style={styles.botaoCompacto}
+                          >
+                            Reativar
+                          </Button>
+                        ) : (
+                          <Button
+                            compact
+                            mode="outlined"
+                            textColor={cores.erro}
+                            icon="block-helper"
+                            onPress={() => pedirConfirmacao(u, 'desativar')}
+                            labelStyle={styles.botaoLabel}
+                            style={[styles.botaoCompacto, { borderColor: cores.erro }]}
+                          >
+                            Desativar
+                          </Button>
+                        )
+                      )
+                    )}
                   </View>
                 </Card.Content>
               </Card>
@@ -249,19 +362,17 @@ export default function AprovacoesScreen() {
         )}
       </ScrollView>
 
-      <ConfirmModal
-        visible={!!selecionado}
-        titulo={aprovando ? 'Aprovar cadastro' : 'Recusar cadastro'}
-        mensagem={
-          aprovando
-            ? `${selecionado?.nome} poderá entrar no sistema com o email e a senha que cadastrou.`
-            : `${selecionado?.nome} não conseguirá entrar no sistema e verá que o cadastro não foi aprovado.`
-        }
-        corBotao={aprovando ? cores.sucesso : cores.erro}
-        onClose={fecharConfirmacao}
-        onConfirmar={confirmar}
-        loading={processando}
-      />
+      {acao && (
+        <ConfirmModal
+          visible={!!selecionado}
+          titulo={modalTitulos[acao]}
+          mensagem={modalMensagens[acao]}
+          corBotao={acaoPositiva ? cores.sucesso : cores.erro}
+          onClose={fecharConfirmacao}
+          onConfirmar={confirmar}
+          loading={processando}
+        />
+      )}
 
       <Snackbar
         visible={!!feedback}
@@ -277,24 +388,24 @@ export default function AprovacoesScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: 'transparent' },
   centro: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  conteudo: { padding: 16, paddingBottom: 32 },
-  cabecalho: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 },
-  titulo: { fontWeight: 'bold' },
-  erro: { color: cores.erro, marginBottom: 12 },
+  conteudo: { padding: 12, paddingBottom: 28 },
+  erro: { color: cores.erro, marginBottom: 10, fontSize: 13 },
 
-  filtrosBox: { marginBottom: 12 },
-  busca: { marginBottom: 8 },
-  chipsScroll: { gap: 6 },
-  chipTexto: { fontSize: 12, lineHeight: 16, marginVertical: 2 },
-  chipTextoNegrito: { fontSize: 12, lineHeight: 16, fontWeight: '700', marginVertical: 2 },
+  filtrosBox: { marginBottom: 10 },
+  busca: { marginBottom: 6, height: 42 },
+  buscaInput: { minHeight: 42, fontSize: 13 },
+  chipsScroll: { gap: 5 },
+  chipTexto: { fontSize: 11, lineHeight: 14, marginVertical: 1 },
 
-  card: { marginBottom: 12, borderRadius: 12 },
-  linhaUsuario: { flexDirection: 'row', alignItems: 'center', marginBottom: 14 },
-  info: { marginLeft: 12, flex: 1 },
-  chipPerfil: { alignSelf: 'flex-start', marginTop: 6 },
-  botoes: { flexDirection: 'row', gap: 8 },
-  botao: { flex: 1, borderRadius: 8 },
-  vazio: { alignItems: 'center', marginTop: 60 },
-  textoVazio: { marginTop: 12, fontSize: 16, textAlign: 'center' },
-  textoVazioSub: { marginTop: 6, textAlign: 'center', opacity: 0.7 },
+  card: { marginBottom: 8, borderRadius: 10 },
+  cardContent: { paddingVertical: 10, paddingHorizontal: 12 },
+  linhaUsuario: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  info: { flex: 1 },
+  chipsLinha: { flexDirection: 'row', gap: 5, marginTop: 4, flexWrap: 'wrap' },
+  chipPerfil: { alignSelf: 'flex-start' },
+  botoesDireita: { flexDirection: 'row', gap: 6, flexShrink: 0 },
+  botaoCompacto: { borderRadius: 7 },
+  botaoLabel: { fontSize: 11.5, marginHorizontal: 8, marginVertical: 4 },
+  vazio: { alignItems: 'center', marginTop: 50 },
+  textoVazio: { marginTop: 10, fontSize: 14, textAlign: 'center' },
 });
