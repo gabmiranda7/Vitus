@@ -139,7 +139,7 @@ export default function MedicosScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: cores.fundo },
+  container: { flex: 1, backgroundColor: 'transparent' },
   centro: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   busca: { margin: 16, marginBottom: 8 },
   lista: { padding: 16, paddingTop: 8, paddingBottom: 80 },
@@ -149,7 +149,7 @@ const styles = StyleSheet.create({
   crm: { color: cores.textoSecundario, marginTop: 4 },
   textoVazio: { textAlign: 'center', color: cores.textoDesabilitado, marginTop: 40 },
   fab: { position: 'absolute', right: 16, bottom: 16, backgroundColor: cores.primaria },
-  modal: { backgroundColor: 'white', margin: 20, padding: 20, borderRadius: 16 },
+  modal: { backgroundColor: '#1e2733', margin: 20, padding: 20, borderRadius: 16 },
   tituloModal: { marginBottom: 16, fontWeight: 'bold' },
   input: { marginBottom: 12 },
   botoes: { flexDirection: 'row', justifyContent: 'flex-end', gap: 8, marginTop: 8 },
