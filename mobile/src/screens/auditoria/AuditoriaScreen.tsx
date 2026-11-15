@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, ScrollView, StyleSheet, TouchableOpacity, LayoutAnimation, Platform } from 'react-native';
-import { Text, Card, Searchbar, ActivityIndicator, Chip, Divider } from 'react-native-paper';
+import { Text, Card, Searchbar, ActivityIndicator, Chip, Divider, useTheme } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import api from '../../services/api';
 import { AuditoriaLog } from '../../types';
@@ -8,6 +8,7 @@ import { cores } from '../../theme';
 import { acaoIcones, acaoCores, acaoLabel } from '../../utils/auditoria';
 
 export default function AuditoriaScreen() {
+  const theme = useTheme();
   const [logs, setLogs] = useState<AuditoriaLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState('');
@@ -72,7 +73,7 @@ export default function AuditoriaScreen() {
 
       <ScrollView contentContainerStyle={styles.conteudo}>
         {filtrados.length === 0 ? (
-          <Text style={styles.textoVazio}>
+          <Text style={[styles.textoVazio, { color: theme.colors.onSurfaceVariant }]}>
             {busca ? 'Nenhum registro encontrado' : 'Nenhum registro de auditoria'}
           </Text>
         ) : (
@@ -94,13 +95,13 @@ export default function AuditoriaScreen() {
                           <MaterialCommunityIcons
                             name={expandido ? 'chevron-up' : 'chevron-down'}
                             size={20}
-                            color={cores.textoDesabilitado}
+                            color={theme.colors.onSurfaceVariant}
                           />
                         </View>
-                        <Text variant="bodySmall" style={styles.textoSecundario}>
+                        <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant, marginTop: 2 }}>
                           {log.usuarioNome} · {log.entidadeAfetada}
                         </Text>
-                        <Text variant="bodySmall" style={styles.data}>
+                        <Text variant="bodySmall" style={[styles.data, { color: theme.colors.onSurfaceVariant }]}>
                           {new Date(log.dataHora).toLocaleString('pt-BR')}
                         </Text>
                       </View>
@@ -110,29 +111,49 @@ export default function AuditoriaScreen() {
                       <View style={styles.detalhes}>
                         <Divider style={styles.divider} />
                         <View style={styles.detalheLinha}>
-                          <Text variant="bodySmall" style={styles.detalheLabel}>Ação</Text>
-                          <Chip compact style={{ backgroundColor: cor + '20' }} textStyle={{ color: cor, fontSize: 11 }}>
+                          <Text variant="bodySmall" style={[styles.detalheLabel, { color: theme.colors.onSurfaceVariant }]}>
+                            Ação
+                          </Text>
+                          <Chip
+                            compact
+                            style={{ backgroundColor: cor + (theme.dark ? '33' : '20') }}
+                            textStyle={{ color: theme.dark ? '#e8eef5' : cor, fontSize: 11 }}
+                          >
                             {log.acao}
                           </Chip>
                         </View>
                         <View style={styles.detalheLinha}>
-                          <Text variant="bodySmall" style={styles.detalheLabel}>Entidade Afetada</Text>
+                          <Text variant="bodySmall" style={[styles.detalheLabel, { color: theme.colors.onSurfaceVariant }]}>
+                            Entidade Afetada
+                          </Text>
                           <Text variant="bodySmall" style={styles.detalheValor}>{log.entidadeAfetada}</Text>
                         </View>
                         <View style={styles.detalheLinha}>
-                          <Text variant="bodySmall" style={styles.detalheLabel}>ID da Entidade</Text>
-                          <Text variant="bodySmall" style={styles.detalheValorMono}>{log.entidadeId}</Text>
+                          <Text variant="bodySmall" style={[styles.detalheLabel, { color: theme.colors.onSurfaceVariant }]}>
+                            ID da Entidade
+                          </Text>
+                          <Text variant="bodySmall" style={[styles.detalheValorMono, { color: theme.colors.onSurfaceVariant }]}>
+                            {log.entidadeId}
+                          </Text>
                         </View>
                         <View style={styles.detalheLinha}>
-                          <Text variant="bodySmall" style={styles.detalheLabel}>Usuário</Text>
+                          <Text variant="bodySmall" style={[styles.detalheLabel, { color: theme.colors.onSurfaceVariant }]}>
+                            Usuário
+                          </Text>
                           <Text variant="bodySmall" style={styles.detalheValor}>{log.usuarioNome}</Text>
                         </View>
                         <View style={styles.detalheLinha}>
-                          <Text variant="bodySmall" style={styles.detalheLabel}>ID do Usuário</Text>
-                          <Text variant="bodySmall" style={styles.detalheValorMono}>{log.usuarioId}</Text>
+                          <Text variant="bodySmall" style={[styles.detalheLabel, { color: theme.colors.onSurfaceVariant }]}>
+                            ID do Usuário
+                          </Text>
+                          <Text variant="bodySmall" style={[styles.detalheValorMono, { color: theme.colors.onSurfaceVariant }]}>
+                            {log.usuarioId}
+                          </Text>
                         </View>
                         <View style={styles.detalheLinha}>
-                          <Text variant="bodySmall" style={styles.detalheLabel}>Data e Hora</Text>
+                          <Text variant="bodySmall" style={[styles.detalheLabel, { color: theme.colors.onSurfaceVariant }]}>
+                            Data e Hora
+                          </Text>
                           <Text variant="bodySmall" style={styles.detalheValor}>
                             {new Date(log.dataHora).toLocaleString('pt-BR', {
                               dateStyle: 'long',
@@ -142,8 +163,21 @@ export default function AuditoriaScreen() {
                         </View>
                         {log.detalhes && (
                           <View style={styles.detalhesTexto}>
-                            <Text variant="bodySmall" style={styles.detalheLabel}>Detalhes</Text>
-                            <Text variant="bodySmall" style={styles.detalheTextoLivre}>{log.detalhes}</Text>
+                            <Text variant="bodySmall" style={[styles.detalheLabel, { color: theme.colors.onSurfaceVariant }]}>
+                              Detalhes
+                            </Text>
+                            <Text
+                              variant="bodySmall"
+                              style={[
+                                styles.detalheTextoLivre,
+                                {
+                                  backgroundColor: theme.colors.surfaceVariant,
+                                  color: theme.colors.onSurfaceVariant,
+                                },
+                              ]}
+                            >
+                              {log.detalhes}
+                            </Text>
                           </View>
                         )}
                       </View>
@@ -160,7 +194,7 @@ export default function AuditoriaScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: cores.fundo },
+  container: { flex: 1, backgroundColor: 'transparent' },
   centro: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   busca: { margin: 16, marginBottom: 8 },
   conteudo: { padding: 16, paddingTop: 8 },
@@ -170,9 +204,8 @@ const styles = StyleSheet.create({
   info: { flex: 1 },
   tituloRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   titulo: { fontWeight: '600' },
-  textoSecundario: { color: cores.textoSecundario, marginTop: 2 },
-  data: { color: cores.textoDesabilitado, marginTop: 2, fontSize: 11 },
-  textoVazio: { textAlign: 'center', color: cores.textoDesabilitado, marginTop: 40 },
+  data: { marginTop: 2, fontSize: 11 },
+  textoVazio: { textAlign: 'center', marginTop: 40 },
   erro: { color: cores.erro },
 
   detalhes: { marginTop: 4 },
@@ -183,12 +216,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 6,
   },
-  detalheLabel: { color: cores.textoSecundario, fontWeight: '600' },
+  detalheLabel: { fontWeight: '600' },
   detalheValor: { fontWeight: '500', flexShrink: 1, textAlign: 'right' },
   detalheValorMono: {
     fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
     fontSize: 11,
-    color: cores.textoSecundario,
     flexShrink: 1,
     textAlign: 'right',
   },
@@ -197,7 +229,5 @@ const styles = StyleSheet.create({
     marginTop: 4,
     padding: 10,
     borderRadius: 8,
-    backgroundColor: '#f5f5f5',
-    color: cores.textoSecundario,
   },
 });
