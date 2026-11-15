@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, ScrollView, StyleSheet } from 'react-native';
-import { Text, Card, Avatar, Searchbar, ActivityIndicator, Chip, TextInput, SegmentedButtons, Button } from 'react-native-paper';
+import { Text, Card, Avatar, Searchbar, ActivityIndicator, Chip, TextInput, SegmentedButtons, Button, useTheme } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
 import api from '../../services/api';
 import { AcompanhamentoPaciente, Paciente, Tratamento } from '../../types';
@@ -16,6 +16,7 @@ const SITUACOES = [
 
 export default function PacientesProntuarioScreen() {
   const navigation = useNavigation<any>();
+  const theme = useTheme();
   const [pacientes, setPacientes] = useState<Paciente[]>([]);
   const [acompanhamentos, setAcompanhamentos] = useState<AcompanhamentoPaciente[]>([]);
   const [busca, setBusca] = useState('');
@@ -102,8 +103,10 @@ export default function PacientesProntuarioScreen() {
       </View>
 
       {filtrosVisiveis && (
-        <View style={styles.painelFiltros}>
-          <Text variant="labelLarge" style={styles.painelTitulo}>Receita</Text>
+        <View style={[styles.painelFiltros, { backgroundColor: theme.colors.surface }]}>
+          <Text variant="labelLarge" style={[styles.painelTitulo, { color: theme.colors.onSurfaceVariant }]}>
+            Receita
+          </Text>
           <View style={styles.filtros}>
             {SITUACOES.map((s) => (
               <Chip
@@ -145,7 +148,7 @@ export default function PacientesProntuarioScreen() {
           )}
 
           <View style={styles.painelRodape}>
-            <Text variant="bodySmall" style={styles.textoSecundario}>
+            <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
               {filtrados.length} de {pacientes.length} paciente(s)
             </Text>
             {temFiltroAtivo && (
@@ -159,7 +162,9 @@ export default function PacientesProntuarioScreen() {
 
       <ScrollView contentContainerStyle={styles.lista}>
         {filtrados.length === 0 ? (
-          <Text style={styles.textoVazio}>Nenhum paciente encontrado</Text>
+          <Text style={[styles.textoVazio, { color: theme.colors.onSurfaceVariant }]}>
+            Nenhum paciente encontrado
+          </Text>
         ) : (
           filtrados.map((p) => {
             const t = tratamentosPorPaciente.get(p.id)?.[0];
@@ -174,12 +179,16 @@ export default function PacientesProntuarioScreen() {
                   <Avatar.Text size={44} label={iniciais(p.nome)} style={{ backgroundColor: corAvatar(p.nome) }} />
                   <View style={styles.info}>
                     <Text variant="titleMedium">{p.nome}</Text>
-                    {p.cpf && <Text variant="bodySmall" style={styles.textoSecundario}>CPF: {p.cpf}</Text>}
+                    {p.cpf && (
+                      <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
+                        CPF: {p.cpf}
+                      </Text>
+                    )}
                     {t && s && (
                       <Chip
                         compact
-                        style={[styles.chipVencimento, { backgroundColor: s.cor + '20' }]}
-                        textStyle={{ color: s.cor, fontSize: 11, fontWeight: '700' }}
+                        style={[styles.chipVencimento, { backgroundColor: s.cor + (theme.dark ? '33' : '20') }]}
+                        textStyle={{ color: theme.dark ? '#ffb74d' : s.cor, fontSize: 11, fontWeight: '700' }}
                       >
                         Receita {s.label} · {t.medicamento}
                       </Chip>
@@ -198,7 +207,7 @@ export default function PacientesProntuarioScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: cores.fundo,
+    backgroundColor: 'transparent',
   },
   centro: {
     flex: 1,
@@ -216,14 +225,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   painelFiltros: {
-    backgroundColor: 'white',
     borderRadius: 12,
     padding: 12,
     marginHorizontal: 16,
     marginBottom: 8,
   },
   painelTitulo: {
-    color: cores.textoSecundario,
     marginBottom: 8,
   },
   filtros: {
@@ -245,7 +252,6 @@ const styles = StyleSheet.create({
   },
   prazoInput: {
     width: 90,
-    backgroundColor: 'white',
   },
   prazoUnidade: {
     flex: 1,
@@ -270,12 +276,8 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     marginTop: 6,
   },
-  textoSecundario: {
-    color: cores.textoSecundario,
-  },
   textoVazio: {
     textAlign: 'center',
-    color: cores.textoDesabilitado,
     marginTop: 40,
   },
 });

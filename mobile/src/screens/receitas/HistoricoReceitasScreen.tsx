@@ -1,13 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { View, ScrollView, StyleSheet } from 'react-native';
-import { Text, Card, ActivityIndicator, Divider, Chip } from 'react-native-paper';
+import { Text, Card, ActivityIndicator, Divider, Chip, useTheme } from 'react-native-paper';
 import { useRoute } from '@react-navigation/native';
 import api from '../../services/api';
 import { Consulta, Prontuario, Receita } from '../../types';
 import { cores } from '../../theme';
 import { situacaoVencimento, dataVencimentoBr, capitalizar } from '../../utils/vencimento';
 
-// Receitas anteriores ao campo data_emissao ficam com data zerada no banco
 function dataDaReceita(r: Receita, consulta?: Consulta): Date {
   const d = new Date(r.dataEmissao);
   if (d.getFullYear() < 2000 && consulta) return new Date(consulta.dataConsulta);
@@ -16,6 +15,7 @@ function dataDaReceita(r: Receita, consulta?: Consulta): Date {
 
 export default function HistoricoReceitasScreen() {
   const route = useRoute<any>();
+  const theme = useTheme();
   const { pacienteId } = route.params;
   const [prontuario, setProntuario] = useState<Prontuario | null>(null);
   const [loading, setLoading] = useState(true);
@@ -76,11 +76,15 @@ export default function HistoricoReceitasScreen() {
                 <Card.Content>
                   <View style={styles.topo}>
                     <Text variant="titleSmall" style={styles.nomeTratamento}>{t.medicamento}</Text>
-                    <Chip compact style={{ backgroundColor: s.cor + '20' }} textStyle={{ color: s.cor, fontSize: 11 }}>
+                    <Chip
+                      compact
+                      style={{ backgroundColor: s.cor + (theme.dark ? '33' : '20') }}
+                      textStyle={{ color: theme.dark ? '#ffb74d' : s.cor, fontSize: 11 }}
+                    >
                       {capitalizar(s.label)}
                     </Chip>
                   </View>
-                  <Text variant="bodySmall" style={styles.detalheMed}>
+                  <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
                     Emitida em {new Date(t.dataEmissao).toLocaleDateString('pt-BR')} · validade de {t.validadeDias} dias · vence em {dataVencimentoBr(t.dataVencimento)}
                   </Text>
                 </Card.Content>
@@ -95,23 +99,30 @@ export default function HistoricoReceitasScreen() {
       </Text>
 
       {receitas.length === 0 ? (
-        <Text style={styles.textoVazio}>Nenhuma receita registrada</Text>
+        <Text style={[styles.textoVazio, { color: theme.colors.onSurfaceVariant }]}>
+          Nenhuma receita registrada
+        </Text>
       ) : (
         receitas.map(({ receita: r, consulta, data }) => (
           <Card key={r.id} style={styles.card}>
             <Card.Content>
-              <Text variant="bodySmall" style={styles.dataConsulta}>
+              <Text variant="bodySmall" style={[styles.dataConsulta, { color: theme.colors.onSurfaceVariant }]}>
                 {data.toLocaleDateString('pt-BR')}{consulta ? ` · ${consulta.nomeMedico}` : ''}
               </Text>
               <Divider style={styles.divider} />
               {r.medicamentos.map((m, i) => (
                 <View key={i} style={styles.medicamento}>
                   <Text variant="titleSmall">{m.nome}{m.dosagem ? ` ${m.dosagem}` : ''}</Text>
-                  <Text variant="bodySmall" style={styles.detalheMed}>
+                  <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
                     {m.quantidade ? `${m.quantidade} · ` : ''}{m.posologia}
                   </Text>
                   {m.acompanharVencimento && m.validadeDias != null && (
-                    <Chip compact icon="alarm" style={styles.chipAcompanhado} textStyle={{ fontSize: 11 }}>
+                    <Chip
+                      compact
+                      icon="alarm"
+                      style={[styles.chipAcompanhado, { backgroundColor: theme.colors.surfaceVariant }]}
+                      textStyle={{ fontSize: 11, color: theme.colors.primary }}
+                    >
                       Acompanhado · {m.validadeDias} dias
                     </Chip>
                   )}
@@ -126,7 +137,7 @@ export default function HistoricoReceitasScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: cores.fundo },
+  container: { flex: 1, backgroundColor: 'transparent' },
   centro: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   conteudo: { padding: 16 },
   secao: { marginBottom: 8 },
@@ -134,11 +145,10 @@ const styles = StyleSheet.create({
   card: { marginBottom: 12, borderRadius: 12 },
   topo: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 },
   nomeTratamento: { fontWeight: '600', flex: 1, marginRight: 8 },
-  dataConsulta: { color: cores.textoSecundario, marginBottom: 4 },
+  dataConsulta: { marginBottom: 4 },
   divider: { marginBottom: 10 },
   medicamento: { marginBottom: 10 },
-  detalheMed: { color: cores.textoSecundario },
-  chipAcompanhado: { alignSelf: 'flex-start', marginTop: 6, backgroundColor: '#e3f2fd' },
-  textoVazio: { textAlign: 'center', color: cores.textoDesabilitado, marginTop: 40 },
+  chipAcompanhado: { alignSelf: 'flex-start', marginTop: 6 },
+  textoVazio: { textAlign: 'center', marginTop: 40 },
   erro: { color: cores.erro },
 });
