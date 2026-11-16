@@ -1,8 +1,7 @@
-version: '3.9'
- 
 services:
   db:
-    image: postgres:16
+    image: postgres:16-alpine
+    restart: unless-stopped
     environment:
       POSTGRES_DB: VitusDB
       POSTGRES_USER: ${DB_USER}
@@ -16,17 +15,20 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
- 
+
   api:
     build:
       context: .
       dockerfile: src/Vitus.API/Dockerfile
+    restart: unless-stopped
     ports:
       - "5000:8080"
     depends_on:
       db:
         condition: service_healthy
     environment:
+      DB_USER: ${DB_USER}
+      DB_PASS: ${DB_PASS}
       ConnectionStrings__DefaultConnection: "Host=db;Port=5432;Database=VitusDB;Username=${DB_USER};Password=${DB_PASS}"
       JWT_KEY: ${JWT_KEY}
       ASPNETCORE_ENVIRONMENT: Production
@@ -35,17 +37,18 @@ services:
     volumes:
       - storage_data:/app/storage
       - ./storage/templates:/app/storage/templates:ro
- 
+
   frontend:
     build:
       context: ./web
       args:
-        VITE_API_URL: http://localhost:5000
+        VITE_API_URL: ${VITE_API_URL:-http://localhost:5000}
+    restart: unless-stopped
     ports:
       - "3000:80"
     depends_on:
       - api
- 
+
 volumes:
   postgres_data:
   storage_data:
