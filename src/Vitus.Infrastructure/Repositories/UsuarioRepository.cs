@@ -41,6 +41,14 @@ namespace Vitus.Infrastructure.Repositories
                 .FirstOrDefaultAsync(u => u.Id == id);
         }
 
+        public async Task<IList<Usuario>> GetAll()
+        {
+            return await _context.Usuarios
+                .AsNoTracking()
+                .OrderBy(u => u.Nome)
+                .ToListAsync();
+        }
+
         public async Task<IList<Usuario>> GetByStatus(StatusUsuario status)
         {
             return await _context.Usuarios

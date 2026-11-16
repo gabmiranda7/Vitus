@@ -1,7 +1,9 @@
 ﻿using Vitus.Application.UseCases.Auditoria.GetAuditoriaLogs;
+using Vitus.Application.UseCases.Auth.AlterarStatusUsuario;
 using Vitus.Application.UseCases.Auth.AprovarUsuario;
 using Vitus.Application.UseCases.Auth.AtualizarFotoPerfil;
 using Vitus.Application.UseCases.Auth.AtualizarPerfil;
+using Vitus.Application.UseCases.Auth.GetAllUsuarios;
 using Vitus.Application.UseCases.Auth.GetUsuariosPendentes;
 using Vitus.Application.UseCases.Auth.Login;
 using Vitus.Application.UseCases.Auth.ObterFotoPerfil;
@@ -48,9 +50,11 @@ namespace Vitus.API.Extensions
             services.AddScoped<GetAuditoriaLogsUseCase>();
             services.AddScoped<IAuditoriaService, AuditoriaService>();
 
+            services.AddScoped<AlterarStatusUsuarioUseCase>();
             services.AddScoped<AprovarUsuarioUseCase>();
             services.AddScoped<AtualizarPerfilUseCase>();
             services.AddScoped<AtualizarFotoPerfilUseCase>();
+            services.AddScoped<GetAllUsuariosUseCase>();
             services.AddScoped<GetUsuariosPendentesUseCase>();
             services.AddScoped<LoginUsuarioUseCase>();
             services.AddScoped<ObterFotoPerfilUseCase>();

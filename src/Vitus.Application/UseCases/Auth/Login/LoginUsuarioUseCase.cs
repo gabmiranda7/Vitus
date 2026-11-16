@@ -57,6 +57,9 @@ namespace Vitus.Application.UseCases.Auth.Login
             if (usuario.Status == StatusUsuario.Recusado)
                 throw new DomainException("Seu cadastro não foi aprovado. Entre em contato com um administrador");
 
+            if (usuario.Status == StatusUsuario.Inativo)
+                throw new DomainException("Sua conta está desativada. Entre em contato com um administrador");
+
             var token = _tokenService.Generate(usuario);
 
             string? medicoId = null;

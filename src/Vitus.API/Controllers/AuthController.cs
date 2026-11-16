@@ -1,17 +1,19 @@
-﻿using System.Security.Claims;
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
+using System.Security.Claims;
+using Vitus.Application.UseCases.Auth.AlterarStatusUsuario;
 using Vitus.Application.UseCases.Auth.AprovarUsuario;
 using Vitus.Application.UseCases.Auth.AtualizarFotoPerfil;
 using Vitus.Application.UseCases.Auth.AtualizarPerfil;
+using Vitus.Application.UseCases.Auth.GetAllUsuarios;
 using Vitus.Application.UseCases.Auth.GetUsuariosPendentes;
 using Vitus.Application.UseCases.Auth.Login;
 using Vitus.Application.UseCases.Auth.ObterFotoPerfil;
 using Vitus.Application.UseCases.Auth.ObterUsuarioLogado;
-using Vitus.Application.UseCases.Auth.RemoverFotoPerfil;
 using Vitus.Application.UseCases.Auth.RecusarUsuario;
 using Vitus.Application.UseCases.Auth.Registrar;
+using Vitus.Application.UseCases.Auth.RemoverFotoPerfil;
 using Vitus.Communication.Auth.Requests;
 
 namespace Vitus.API.Controllers
@@ -54,6 +56,35 @@ namespace Vitus.API.Controllers
 
             var response = await useCase.Execute(email);
             return Ok(response);
+        }
+
+        [HttpGet("usuarios")]
+        [Authorize(Roles = "Administrador")]
+        public async Task<IActionResult> ListarUsuarios(
+            [FromServices] GetAllUsuariosUseCase useCase)
+        {
+            var response = await useCase.Execute();
+            return Ok(response);
+        }
+
+        [HttpPatch("{id}/desativar")]
+        [Authorize(Roles = "Administrador")]
+        public async Task<IActionResult> Desativar(
+            [FromServices] AlterarStatusUsuarioUseCase useCase,
+            Guid id)
+        {
+            await useCase.Execute(id, ativar: false);
+            return NoContent();
+        }
+
+        [HttpPatch("{id}/reativar")]
+        [Authorize(Roles = "Administrador")]
+        public async Task<IActionResult> Reativar(
+            [FromServices] AlterarStatusUsuarioUseCase useCase,
+            Guid id)
+        {
+            await useCase.Execute(id, ativar: true);
+            return NoContent();
         }
 
         [HttpPut("me")]

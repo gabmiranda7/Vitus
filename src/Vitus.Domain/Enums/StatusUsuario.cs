@@ -4,6 +4,7 @@
     {
         Pendente,
         Aprovado,
-        Recusado
+        Recusado,
+        Inativo
     }
 }

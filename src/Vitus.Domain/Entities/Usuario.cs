@@ -52,6 +52,25 @@ namespace Vitus.Domain.Entities
             Status = StatusUsuario.Recusado;
         }
 
+        public void Desativar()
+        {
+            if (Perfil == PerfilUsuario.Administrador)
+                throw new DomainException("Não é possível desativar uma conta de Administrador");
+
+            if (Status != StatusUsuario.Aprovado)
+                throw new DomainException("Apenas usuários ativos podem ser desativados");
+
+            Status = StatusUsuario.Inativo;
+        }
+
+        public void Reativar()
+        {
+            if (Status != StatusUsuario.Inativo)
+                throw new DomainException("Apenas usuários inativos podem ser reativados");
+
+            Status = StatusUsuario.Aprovado;
+        }
+
         public void AlterarNome(string nome)
         {
             if (string.IsNullOrWhiteSpace(nome))

@@ -9,6 +9,7 @@ namespace Vitus.Domain.Interfaces
         Task Update(Usuario usuario);
         Task<Usuario?> GetByEmail(string email);
         Task<Usuario?> GetById(Guid id);
+        Task<IList<Usuario>> GetAll();
         Task<IList<Usuario>> GetByStatus(StatusUsuario status);
     }
 }
