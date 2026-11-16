@@ -31,6 +31,7 @@ services:
       DB_PASS: ${DB_PASS}
       ConnectionStrings__DefaultConnection: "Host=db;Port=5432;Database=VitusDB;Username=${DB_USER};Password=${DB_PASS}"
       JWT_KEY: ${JWT_KEY}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY}
       ASPNETCORE_ENVIRONMENT: Production
       Storage__Raiz: /app/storage
       Storage__Templates: /app/storage/templates

@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Vitus.Domain.Entities;
+using Vitus.Infrastructure.Security;
 
 namespace Vitus.Infrastructure.Mappings
 {
@@ -20,7 +21,8 @@ namespace Vitus.Infrastructure.Mappings
                    .IsRequired();
 
             builder.Property(c => c.Anotacoes)
-                .HasMaxLength(2000);
+                   .HasMaxLength(4000)
+                   .HasConversion(new AesEncryptionConverter());
 
             builder.HasOne<Prontuario>()
                    .WithMany()

@@ -3,6 +3,7 @@ using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Scalar.AspNetCore;
 using System.Text;
@@ -12,9 +13,17 @@ using Vitus.API.Extensions;
 using Vitus.API.Middlewares;
 using Vitus.Application.Validators.Pacientes;
 using Vitus.Infrastructure.Data;
-using Microsoft.EntityFrameworkCore;
+using Vitus.Infrastructure.Security;
 
 var builder = WebApplication.CreateBuilder(args);
+
+var encryptionKey = Environment.GetEnvironmentVariable("ENCRYPTION_KEY")
+                    ?? builder.Configuration["Encryption:Key"];
+
+if (string.IsNullOrWhiteSpace(encryptionKey) || encryptionKey == "{ENCRYPTION_KEY}")
+    throw new InvalidOperationException("A chave de criptografia ENCRYPTION_KEY não está configurada.");
+
+AesEncryptionConverter.Configure(encryptionKey);
 
 builder.Services.AddApplicationServices();
 builder.Services.AddInfrastructureServices(builder.Configuration);

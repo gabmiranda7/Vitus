@@ -77,8 +77,8 @@ namespace Vitus.Infrastructure.Migrations
                         .HasColumnName("id");
 
                     b.Property<string>("Anotacoes")
-                        .HasMaxLength(2000)
-                        .HasColumnType("character varying(2000)")
+                        .HasMaxLength(4000)
+                        .HasColumnType("character varying(4000)")
                         .HasColumnName("anotacoes");
 
                     b.Property<DateTime>("DataConsulta")
@@ -390,8 +390,8 @@ namespace Vitus.Infrastructure.Migrations
 
                     b.Property<string>("Observacoes")
                         .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
                         .HasColumnName("observacoes");
 
                     b.Property<string>("PressaoArterial")

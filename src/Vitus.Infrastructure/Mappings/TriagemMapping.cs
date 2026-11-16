@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Vitus.Domain.Entities;
+using Vitus.Infrastructure.Security;
 
 namespace Vitus.Infrastructure.Mappings
 {
@@ -13,7 +14,8 @@ namespace Vitus.Infrastructure.Mappings
             builder.HasKey(t => t.Id);
 
             builder.Property(t => t.Observacoes)
-                   .HasMaxLength(500);
+                   .HasMaxLength(1000)
+                   .HasConversion(new AesEncryptionConverter());
 
             builder.Property(t => t.ConsultaId)
                 .IsRequired();
