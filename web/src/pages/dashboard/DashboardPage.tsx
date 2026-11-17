@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Box, Card, CardContent, Typography, Chip, Avatar,
@@ -52,6 +52,8 @@ const acaoLabels: Record<string, string> = {
   AprovacaoCadastro: 'Aprovação de Cadastro',
   RecusaCadastro: 'Recusa de Cadastro',
   AtualizacaoPerfil: 'Atualização de Perfil',
+  LoginSucesso: 'Login Realizado',
+  LoginFalha: 'Falha no Login',
 };
 
 const acaoCores: Record<string, string> = {
@@ -69,6 +71,8 @@ const acaoCores: Record<string, string> = {
   AprovacaoCadastro: '#388e3c',
   RecusaCadastro: '#c62828',
   AtualizacaoPerfil: '#00838f',
+  LoginSucesso: '#2e7d32',
+  LoginFalha: '#d32f2f',
 };
 
 const statusAtivos = [

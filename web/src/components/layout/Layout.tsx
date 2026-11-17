@@ -127,8 +127,8 @@ export default function Layout({ children }: { children: ReactNode }) {
         width: DRAWER_WIDTH, flexShrink: 0,
         '& .MuiDrawer-paper': {
           width: DRAWER_WIDTH, boxSizing: 'border-box',
-          bgcolor: isDark ? 'grey.900' : '#f8faff',
-          borderRight: `1px solid ${isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)'}`,
+          bgcolor: isDark ? 'grey.900' : 'background.paper',
+          borderRight: `1px solid ${isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.08)'}`,
         },
       }}>
         <Toolbar />
