@@ -20,12 +20,15 @@ import AttachFileIcon from '@mui/icons-material/AttachFile';
 import DownloadIcon from '@mui/icons-material/Download';
 import AddIcon from '@mui/icons-material/Add';
 import AccessAlarmIcon from '@mui/icons-material/AccessAlarm';
+import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import api from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
 import TratamentosAcompanhados from '../receitas/TratamentosAcompanhados';
+import ExameAnaliseIaPanel from './ExameAnaliseIaPanel';
 import { situacaoVencimento } from '../receitas/vencimento';
 import { Prontuario, Receita, Triagem, Consulta, Paciente, Exame, Medicamento } from '../../types';
 
+const MAXIMO_ARQUIVOS_EXAME = 15;
 const CATEGORIAS = ['Sangue', 'Imagem', 'Urina', 'Cardiologico', 'Fisico', 'Outro'];
 
 const categoriaLabel: Record<string, string> = {
@@ -215,6 +218,7 @@ export default function ProntuarioConteudo({
   const [erroForm, setErroForm] = useState('');
   const [erroExame, setErroExame] = useState('');
   const [uploadingId, setUploadingId] = useState<string | null>(null);
+  const [analisandoId, setAnalisandoId] = useState<string | null>(null);
 
   const isDark = theme.palette.mode === 'dark';
   const paperBg = isDark ? theme.palette.grey[900] : theme.palette.background.paper;
@@ -286,50 +290,78 @@ export default function ProntuarioConteudo({
     }
   }
 
-  async function handleUpload(exameId: string, arquivo: File) {
-    const extensoesValidas = ['.pdf', '.jpg', '.jpeg', '.png'];
-    const extensao = '.' + arquivo.name.split('.').pop()?.toLowerCase();
+  async function handleUploadMultiplo(exame: Exame, fileList: FileList) {
+    const arquivos = Array.from(fileList);
+    if (arquivos.length === 0) return;
 
-    if (!extensoesValidas.includes(extensao)) {
-      setErroExame('Formato inválido. Envie apenas PDF, JPG ou PNG.');
+    const atuais = exame.arquivos?.length ?? (exame.temArquivo ? 1 : 0);
+    if (atuais + arquivos.length > MAXIMO_ARQUIVOS_EXAME) {
+      setErroExame(`Limite máximo de ${MAXIMO_ARQUIVOS_EXAME} arquivos por exame (restam ${Math.max(0, MAXIMO_ARQUIVOS_EXAME - atuais)}).`);
       return;
     }
-    if (arquivo.size > 10 * 1024 * 1024) {
-      setErroExame('Arquivo muito grande. Tamanho máximo: 10MB.');
-      return;
+
+    const extensoesValidas = ['.pdf', '.jpg', '.jpeg', '.png'];
+    for (const arquivo of arquivos) {
+      const extensao = '.' + arquivo.name.split('.').pop()?.toLowerCase();
+      if (!extensoesValidas.includes(extensao)) {
+        setErroExame(`Formato inválido (${arquivo.name}). Envie apenas PDF, JPG ou PNG.`);
+        return;
+      }
+      if (arquivo.size > 10 * 1024 * 1024) {
+        setErroExame(`O arquivo "${arquivo.name}" excede o limite de 10MB.`);
+        return;
+      }
     }
 
     setErroExame('');
-    setUploadingId(exameId);
+    setUploadingId(exame.id);
     try {
       const formData = new FormData();
-      formData.append('arquivo', arquivo);
-      await api.post(`/api/exames/${exameId}/arquivo`, formData, {
+      arquivos.forEach(arq => formData.append('arquivos', arq));
+
+      await api.post(`/api/exames/${exame.id}/arquivos`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
       await onExamesAtualizados();
     } catch (error: any) {
       if (!error.response) {
-        setErroExame('Não foi possível enviar o arquivo. Verifique o tamanho (máx. 10MB) e sua conexão.');
+        setErroExame('Não foi possível enviar os arquivos. Verifique o tamanho (máx. 10MB cada) e sua conexão.');
       } else {
-        setErroExame(error.mensagemBack ?? 'Erro ao enviar arquivo');
+        setErroExame(error.mensagemBack ?? 'Erro ao enviar arquivos');
       }
     } finally {
       setUploadingId(null);
     }
   }
 
-  async function handleDownload(exame: Exame) {
+  async function handleDownload(exame: Exame, arquivoId?: string, nomeArquivo?: string) {
     try {
-      const r = await api.get(`/api/exames/${exame.id}/arquivo`, { responseType: 'blob' });
+      const urlReq = arquivoId
+        ? `/api/exames/${exame.id}/arquivo?arquivoId=${arquivoId}`
+        : `/api/exames/${exame.id}/arquivo`;
+
+      const r = await api.get(urlReq, { responseType: 'blob' });
       const url = URL.createObjectURL(r.data);
       const a = document.createElement('a');
       a.href = url;
-      a.download = exame.nomeArquivoOriginal ?? 'exame';
+      a.download = nomeArquivo ?? exame.nomeArquivoOriginal ?? 'exame';
       a.click();
       URL.revokeObjectURL(url);
     } catch {
       setErroExame('Erro ao baixar arquivo');
+    }
+  }
+
+  async function handleAnalisarIa(exameId: string) {
+    setErroExame('');
+    setAnalisandoId(exameId);
+    try {
+      await api.post(`/api/exames/${exameId}/analisar-ia`);
+      await onExamesAtualizados();
+    } catch (error: any) {
+      setErroExame(error.mensagemBack ?? 'Erro ao analisar exame com IA. Tente novamente em instantes.');
+    } finally {
+      setAnalisandoId(null);
     }
   }
 
@@ -866,70 +898,141 @@ export default function ProntuarioConteudo({
                 </Box>
               ) : (
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-                  {exames.map(exame => (
-                    <Paper
-                      key={exame.id}
-                      variant="outlined"
-                      sx={{
-                        p: 2,
-                        borderRadius: 2,
-                        borderLeft: `4px solid ${categoriaCor[exame.categoria] ?? '#546e7a'}`,
-                      }}
-                    >
-                      <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1 }}>
-                        <Box sx={{ flex: 1, minWidth: 0 }}>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-                            <Chip
-                              label={categoriaLabel[exame.categoria] ?? exame.categoria}
-                              size="small"
-                              sx={{ bgcolor: categoriaCor[exame.categoria] ?? '#546e7a', color: 'white', fontWeight: 600, fontSize: 11 }}
-                            />
-                            <Typography variant="body2" sx={{ fontWeight: 600 }}>{exame.nome}</Typography>
-                          </Box>
-                          <Typography variant="caption" color="text.secondary">
-                            {new Date(exame.dataExame + 'T00:00:00').toLocaleDateString('pt-BR')} · Dr(a). {exame.medicoSolicitante}
-                          </Typography>
-                          {exame.descricao && (
-                            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>{exame.descricao}</Typography>
-                          )}
-                          {exame.observacoes && (
-                            <Box sx={{ mt: 1, p: 1, bgcolor: isDark ? 'grey.800' : '#f5f5f5', borderRadius: 1 }}>
-                              <Typography variant="caption" sx={{ fontFamily: 'monospace' }}>{exame.observacoes}</Typography>
-                            </Box>
-                          )}
-                        </Box>
-                        <Box sx={{ display: 'flex', gap: 1, flexShrink: 0, alignItems: 'center' }}>
-                          {exame.temArquivo ? (
-                            <Button
-                              size="small"
-                              variant="outlined"
-                              color="success"
-                              startIcon={<DownloadIcon />}
-                              onClick={() => handleDownload(exame)}
-                            >
-                              {exame.nomeArquivoOriginal ?? 'Baixar'}
-                            </Button>
-                          ) : isMedico ? (
-                            <Button
-                              size="small"
-                              variant="outlined"
-                              startIcon={uploadingId === exame.id ? <CircularProgress size={14} /> : <AttachFileIcon />}
-                              component="label"
-                              disabled={uploadingId === exame.id}
-                            >
-                              Anexar
-                              <input
-                                type="file"
-                                hidden
-                                accept=".pdf,.jpg,.jpeg,.png"
-                                onChange={e => { const file = e.target.files?.[0]; if (file) handleUpload(exame.id, file); }}
+                  {exames.map(exame => {
+                    const listaArquivos = exame.arquivos ?? [];
+                    const totalAnexos = listaArquivos.length > 0 ? listaArquivos.length : (exame.temArquivo ? 1 : 0);
+                    const podeAnexarMais = isMedico && totalAnexos < MAXIMO_ARQUIVOS_EXAME;
+
+                    return (
+                      <Paper
+                        key={exame.id}
+                        variant="outlined"
+                        sx={{
+                          p: 2,
+                          borderRadius: 2,
+                          borderLeft: `4px solid ${categoriaCor[exame.categoria] ?? '#546e7a'}`,
+                        }}
+                      >
+                        <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1.5 }}>
+                          <Box sx={{ flex: 1, minWidth: 220 }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5, flexWrap: 'wrap' }}>
+                              <Chip
+                                label={categoriaLabel[exame.categoria] ?? exame.categoria}
+                                size="small"
+                                sx={{ bgcolor: categoriaCor[exame.categoria] ?? '#546e7a', color: 'white', fontWeight: 600, fontSize: 11 }}
                               />
-                            </Button>
-                          ) : null}
+                              <Typography variant="body2" sx={{ fontWeight: 600 }}>{exame.nome}</Typography>
+                              {totalAnexos > 0 && (
+                                <Chip
+                                  label={`${totalAnexos} anexo(s)`}
+                                  size="small"
+                                  variant="outlined"
+                                  sx={{ height: 20, fontSize: 11 }}
+                                />
+                              )}
+                            </Box>
+                            <Typography variant="caption" color="text.secondary">
+                              {new Date(exame.dataExame + 'T00:00:00').toLocaleDateString('pt-BR')} · Dr(a). {exame.medicoSolicitante}
+                            </Typography>
+                            {exame.descricao && (
+                              <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>{exame.descricao}</Typography>
+                            )}
+                            {exame.observacoes && (
+                              <Box sx={{ mt: 1, p: 1, bgcolor: isDark ? 'grey.800' : '#f5f5f5', borderRadius: 1 }}>
+                                <Typography variant="caption" sx={{ fontFamily: 'monospace' }}>{exame.observacoes}</Typography>
+                              </Box>
+                            )}
+
+                            {/* Lista de anexos disponíveis para download */}
+                            {totalAnexos > 0 && (
+                              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75, mt: 1.25 }}>
+                                {listaArquivos.length > 0 ? (
+                                  listaArquivos.map(arq => (
+                                    <Chip
+                                      key={arq.id}
+                                      icon={<DownloadIcon sx={{ fontSize: 15 }} />}
+                                      label={arq.nomeArquivoOriginal}
+                                      size="small"
+                                      color="success"
+                                      variant="outlined"
+                                      onClick={() => handleDownload(exame, arq.id, arq.nomeArquivoOriginal)}
+                                      sx={{ cursor: 'pointer', maxWidth: 260 }}
+                                    />
+                                  ))
+                                ) : (
+                                  <Chip
+                                    icon={<DownloadIcon sx={{ fontSize: 15 }} />}
+                                    label={exame.nomeArquivoOriginal ?? 'Baixar anexo'}
+                                    size="small"
+                                    color="success"
+                                    variant="outlined"
+                                    onClick={() => handleDownload(exame)}
+                                    sx={{ cursor: 'pointer', maxWidth: 260 }}
+                                  />
+                                )}
+                              </Box>
+                            )}
+                          </Box>
+
+                          {/* Ações do exame (Anexar arquivos + Analisar com IA) */}
+                          <Box sx={{ display: 'flex', gap: 1, flexShrink: 0, alignItems: 'center', flexWrap: 'wrap' }}>
+                            {podeAnexarMais && (
+                              <Button
+                                size="small"
+                                variant="outlined"
+                                startIcon={uploadingId === exame.id ? <CircularProgress size={14} /> : <AttachFileIcon />}
+                                component="label"
+                                disabled={uploadingId === exame.id || analisandoId === exame.id}
+                              >
+                                {totalAnexos > 0 ? `Anexar (${totalAnexos}/${MAXIMO_ARQUIVOS_EXAME})` : 'Anexar'}
+                                <input
+                                  type="file"
+                                  hidden
+                                  multiple
+                                  accept=".pdf,.jpg,.jpeg,.png"
+                                  onChange={e => {
+                                    if (e.target.files) {
+                                      handleUploadMultiplo(exame, e.target.files);
+                                      e.target.value = '';
+                                    }
+                                  }}
+                                />
+                              </Button>
+                            )}
+
+                            {isMedico && totalAnexos > 0 && (
+                              <Button
+                                size="small"
+                                variant={exame.analiseIaJson ? 'outlined' : 'contained'}
+                                startIcon={analisandoId === exame.id ? <CircularProgress size={14} color="inherit" /> : <AutoAwesomeIcon />}
+                                onClick={() => handleAnalisarIa(exame.id)}
+                                disabled={analisandoId === exame.id || uploadingId === exame.id}
+                                sx={
+                                  exame.analiseIaJson
+                                    ? { borderColor: '#7b1fa2', color: '#7b1fa2', '&:hover': { borderColor: '#6a1b9a', bgcolor: 'rgba(123, 31, 162, 0.06)' } }
+                                    : { bgcolor: '#7b1fa2', '&:hover': { bgcolor: '#6a1b9a' } }
+                                }
+                              >
+                                {analisandoId === exame.id
+                                  ? 'Analisando...'
+                                  : exame.analiseIaJson
+                                    ? 'Reanalisar'
+                                    : 'Analisar com IA'}
+                              </Button>
+                            )}
+                          </Box>
                         </Box>
-                      </Box>
-                    </Paper>
-                  ))}
+
+                        {/* Painel estruturado com o resultado da IA */}
+                        {exame.analiseIaJson && (
+                          <ExameAnaliseIaPanel
+                            analiseIaJson={exame.analiseIaJson}
+                            dataAnaliseIa={exame.dataAnaliseIa}
+                          />
+                        )}
+                      </Paper>
+                    );
+                  })}
                 </Box>
               )}
             </Box>

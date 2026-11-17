@@ -1,18 +1,18 @@
 export interface AcompanhamentoPaciente {
-    pacienteId: string;
-    prontuarioId: string;
-    tratamentos: Tratamento[];
+  pacienteId: string;
+  prontuarioId: string;
+  tratamentos: Tratamento[];
 }
 
 export interface AuditoriaLog {
-    id: string;
-    usuarioId: string;
-    usuarioNome: string;
-    acao: string;
-    entidadeAfetada: string;
-    entidadeId: string;
-    dataHora: string;
-    detalhes?: string;
+  id: string;
+  usuarioId: string;
+  usuarioNome: string;
+  acao: string;
+  entidadeAfetada: string;
+  entidadeId: string;
+  dataHora: string;
+  detalhes?: string;
 }
 
 export interface Consulta {
@@ -24,6 +24,27 @@ export interface Consulta {
   nomePaciente: string;
   nomeMedico: string;
   anotacoes?: string;
+}
+
+export interface ExameArquivo {
+  id: string;
+  nomeArquivoOriginal: string;
+  dataUpload: string;
+}
+
+export interface ParametroAlteradoIa {
+  nome: string;
+  valorEncontrado: string;
+  valorReferencia: string;
+  status: string;
+  observacaoClinica: string;
+}
+
+export interface AnaliseExameIa {
+  resumoGeral: string;
+  parametrosAlterados: ParametroAlteradoIa[];
+  parametrosNormais: string[];
+  pontosDeAtencao: string[];
 }
 
 export interface Exame {
@@ -38,6 +59,9 @@ export interface Exame {
   observacoes?: string;
   nomeArquivoOriginal?: string;
   temArquivo: boolean;
+  arquivos?: ExameArquivo[];
+  analiseIaJson?: string | null;
+  dataAnaliseIa?: string | null;
 }
 
 export interface Medicamento {
@@ -50,11 +74,11 @@ export interface Medicamento {
 }
 
 export interface Medico {
-    id: string;
-    nome: string;
-    especialidade: string;
-    crm: string;
-    medicoId: string;
+  id: string;
+  nome: string;
+  especialidade: string;
+  crm: string;
+  medicoId: string;
 }
 
 export interface Paciente {
@@ -74,45 +98,45 @@ export interface Paciente {
 }
 
 export interface Prontuario {
-    id: string;
-    pacienteId: string;
-    triagens: Triagem[];
-    consultas: Consulta[];
-    receitas: Receita[];
-    tratamentos: Tratamento[];
+  id: string;
+  pacienteId: string;
+  triagens: Triagem[];
+  consultas: Consulta[];
+  receitas: Receita[];
+  tratamentos: Tratamento[];
 }
 
 export interface Receita {
-    id: string;
-    consultaId: string;
-    dataEmissao: string;
-    medicamentos: Medicamento[];
+  id: string;
+  consultaId: string;
+  dataEmissao: string;
+  medicamentos: Medicamento[];
 }
 
 export interface Tratamento {
-    medicamento: string;
-    receitaId: string;
-    dataEmissao: string;
-    validadeDias: number;
-    dataVencimento: string;
-    diasRestantes: number;
+  medicamento: string;
+  receitaId: string;
+  dataEmissao: string;
+  validadeDias: number;
+  dataVencimento: string;
+  diasRestantes: number;
 }
 
 export interface Triagem {
-    id: string;
-    prontuarioId: string;
-    consultaId: string;
-    observacoes: string;
-    pressaoArterial: string;
-    temperatura: number;
-    nomeEnfermeiro: string;
+  id: string;
+  prontuarioId: string;
+  consultaId: string;
+  observacoes: string;
+  pressaoArterial: string;
+  temperatura: number;
+  nomeEnfermeiro: string;
 }
 
 export interface Usuario {
-    token: string;
-    nome: string;
-    email: string;
-    perfil: string;
-    medicoId?: string;
-    temFoto?: boolean;
+  token: string;
+  nome: string;
+  email: string;
+  perfil: string;
+  medicoId?: string;
+  temFoto?: boolean;
 }
