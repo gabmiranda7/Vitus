@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Vitus.Communication.Exame.Responses;
+using Vitus.Domain.Entities;
 using Vitus.Domain.Enums;
 using Vitus.Domain.Exceptions;
 using Vitus.Domain.Interfaces;
@@ -31,30 +32,49 @@ namespace Vitus.Application.UseCases.Exames.AnexarArquivo
             _auditoriaService = auditoriaService;
         }
 
-        public async Task<ExameResponseJson> Execute(Guid exameId, IFormFile arquivo)
+        // Mantém compatibilidade com o endpoint atual POST /api/exames/{id}/arquivo
+        public Task<ExameResponseJson> Execute(Guid exameId, IFormFile arquivo)
+            => Execute(exameId, new List<IFormFile> { arquivo });
+
+        // Novo suporte para múltiplos arquivos (até 15)
+        public async Task<ExameResponseJson> Execute(Guid exameId, IList<IFormFile> arquivos)
         {
+            if (arquivos == null || arquivos.Count == 0)
+                throw new DomainException("Selecione ao menos um arquivo.");
+
             var exame = await _exameRepository.GetById(exameId);
 
             if (exame == null)
                 throw new DomainException("Exame não encontrado");
 
-            var extensao = Path.GetExtension(arquivo.FileName).ToLowerInvariant();
+            if (exame.TotalArquivos() + arquivos.Count > Exame.MaximoArquivos)
+                throw new DomainException($"Limite máximo de {Exame.MaximoArquivos} arquivos por exame.");
 
-            if (!AssinaturasValidas.ContainsKey(extensao))
-                throw new DomainException("Formato inválido. Use PDF, JPG ou PNG");
+            foreach (var arquivo in arquivos)
+            {
+                var extensao = Path.GetExtension(arquivo.FileName).ToLowerInvariant();
 
-            if (arquivo.Length > 10 * 1024 * 1024)
-                throw new DomainException("Arquivo muito grande. Tamanho máximo: 10MB");
+                if (!AssinaturasValidas.ContainsKey(extensao))
+                    throw new DomainException($"Formato inválido ({arquivo.FileName}). Use PDF, JPG ou PNG");
 
-            await ValidarConteudoReal(arquivo, extensao);
+                if (arquivo.Length > 10 * 1024 * 1024)
+                    throw new DomainException($"Arquivo {arquivo.FileName} muito grande. Tamanho máximo: 10MB");
 
-            using var stream = arquivo.OpenReadStream();
-            var caminho = await _arquivoService.Salvar(stream, arquivo.FileName, "exames");
+                await ValidarConteudoReal(arquivo, extensao);
 
-            exame.AnexarArquivo(caminho, arquivo.FileName);
+                using var stream = arquivo.OpenReadStream();
+                var caminho = await _arquivoService.Salvar(stream, arquivo.FileName, "exames");
+
+                exame.AnexarArquivo(caminho, arquivo.FileName);
+            }
+
             await _exameRepository.Update(exame);
 
-            await _auditoriaService.Registrar(AcaoAuditoria.AnexoExame, "Exame", exame.Id, $"Prontuário {exame.ProntuarioId}");
+            await _auditoriaService.Registrar(
+                AcaoAuditoria.AnexoExame,
+                "Exame",
+                exame.Id,
+                $"Prontuário {exame.ProntuarioId} (+{arquivos.Count} arquivo(s))");
 
             return RegistrarExameUseCase.MapToResponse(exame);
         }
@@ -69,14 +89,14 @@ namespace Vitus.Application.UseCases.Exames.AnexarArquivo
             {
                 var bytesLidos = await stream.ReadAsync(buffer, 0, buffer.Length);
                 if (bytesLidos < tamanhoMaximoAssinatura)
-                    throw new DomainException("Arquivo corrompido ou inválido");
+                    throw new DomainException($"Arquivo corrompido ou inválido: {arquivo.FileName}");
             }
 
             var valido = assinaturas.Any(assinatura =>
                 buffer.Take(assinatura.Length).SequenceEqual(assinatura));
 
             if (!valido)
-                throw new DomainException("O conteúdo do arquivo não corresponde ao formato declarado");
+                throw new DomainException($"O conteúdo de {arquivo.FileName} não corresponde ao formato declarado");
         }
     }
 }

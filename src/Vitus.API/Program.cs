@@ -25,7 +25,7 @@ if (string.IsNullOrWhiteSpace(encryptionKey) || encryptionKey == "{ENCRYPTION_KE
 
 AesEncryptionConverter.Configure(encryptionKey);
 
-builder.Services.AddApplicationServices();
+builder.Services.AddApplicationServices(builder.Configuration);
 builder.Services.AddInfrastructureServices(builder.Configuration);
 
 var jwtKey = Environment.GetEnvironmentVariable("JWT_KEY") ?? builder.Configuration["JWT_KEY"];

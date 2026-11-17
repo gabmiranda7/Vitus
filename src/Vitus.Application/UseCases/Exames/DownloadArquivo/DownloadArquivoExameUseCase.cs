@@ -21,21 +21,49 @@ namespace Vitus.Application.UseCases.Exames.DownloadArquivo
             _auditoriaService = auditoriaService;
         }
 
-        public async Task<ArquivoDownloadResult> Execute(Guid exameId)
+        public async Task<ArquivoDownloadResult> Execute(Guid exameId, Guid? arquivoId = null)
         {
             var exame = await _exameRepository.GetById(exameId);
 
             if (exame == null)
                 throw new DomainException("Exame não encontrado");
 
-            if (exame.CaminhoArquivo == null)
+            string? caminho;
+            string? nomeOriginal;
+
+            if (arquivoId.HasValue && exame.Arquivos.Count > 0)
+            {
+                var item = exame.Arquivos.FirstOrDefault(a => a.Id == arquivoId.Value);
+                if (item == null)
+                    throw new DomainException("Arquivo não encontrado neste exame");
+
+                caminho = item.CaminhoArquivo;
+                nomeOriginal = item.NomeArquivoOriginal;
+            }
+            else if (exame.Arquivos.Count > 0)
+            {
+                var primeiro = exame.Arquivos.OrderBy(a => a.DataUpload).First();
+                caminho = primeiro.CaminhoArquivo;
+                nomeOriginal = primeiro.NomeArquivoOriginal;
+            }
+            else
+            {
+                caminho = exame.CaminhoArquivo;
+                nomeOriginal = exame.NomeArquivoOriginal;
+            }
+
+            if (string.IsNullOrEmpty(caminho))
                 throw new DomainException("Exame não possui arquivo anexado");
 
-            var conteudo = await _arquivoService.Ler(exame.CaminhoArquivo);
+            var conteudo = await _arquivoService.Ler(caminho);
 
-            await _auditoriaService.Registrar(AcaoAuditoria.DownloadExame, "Exame", exame.Id, $"Prontuário {exame.ProntuarioId}");
+            await _auditoriaService.Registrar(
+                AcaoAuditoria.DownloadExame,
+                "Exame",
+                exame.Id,
+                $"Prontuário {exame.ProntuarioId}");
 
-            var extensao = Path.GetExtension(exame.NomeArquivoOriginal ?? "").ToLowerInvariant();
+            var extensao = Path.GetExtension(nomeOriginal ?? "").ToLowerInvariant();
 
             var contentType = extensao switch
             {
@@ -45,7 +73,7 @@ namespace Vitus.Application.UseCases.Exames.DownloadArquivo
                 _ => "application/octet-stream"
             };
 
-            return new ArquivoDownloadResult(conteudo, contentType, exame.NomeArquivoOriginal ?? "arquivo");
+            return new ArquivoDownloadResult(conteudo, contentType, nomeOriginal ?? "arquivo");
         }
     }
 }

@@ -1,5 +1,12 @@
 ﻿namespace Vitus.Communication.Exame.Responses
 {
+    public class ExameArquivoResponseJson
+    {
+        public Guid Id { get; set; }
+        public string NomeArquivoOriginal { get; set; } = string.Empty;
+        public DateTime DataUpload { get; set; }
+    }
+
     public class ExameResponseJson
     {
         public Guid Id { get; set; }
@@ -13,5 +20,8 @@
         public string? Observacoes { get; set; }
         public string? NomeArquivoOriginal { get; set; }
         public bool TemArquivo { get; set; }
+        public List<ExameArquivoResponseJson> Arquivos { get; set; } = new();
+        public string? AnaliseIaJson { get; set; }
+        public DateTime? DataAnaliseIa { get; set; }
     }
 }

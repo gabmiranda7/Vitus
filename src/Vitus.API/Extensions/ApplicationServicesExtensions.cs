@@ -20,6 +20,7 @@ using Vitus.Application.UseCases.Consultas.GetAllConsultas;
 using Vitus.Application.UseCases.Consultas.GetConsultaById;
 using Vitus.Application.UseCases.Consultas.IniciarAtendimento;
 using Vitus.Application.UseCases.Consultas.IniciarTriagem;
+using Vitus.Application.UseCases.Exames.AnalisarExameIa;
 using Vitus.Application.UseCases.Exames.AnexarArquivo;
 using Vitus.Application.UseCases.Exames.DownloadArquivo;
 using Vitus.Application.UseCases.Exames.GetExamesByProntuario;
@@ -39,13 +40,16 @@ using Vitus.Application.UseCases.Receitas.CriarReceita;
 using Vitus.Application.UseCases.Receitas.GerarReceita;
 using Vitus.Application.UseCases.Triagens.RegistrarTriagem;
 using Vitus.Domain.Interfaces;
+using Vitus.Infrastructure.Configurations;
 using Vitus.Infrastructure.Services;
 
 namespace Vitus.API.Extensions
 {
     public static class ApplicationServicesExtensions
     {
-        public static IServiceCollection AddApplicationServices(this IServiceCollection services)
+        public static IServiceCollection AddApplicationServices(
+            this IServiceCollection services,
+            IConfiguration configuration)
         {
             services.AddScoped<GetAuditoriaLogsUseCase>();
             services.AddScoped<IAuditoriaService, AuditoriaService>();
@@ -77,6 +81,15 @@ namespace Vitus.API.Extensions
             services.AddScoped<DownloadArquivoExameUseCase>();
             services.AddScoped<GetExamesByProntuarioUseCase>();
             services.AddScoped<RegistrarExameUseCase>();
+            services.AddScoped<AnalisarExameIaUseCase>();
+
+            services.Configure<GeminiSettings>(
+                configuration.GetSection(GeminiSettings.SectionName));
+
+            services.AddHttpClient<IAnalisadorExameIaService, GeminiAnalisadorExameService>(client =>
+            {
+                client.Timeout = TimeSpan.FromSeconds(90);
+            });
 
             services.AddScoped<GetAllMedicosUseCase>();
             services.AddScoped<GetMedicoByIdUseCase>();

@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Vitus.Application.UseCases.Exames.AnalisarExameIa;
 using Vitus.Application.UseCases.Exames.AnexarArquivo;
 using Vitus.Application.UseCases.Exames.DownloadArquivo;
 using Vitus.Application.UseCases.Exames.GetExamesByProntuario;
@@ -43,13 +44,36 @@ namespace Vitus.API.Controllers
             return Ok(response);
         }
 
+        [HttpPost("{id}/arquivos")]
+        [Authorize(Roles = "Medico")]
+        public async Task<IActionResult> AnexarMultiplosArquivos(
+            [FromServices] AnexarArquivoExameUseCase useCase,
+            Guid id,
+            List<IFormFile> arquivos)
+        {
+            var response = await useCase.Execute(id, arquivos);
+            return Ok(response);
+        }
+
         [HttpGet("{id}/arquivo")]
         public async Task<IActionResult> DownloadArquivo(
             [FromServices] DownloadArquivoExameUseCase useCase,
-            Guid id)
+            Guid id,
+            [FromQuery] Guid? arquivoId = null)
         {
-            var resultado = await useCase.Execute(id);
+            var resultado = await useCase.Execute(id, arquivoId);
             return File(resultado.Conteudo, resultado.ContentType, resultado.NomeArquivo);
+        }
+
+        [HttpPost("{id}/analisar-ia")]
+        [Authorize(Roles = "Medico")]
+        public async Task<IActionResult> AnalisarComIa(
+            [FromServices] AnalisarExameIaUseCase useCase,
+            Guid id,
+            CancellationToken ct)
+        {
+            var response = await useCase.Execute(id, ct);
+            return Ok(response);
         }
     }
 }

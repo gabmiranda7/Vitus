@@ -67,19 +67,46 @@ namespace Vitus.Application.UseCases.Exames.RegistrarExame
             return MapToResponse(exame);
         }
 
-        public static ExameResponseJson MapToResponse(Exame e) => new()
+        public static ExameResponseJson MapToResponse(Exame exame)
         {
-            Id = e.Id,
-            ProntuarioId = e.ProntuarioId,
-            ConsultaId = e.ConsultaId,
-            Categoria = e.Categoria.ToString(),
-            Nome = e.Nome,
-            Descricao = e.Descricao,
-            MedicoSolicitante = e.MedicoSolicitante,
-            DataExame = e.DataExame,
-            Observacoes = e.Observacoes,
-            NomeArquivoOriginal = e.NomeArquivoOriginal,
-            TemArquivo = e.CaminhoArquivo != null
-        };
+            var arquivos = exame.Arquivos
+                .OrderBy(a => a.DataUpload)
+                .Select(a => new ExameArquivoResponseJson
+                {
+                    Id = a.Id,
+                    NomeArquivoOriginal = a.NomeArquivoOriginal,
+                    DataUpload = a.DataUpload
+                })
+                .ToList();
+
+            // Retrocompatibilidade para exames antigos que tinham apenas CaminhoArquivo
+            if (arquivos.Count == 0 && !string.IsNullOrEmpty(exame.CaminhoArquivo))
+            {
+                arquivos.Add(new ExameArquivoResponseJson
+                {
+                    Id = exame.Id,
+                    NomeArquivoOriginal = exame.NomeArquivoOriginal ?? "exame",
+                    DataUpload = exame.DataExame.ToDateTime(TimeOnly.MinValue)
+                });
+            }
+
+            return new ExameResponseJson
+            {
+                Id = exame.Id,
+                ProntuarioId = exame.ProntuarioId,
+                ConsultaId = exame.ConsultaId,
+                Categoria = exame.Categoria.ToString(),
+                Nome = exame.Nome,
+                Descricao = exame.Descricao,
+                MedicoSolicitante = exame.MedicoSolicitante,
+                DataExame = exame.DataExame,
+                Observacoes = exame.Observacoes,
+                NomeArquivoOriginal = exame.NomeArquivoOriginal,
+                TemArquivo = arquivos.Count > 0,
+                Arquivos = arquivos,
+                AnaliseIaJson = exame.AnaliseIaJson,
+                DataAnaliseIa = exame.DataAnaliseIa
+            };
+        }
     }
 }
