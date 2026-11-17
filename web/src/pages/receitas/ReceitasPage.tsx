@@ -51,6 +51,44 @@ const medVazio = (): Medicamento => ({
   acompanharVencimento: false, validadeDias: null,
 });
 
+interface MedicamentoAgrupado {
+  nome: string;
+  dosagem?: string;
+  posologia?: string;
+  quantidade?: string;
+  ocorrencias: number;
+}
+
+function agruparMedicamentos(lista: Medicamento[]): MedicamentoAgrupado[] {
+  const mapa = new Map<string, MedicamentoAgrupado>();
+  for (const m of lista) {
+    const chave = [
+      (m.nome ?? '').trim().toLowerCase(),
+      (m.dosagem ?? '').trim().toLowerCase(),
+      (m.posologia ?? '').trim().toLowerCase(),
+    ].join('|');
+
+    const existente = mapa.get(chave);
+    if (existente) {
+      existente.ocorrencias += 1;
+      if (m.quantidade && !existente.quantidade?.includes(m.quantidade)) {
+        existente.quantidade = existente.quantidade
+          ? `${existente.quantidade} + ${m.quantidade}`
+          : m.quantidade;
+      }
+    } else {
+      mapa.set(chave, {
+        nome: m.nome,
+        dosagem: m.dosagem,
+        posologia: m.posologia,
+        quantidade: m.quantidade,
+        ocorrencias: 1,
+      });
+    }
+  }
+  return Array.from(mapa.values());
+}
+
 export default function ReceitasPage() {
   const { usuario } = useAuth();
   const [pacientes, setPacientes] = useState<Paciente[]>([]);
@@ -132,7 +170,7 @@ export default function ReceitasPage() {
     if (!consultaId) return setErro('Selecione uma consulta');
     if (medicamentos.some(m => !m.nome.trim())) return setErro('Preencha o nome de todos os medicamentos');
     if (medicamentos.some(m => m.acompanharVencimento && !(m.validadeDias && m.validadeDias >= 1 && m.validadeDias <= 730)))
-    return setErro('Informe a validade (1 a 730 dias) dos medicamentos acompanhados');
+      return setErro('Informe a validade (1 a 730 dias) dos medicamentos acompanhados');
 
     setGerando(true);
     try {
@@ -367,6 +405,7 @@ export default function ReceitasPage() {
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             {receitas.map((receita) => {
               const consulta = prontuario?.consultas.find(c => c.id === receita.consultaId);
+              const medsAgrupados = agruparMedicamentos(receita.medicamentos);
               return (
                 <Card key={receita.id} sx={{ borderRadius: 2 }}>
                   <CardContent sx={{ p: 2.5 }}>
@@ -379,19 +418,34 @@ export default function ReceitasPage() {
                             : 'Receita'}
                         </Typography>
                       </Box>
-                      <Chip label={`${receita.medicamentos.length} medicamento(s)`} size="small" color="success" variant="outlined" />
+                      <Chip
+                        label={`${medsAgrupados.length} medicamento(s)`}
+                        size="small"
+                        color="success"
+                        variant="outlined"
+                      />
                     </Box>
                     <Divider sx={{ mb: 2 }} />
                     <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5 }}>
-                      {receita.medicamentos.map((m, i) => (
+                      {medsAgrupados.map((m, i) => (
                         <Paper key={i} variant="outlined" sx={{
                           p: 1.5, borderRadius: 2, flex: '1 1 180px',
                           maxWidth: { xs: '100%', sm: 'calc(50% - 6px)', md: 'calc(33.33% - 8px)' },
                           borderLeft: '3px solid #2e7d32',
                         }}>
-                          <Typography variant="body2" sx={{ fontWeight: 600 }}>{m.nome}</Typography>
+                          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
+                            <Typography variant="body2" sx={{ fontWeight: 600 }}>{m.nome}</Typography>
+                            {m.ocorrencias > 1 && (
+                              <Chip
+                                label={`${m.ocorrencias}x`}
+                                size="small"
+                                color="success"
+                                sx={{ height: 20, fontSize: 11, fontWeight: 700 }}
+                              />
+                            )}
+                          </Box>
                           <Typography variant="caption" color="text.secondary">
-                            {m.dosagem && `${m.dosagem} · `}{m.posologia}
+                            {[m.dosagem, m.quantidade, m.posologia].filter(Boolean).join(' · ')}
                           </Typography>
                         </Paper>
                       ))}

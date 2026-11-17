@@ -24,7 +24,7 @@ import api from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
 import TratamentosAcompanhados from '../receitas/TratamentosAcompanhados';
 import { situacaoVencimento } from '../receitas/vencimento';
-import { Prontuario, Receita, Triagem, Consulta, Paciente, Exame } from '../../types';
+import { Prontuario, Receita, Triagem, Consulta, Paciente, Exame, Medicamento } from '../../types';
 
 const CATEGORIAS = ['Sangue', 'Imagem', 'Urina', 'Cardiologico', 'Fisico', 'Outro'];
 
@@ -81,6 +81,52 @@ function formatarSus(sus?: string) {
   if (!sus) return '';
   const s = sus.replace(/\D/g, '');
   return s.length === 15 ? `${s.slice(0, 3)}.${s.slice(3, 7)}.${s.slice(7, 11)}.${s.slice(11)}` : sus;
+}
+
+interface MedicamentoAgrupado {
+  nome: string;
+  dosagem?: string;
+  posologia?: string;
+  quantidade?: string;
+  acompanharVencimento?: boolean;
+  validadeDias?: number | null;
+  ocorrencias: number;
+}
+
+function agruparMedicamentos(lista: Medicamento[]): MedicamentoAgrupado[] {
+  const mapa = new Map<string, MedicamentoAgrupado>();
+  for (const m of lista) {
+    const chave = [
+      (m.nome ?? '').trim().toLowerCase(),
+      (m.dosagem ?? '').trim().toLowerCase(),
+      (m.posologia ?? '').trim().toLowerCase(),
+    ].join('|');
+
+    const existente = mapa.get(chave);
+    if (existente) {
+      existente.ocorrencias += 1;
+      if (m.quantidade && !existente.quantidade?.includes(m.quantidade)) {
+        existente.quantidade = existente.quantidade
+          ? `${existente.quantidade} + ${m.quantidade}`
+          : m.quantidade;
+      }
+      if (m.acompanharVencimento && m.validadeDias) {
+        existente.acompanharVencimento = true;
+        existente.validadeDias = m.validadeDias;
+      }
+    } else {
+      mapa.set(chave, {
+        nome: m.nome,
+        dosagem: m.dosagem,
+        posologia: m.posologia,
+        quantidade: m.quantidade,
+        acompanharVencimento: m.acompanharVencimento,
+        validadeDias: m.validadeDias,
+        ocorrencias: 1,
+      });
+    }
+  }
+  return Array.from(mapa.values());
 }
 
 interface ConsultaAgrupada {
@@ -568,18 +614,33 @@ export default function ProntuarioConteudo({
                                   <MedicationIcon fontSize="small" color="success" />
                                   <Typography variant="caption" sx={{ fontWeight: 600, color: 'success.main', textTransform: 'uppercase', letterSpacing: 0.5 }}>Receitas Prescritas</Typography>
                                 </Box>
-                                {receitas.map((receita) => (
-                                  <Box key={receita.id} sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 1 }}>
-                                    {receita.medicamentos.map((m, i) => (
-                                      <Box key={i} sx={{ flex: '1 1 180px', maxWidth: { xs: '100%', sm: 'calc(50% - 4px)', md: 'calc(33.33% - 5px)' } }}>
-                                        <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 1, bgcolor: paperBg }}>
-                                          <Typography variant="body2" sx={{ fontWeight: 600 }}>{m.nome}</Typography>
-                                          <Typography variant="caption" color="text.secondary">{m.dosagem} · {m.posologia}</Typography>
-                                        </Paper>
-                                      </Box>
-                                    ))}
-                                  </Box>
-                                ))}
+                                {receitas.map((receita) => {
+                                  const medsAgrupados = agruparMedicamentos(receita.medicamentos);
+                                  return (
+                                    <Box key={receita.id} sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 1 }}>
+                                      {medsAgrupados.map((m, i) => (
+                                        <Box key={i} sx={{ flex: '1 1 180px', maxWidth: { xs: '100%', sm: 'calc(50% - 4px)', md: 'calc(33.33% - 5px)' } }}>
+                                          <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 1, bgcolor: paperBg }}>
+                                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
+                                              <Typography variant="body2" sx={{ fontWeight: 600 }}>{m.nome}</Typography>
+                                              {m.ocorrencias > 1 && (
+                                                <Chip
+                                                  label={`${m.ocorrencias}x`}
+                                                  size="small"
+                                                  color="success"
+                                                  sx={{ height: 18, fontSize: 10, fontWeight: 700 }}
+                                                />
+                                              )}
+                                            </Box>
+                                            <Typography variant="caption" color="text.secondary">
+                                              {[m.dosagem, m.posologia].filter(Boolean).join(' · ')}
+                                            </Typography>
+                                          </Paper>
+                                        </Box>
+                                      ))}
+                                    </Box>
+                                  );
+                                })}
                               </Box>
                             )}
                             {!t && !c.anotacoes && receitas.length === 0 && (
@@ -599,10 +660,10 @@ export default function ProntuarioConteudo({
         </Card>
       )}
 
-    {/* ABA 2: Tratamentos Acompanhados */}
-    {abaAtiva === 2 && (
-      <TratamentosAcompanhados tratamentos={tratamentos} recolhivel={false} />
-    )}
+      {/* ABA 2: Tratamentos Acompanhados */}
+      {abaAtiva === 2 && (
+        <TratamentosAcompanhados tratamentos={tratamentos} recolhivel={false} />
+      )}
 
       {/* ABA 3: Receitas */}
       {abaAtiva === 3 && (
@@ -623,6 +684,7 @@ export default function ProntuarioConteudo({
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                 {receitasOrdenadas.map(receita => {
                   const consulta = consultaPorId.get(receita.consultaId);
+                  const medsAgrupados = agruparMedicamentos(receita.medicamentos);
                   return (
                     <Paper
                       key={receita.id}
@@ -636,12 +698,12 @@ export default function ProntuarioConteudo({
                           </Typography>
                           {consulta && (
                             <Typography variant="caption" color="text.secondary">
-                              Dr(a). {consulta.nomeMedico}
+                              {consulta.nomeMedico}
                             </Typography>
                           )}
                         </Box>
                         <Chip
-                          label={`${receita.medicamentos.length} medicamento(s)`}
+                          label={`${medsAgrupados.length} medicamento(s)`}
                           size="small"
                           color="success"
                           variant="outlined"
@@ -649,15 +711,25 @@ export default function ProntuarioConteudo({
                       </Box>
 
                       <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5 }}>
-                        {receita.medicamentos.map((m, idx) => (
+                        {medsAgrupados.map((m, idx) => (
                           <Box
                             key={idx}
                             sx={{ flex: '1 1 220px', maxWidth: { xs: '100%', sm: 'calc(50% - 6px)', md: 'calc(33.33% - 8px)' } }}
                           >
                             <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 1.5, bgcolor: timelineBg, height: '100%' }}>
-                              <Typography variant="body2" sx={{ fontWeight: 700 }}>{m.nome}</Typography>
+                              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
+                                <Typography variant="body2" sx={{ fontWeight: 700 }}>{m.nome}</Typography>
+                                {m.ocorrencias > 1 && (
+                                  <Chip
+                                    label={`${m.ocorrencias}x`}
+                                    size="small"
+                                    color="success"
+                                    sx={{ height: 20, fontSize: 11, fontWeight: 700 }}
+                                  />
+                                )}
+                              </Box>
                               <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.25 }}>
-                                {m.dosagem} · {m.posologia}
+                                {[m.dosagem, m.posologia].filter(Boolean).join(' · ')}
                               </Typography>
                               {m.quantidade && (
                                 <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
@@ -866,4 +938,4 @@ export default function ProntuarioConteudo({
       )}
     </>
   );
-} 
+}

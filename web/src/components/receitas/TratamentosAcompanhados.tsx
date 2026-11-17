@@ -3,7 +3,12 @@ import EventRepeatIcon from '@mui/icons-material/EventRepeat';
 import { Tratamento } from '../../types';
 import { dataVencimentoBr, situacaoVencimento } from './vencimento';
 
-export default function TratamentosAcompanhados({ tratamentos }: { tratamentos: Tratamento[] }) {
+interface TratamentosAcompanhadosProps {
+  tratamentos: Tratamento[];
+  recolhivel?: boolean;
+}
+
+export default function TratamentosAcompanhados({ tratamentos }: TratamentosAcompanhadosProps) {
   return (
     <Card sx={{ borderRadius: 3 }}>
       <CardContent sx={{ p: 2.5 }}>
@@ -20,11 +25,11 @@ export default function TratamentosAcompanhados({ tratamentos }: { tratamentos: 
           </Box>
         ) : (
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-            {tratamentos.map((t) => {
+            {tratamentos.map((t, i) => {
               const s = situacaoVencimento(t.diasRestantes);
               return (
                 <Paper
-                  key={`${t.receitaId}-${t.medicamento}`}
+                  key={`${t.receitaId}-${t.medicamento}-${i}`}
                   variant="outlined"
                   sx={{
                     p: 2,
