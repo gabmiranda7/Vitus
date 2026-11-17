@@ -17,6 +17,7 @@
         RecusaCadastro,
         AtualizacaoPerfil,
         LoginSucesso,
-        LoginFalha
+        LoginFalha,
+        AnaliseIaExame
     }
 }

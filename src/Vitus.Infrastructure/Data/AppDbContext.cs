@@ -9,6 +9,7 @@ namespace Vitus.Infrastructure.Data
         public DbSet<Consulta> Consultas { get; set; }
         public DbSet<Enfermeiro> Enfermeiros { get; set; }
         public DbSet<Exame> Exames { get; set; }
+        public DbSet<ExameArquivo> ExameArquivos { get; set; }
         public DbSet<Medico> Medicos { get; set; }
         public DbSet<Paciente> Pacientes { get; set; }
         public DbSet<Prontuario> Prontuarios { get; set; }
@@ -24,6 +25,10 @@ namespace Vitus.Infrastructure.Data
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
+
+            modelBuilder.Entity<ExameArquivo>()
+                .Property(a => a.Id)
+                .ValueGeneratedNever();
         }
     }
 }

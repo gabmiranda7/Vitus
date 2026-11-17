@@ -23,7 +23,7 @@ namespace Vitus.Infrastructure.Repositories
         public async Task<Exame?> GetById(Guid id)
         {
             return await _context.Exames
-                .AsNoTracking()
+                .Include(e => e.Arquivos)
                 .FirstOrDefaultAsync(e => e.Id == id);
         }
 
@@ -31,6 +31,7 @@ namespace Vitus.Infrastructure.Repositories
         {
             return await _context.Exames
                 .AsNoTracking()
+                .Include(e => e.Arquivos)
                 .Where(e => e.ProntuarioId == prontuarioId)
                 .OrderByDescending(e => e.DataExame)
                 .ToListAsync();
@@ -38,7 +39,20 @@ namespace Vitus.Infrastructure.Repositories
 
         public async Task Update(Exame exame)
         {
-            _context.Exames.Update(exame);
+            if (_context.Entry(exame).State == EntityState.Detached)
+            {
+                _context.Exames.Update(exame);
+            }
+
+            foreach (var arquivo in exame.Arquivos)
+            {
+                var entry = _context.Entry(arquivo);
+                if (entry.State == EntityState.Detached)
+                {
+                    entry.State = EntityState.Added;
+                }
+            }
+
             await _context.SaveChangesAsync();
         }
     }

@@ -155,6 +155,10 @@ namespace Vitus.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
+                    b.Property<string>("AnaliseIaJson")
+                        .HasColumnType("text")
+                        .HasColumnName("analise_ia_json");
+
                     b.Property<string>("CaminhoArquivo")
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)")
@@ -168,6 +172,10 @@ namespace Vitus.Infrastructure.Migrations
                     b.Property<Guid?>("ConsultaId")
                         .HasColumnType("uuid")
                         .HasColumnName("consulta_id");
+
+                    b.Property<DateTime?>("DataAnaliseIa")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("data_analise_ia");
 
                     b.Property<DateOnly>("DataExame")
                         .HasColumnType("date")
@@ -211,6 +219,39 @@ namespace Vitus.Infrastructure.Migrations
                         .HasDatabaseName("ix_exames_prontuario_id");
 
                     b.ToTable("exames", (string)null);
+                });
+
+            modelBuilder.Entity("Vitus.Domain.Entities.ExameArquivo", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("CaminhoArquivo")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("caminho_arquivo");
+
+                    b.Property<DateTime>("DataUpload")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("data_upload");
+
+                    b.Property<Guid>("ExameId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("exame_id");
+
+                    b.Property<string>("NomeArquivoOriginal")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("nome_arquivo_original");
+
+                    b.HasKey("Id")
+                        .HasName("pk_exame_arquivos");
+
+                    b.HasIndex("ExameId")
+                        .HasDatabaseName("ix_exame_arquivos_exame_id");
+
+                    b.ToTable("exame_arquivos", (string)null);
                 });
 
             modelBuilder.Entity("Vitus.Domain.Entities.Medico", b =>
@@ -501,6 +542,18 @@ namespace Vitus.Infrastructure.Migrations
                     b.Navigation("Prontuario");
                 });
 
+            modelBuilder.Entity("Vitus.Domain.Entities.ExameArquivo", b =>
+                {
+                    b.HasOne("Vitus.Domain.Entities.Exame", "Exame")
+                        .WithMany("Arquivos")
+                        .HasForeignKey("ExameId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_exame_arquivos_exames_exame_id");
+
+                    b.Navigation("Exame");
+                });
+
             modelBuilder.Entity("Vitus.Domain.Entities.Medico", b =>
                 {
                     b.HasOne("Vitus.Domain.Entities.Usuario", null)
@@ -606,6 +659,11 @@ namespace Vitus.Infrastructure.Migrations
                         .HasConstraintName("fk_triagens_prontuarios_prontuario_id");
 
                     b.Navigation("Prontuario");
+                });
+
+            modelBuilder.Entity("Vitus.Domain.Entities.Exame", b =>
+                {
+                    b.Navigation("Arquivos");
                 });
 
             modelBuilder.Entity("Vitus.Domain.Entities.Paciente", b =>
