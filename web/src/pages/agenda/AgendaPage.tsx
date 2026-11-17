@@ -177,7 +177,7 @@ export default function AgendaPage() {
                 mb: 1.5,
               }}
             >
-              {isEmAtendimento ? '🩺 Em Atendimento Agora' : '⏭️ Próxima Consulta'}
+              {isEmAtendimento ? 'Em Atendimento Agora' : 'Próxima Consulta'}
             </Typography>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
               <Avatar

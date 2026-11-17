@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   Box, Button, Chip, Dialog, DialogActions, DialogContent,
   FormControl, InputLabel, MenuItem, Select, TextField, Typography,
-  Alert, Tabs, Tab, Avatar, Divider, InputAdornment, useTheme,
+  Alert, Tabs, Tab, Avatar, Divider, InputAdornment,
   IconButton, CircularProgress, Paper, Drawer, alpha, Tooltip
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
@@ -102,8 +102,6 @@ function rotuloDia(data: string) {
 export default function ConsultasPage() {
   const { usuario } = useAuth();
   const navigate = useNavigate();
-  const theme = useTheme();
-  const isDark = theme.palette.mode === 'dark';
 
   const [consultas, setConsultas] = useState<Consulta[]>([]);
   const [pacientes, setPacientes] = useState<Paciente[]>([]);
@@ -234,7 +232,7 @@ export default function ConsultasPage() {
     setErro('');
     if (medicamentos.some(m => !m.nome.trim())) return setErro('Preencha o nome de todos os medicamentos');
     if (medicamentos.some(m => m.acompanharVencimento && !(m.validadeDias && m.validadeDias >= 1 && m.validadeDias <= 730)))
-    return setErro('Informe a validade (1 a 730 dias) dos medicamentos acompanhados');
+      return setErro('Informe a validade (1 a 730 dias) dos medicamentos acompanhados');
     setGerando(true);
     try {
       const r = await api.post('/api/receitas/gerar', {
@@ -282,8 +280,7 @@ export default function ConsultasPage() {
       } else {
         setErro(e.mensagemBack ?? 'Erro ao registrar exame');
       }
-    }
-    finally { setSalvandoExame(false); }
+    } finally { setSalvandoExame(false); }
   }
 
   function fecharNova() { setModalNova(false); setPacienteId(''); setMedicoId(''); setDataConsulta(dataHojeLocal()); setErro(''); }
@@ -450,12 +447,12 @@ export default function ConsultasPage() {
           <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
             {usuario?.perfil !== 'Medico' && (
               <FormControl sx={{ minWidth: 200 }} size="small">
-              <InputLabel>Médico</InputLabel>
-              <Select value={filtroMedico} label="Médico" onChange={(e) => setFiltroMedico(e.target.value)}>
-                <MenuItem value="">Todos</MenuItem>
-                {medicosNasConsultas.map(m => <MenuItem key={m} value={m}>{m}</MenuItem>)}
-              </Select>
-            </FormControl>
+                <InputLabel>Médico</InputLabel>
+                <Select value={filtroMedico} label="Médico" onChange={(e) => setFiltroMedico(e.target.value)}>
+                  <MenuItem value="">Todos</MenuItem>
+                  {medicosNasConsultas.map(m => <MenuItem key={m} value={m}>{m}</MenuItem>)}
+                </Select>
+              </FormControl>
             )}
             <FormControl sx={{ minWidth: 180 }} size="small">
               <InputLabel>Status</InputLabel>
@@ -494,9 +491,9 @@ export default function ConsultasPage() {
         {consultaDrawer && (() => {
           const cor = statusCores[consultaDrawer.status] ?? '#1976d2';
           const ehMinhaConsulta =
-          usuario?.perfil === 'Medico' &&
-          !!usuario.medicoId &&
-          consultaDrawer.medicoId === usuario.medicoId;
+            usuario?.perfil === 'Medico' &&
+            !!usuario.medicoId &&
+            consultaDrawer.medicoId === usuario.medicoId;
           return (
             <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
               <Box sx={{ background: `linear-gradient(135deg, ${cor}dd, ${cor})`, p: 3 }}>
@@ -612,11 +609,11 @@ export default function ConsultasPage() {
                     </Box>
                   )}
                   {usuario?.perfil === 'Medico' && !ehMinhaConsulta &&
-                  !['Finalizada', 'Cancelada'].includes(consultaDrawer.status) && (
-                    <Alert severity="info" sx={{ mb: 1 }}>
-                      Esta consulta é do(a) {consultaDrawer.nomeMedico}. Só o médico responsável pode atendê-la.
-                    </Alert>
-                  )}
+                    !['Finalizada', 'Cancelada'].includes(consultaDrawer.status) && (
+                      <Alert severity="info" sx={{ mb: 1 }}>
+                        Esta consulta é do(a) {consultaDrawer.nomeMedico}. Só o médico responsável pode atendê-la.
+                      </Alert>
+                    )}
                 </Box>
               </Box>
             </Box>
@@ -731,7 +728,7 @@ export default function ConsultasPage() {
               </Typography>
             </Box>
             <Box sx={{ ml: 'auto' }}>
-              <Chip label={`👨‍⚕️ ${consultaDrawer?.nomeMedico}`}
+              <Chip label={consultaDrawer?.nomeMedico}
                 sx={{ bgcolor: 'rgba(255,255,255,0.15)', color: 'white', fontWeight: 500 }} size="small" />
             </Box>
           </Box>
@@ -743,7 +740,7 @@ export default function ConsultasPage() {
           </Alert>
           <TextField label="Anotações da consulta" fullWidth multiline rows={10}
             value={anotacoes} onChange={(e) => setAnotacoes(e.target.value)}
-            placeholder={`Ex:\n• Queixa principal: dor lombar há 3 dias\n• Exame físico: PA 130/85, FC 78bpm\n• Hipótese diagnóstica: lombalgia mecânica\n• Conduta: analgésico + repouso relativo`}
+            placeholder={`Ex:\nQueixa principal: dor lombar há 3 dias\nExame físico: PA 130/85, FC 78bpm\nHipótese diagnóstica: lombalgia mecânica\nConduta: analgésico + repouso relativo`}
             sx={{ '& .MuiInputBase-root': { fontFamily: 'monospace', fontSize: 14, lineHeight: 1.7 } }} />
           <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 1 }}>
             <Typography variant="caption" color="text.secondary">{anotacoes.length} caracteres</Typography>
@@ -913,7 +910,6 @@ export default function ConsultasPage() {
         </DialogActions>
       </Dialog>
 
-
       {/* Modal Confirmação */}
       <ConfirmDialog
         open={modalConfirm}
@@ -927,7 +923,6 @@ export default function ConsultasPage() {
         onClose={() => setModalConfirm(false)}
         onConfirm={confirmarAcao}
       />
-
     </Layout>
   );
 }
