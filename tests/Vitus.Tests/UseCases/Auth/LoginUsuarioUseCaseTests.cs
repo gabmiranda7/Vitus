@@ -18,6 +18,7 @@ namespace Vitus.Tests.UseCases.Auth
         private readonly Mock<IMedicoRepository> _medicoRepoMock = new();
         private readonly Mock<ITokenService> _tokenServiceMock = new();
         private readonly Mock<ILoginAttemptTracker> _trackerMock = new();
+        private readonly Mock<IAuditoriaService> _auditoriaMock = new();
         private readonly LoginUsuarioUseCase _useCase;
 
         public LoginUsuarioUseCaseTests()
@@ -27,7 +28,8 @@ namespace Vitus.Tests.UseCases.Auth
                 _usuarioRepoMock.Object,
                 _medicoRepoMock.Object,
                 _tokenServiceMock.Object,
-                _trackerMock.Object);
+                _trackerMock.Object,
+                _auditoriaMock.Object);
         }
 
         private static Usuario UsuarioAprovado(PerfilUsuario perfil = PerfilUsuario.Recepcionista, string nome = "Maria")
@@ -52,6 +54,13 @@ namespace Vitus.Tests.UseCases.Auth
             resultado.Token.Should().Be("token-fake");
             resultado.Email.Should().Be("maria@vitus.com");
             resultado.Perfil.Should().Be("Recepcionista");
+            _auditoriaMock.Verify(a => a.RegistrarComo(
+                usuario.Id,
+                usuario.Nome,
+                AcaoAuditoria.LoginSucesso,
+                "Usuario",
+                usuario.Id,
+                It.IsAny<string?>()), Times.Once);
         }
 
         [Fact]
@@ -98,6 +107,13 @@ namespace Vitus.Tests.UseCases.Auth
             var act = async () => await _useCase.Execute(Request());
 
             await act.Should().ThrowAsync<DomainException>().WithMessage("Email ou senha inválidos");
+            _auditoriaMock.Verify(a => a.RegistrarComo(
+                Guid.Empty,
+                "maria@vitus.com",
+                AcaoAuditoria.LoginFalha,
+                "Usuario",
+                Guid.Empty,
+                It.IsAny<string?>()), Times.Once);
         }
 
         [Fact]
@@ -110,6 +126,13 @@ namespace Vitus.Tests.UseCases.Auth
 
             await act.Should().ThrowAsync<DomainException>().WithMessage("Email ou senha inválidos");
             _tokenServiceMock.Verify(t => t.Generate(It.IsAny<Usuario>()), Times.Never);
+            _auditoriaMock.Verify(a => a.RegistrarComo(
+                usuario.Id,
+                usuario.Nome,
+                AcaoAuditoria.LoginFalha,
+                "Usuario",
+                usuario.Id,
+                It.IsAny<string?>()), Times.Once);
         }
 
         [Fact]
@@ -123,6 +146,13 @@ namespace Vitus.Tests.UseCases.Auth
 
             await act.Should().ThrowAsync<DomainException>().WithMessage("*aguarda aprovação*");
             _tokenServiceMock.Verify(t => t.Generate(It.IsAny<Usuario>()), Times.Never);
+            _auditoriaMock.Verify(a => a.RegistrarComo(
+                pendente.Id,
+                pendente.Nome,
+                AcaoAuditoria.LoginFalha,
+                "Usuario",
+                pendente.Id,
+                It.IsAny<string?>()), Times.Once);
         }
 
         [Fact]
@@ -137,6 +167,13 @@ namespace Vitus.Tests.UseCases.Auth
 
             await act.Should().ThrowAsync<DomainException>().WithMessage("*não foi aprovado*");
             _tokenServiceMock.Verify(t => t.Generate(It.IsAny<Usuario>()), Times.Never);
+            _auditoriaMock.Verify(a => a.RegistrarComo(
+                recusado.Id,
+                recusado.Nome,
+                AcaoAuditoria.LoginFalha,
+                "Usuario",
+                recusado.Id,
+                It.IsAny<string?>()), Times.Once);
         }
 
         [Fact]

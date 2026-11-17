@@ -28,5 +28,19 @@ namespace Vitus.Infrastructure.Services
 
             await _auditoriaRepository.Add(log);
         }
+
+        public async Task RegistrarComo(Guid usuarioId, string usuarioNome, AcaoAuditoria acao, string entidadeAfetada, Guid entidadeId, string? detalhes = null)
+        {
+            var log = new AuditoriaLog(
+                usuarioId,
+                usuarioNome,
+                acao,
+                entidadeAfetada,
+                entidadeId,
+                detalhes
+            );
+
+            await _auditoriaRepository.Add(log);
+        }
     }
 }

@@ -15,6 +15,8 @@
         DownloadExame,
         AprovacaoCadastro,
         RecusaCadastro,
-        AtualizacaoPerfil
+        AtualizacaoPerfil,
+        LoginSucesso,
+        LoginFalha
     }
 }
