@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { Box, Typography, Alert, Button } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import Layout from '../../components/layout/Layout';
@@ -9,7 +9,10 @@ import { Prontuario, Paciente, Exame } from '../../types';
 
 export default function ProntuarioPage(): React.ReactElement {
   const { consultaId } = useParams();
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const abrirEmExames = searchParams.get('aba') === 'exames';
+
   const [prontuario, setProntuario] = useState<Prontuario | null>(null);
   const [paciente, setPaciente] = useState<Paciente | null>(null);
   const [exames, setExames] = useState<Exame[]>([]);
@@ -59,6 +62,8 @@ export default function ProntuarioPage(): React.ReactElement {
         paciente={paciente}
         exames={exames}
         consultaId={consultaId}
+        abaInicial={abrirEmExames ? 4 : 1}
+        abrirNovoExame={abrirEmExames}
         onExamesAtualizados={() => carregarExames(prontuario.id)}
       />
     </Layout>

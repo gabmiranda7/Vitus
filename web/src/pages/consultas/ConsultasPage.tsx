@@ -23,7 +23,6 @@ import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import MedicationIcon from '@mui/icons-material/Medication';
 import ScienceIcon from '@mui/icons-material/Science';
 import DeleteIcon from '@mui/icons-material/Delete';
-import AttachFileIcon from '@mui/icons-material/AttachFile';
 import CloseIcon from '@mui/icons-material/Close';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import FilterListIcon from '@mui/icons-material/FilterList';
@@ -50,11 +49,6 @@ const statusLabels: Record<string, string> = {
 const statusAtivos = ['Agendada', 'EmTriagem', 'AguardandoAtendimento', 'EmAtendimento'];
 const statusHistorico = ['Finalizada', 'Cancelada'];
 
-const CATEGORIAS = ['Sangue', 'Imagem', 'Urina', 'Cardiologico', 'Fisico', 'Outro'];
-const categoriaLabel: Record<string, string> = {
-  Sangue: 'Sangue', Imagem: 'Imagem', Urina: 'Urina',
-  Cardiologico: 'Cardiológico', Fisico: 'Físico', Outro: 'Outro',
-};
 const TIPOS_RECEITA = [
   { value: 'Comum', label: 'Receita Comum (1 via)' },
   { value: 'Especial', label: 'Receita Especial (2 vias — controlados)' },
@@ -68,11 +62,6 @@ const TIPOS_USO = [
 const medVazio = (): Medicamento => ({
   nome: '', dosagem: '', posologia: '', quantidade: '',
   acompanharVencimento: false, validadeDias: null,
-});
-
-const exameVazio = () => ({
-  categoria: 'Sangue', nome: '', descricao: '',
-  medicoSolicitante: '', dataExame: new Date().toISOString().split('T')[0], observacoes: '',
 });
 
 function iniciais(nome: string) {
@@ -126,7 +115,6 @@ export default function ConsultasPage() {
   const [modalTriagem, setModalTriagem] = useState(false);
   const [modalConfirm, setModalConfirm] = useState(false);
   const [modalReceita, setModalReceita] = useState(false);
-  const [modalExame, setModalExame] = useState(false);
   const [confirmAcao, setConfirmAcao] = useState<{
     id: string; acao: string; label: string; cor: 'error' | 'success';
   } | null>(null);
@@ -143,9 +131,6 @@ export default function ConsultasPage() {
   const [tipoUso, setTipoUso] = useState('Oral');
   const [medicamentos, setMedicamentos] = useState<Medicamento[]>([medVazio()]);
   const [gerando, setGerando] = useState(false);
-  const [formExame, setFormExame] = useState(exameVazio());
-  const [arquivoExame, setArquivoExame] = useState<File | null>(null);
-  const [salvandoExame, setSalvandoExame] = useState(false);
   const [erro, setErro] = useState('');
 
   useEffect(() => {
@@ -255,39 +240,10 @@ export default function ConsultasPage() {
     } finally { setGerando(false); }
   }
 
-  async function handleSalvarExame() {
-    if (!consultaDrawer) return;
-    setErro('');
-    if (!formExame.nome.trim()) return setErro('Nome do exame é obrigatório');
-    if (!formExame.medicoSolicitante.trim()) return setErro('Médico solicitante é obrigatório');
-    setSalvandoExame(true);
-    try {
-      const rProntuario = await api.get(`/api/prontuarios/consulta/${consultaDrawer.id}`);
-      const rExame = await api.post('/api/exames', {
-        prontuarioId: rProntuario.data.id,
-        consultaId: consultaDrawer.id, ...formExame,
-      });
-      if (arquivoExame) {
-        const fd = new FormData(); fd.append('arquivo', arquivoExame);
-        await api.post(`/api/exames/${rExame.data.id}/arquivo`, fd, {
-          headers: { 'Content-Type': 'multipart/form-data' },
-        });
-      }
-      fecharExame(); carregar();
-    } catch (e: any) {
-      if (!e.response) {
-        setErro('Não foi possível enviar o arquivo. Verifique o tamanho (máx. 10MB) e sua conexão.');
-      } else {
-        setErro(e.mensagemBack ?? 'Erro ao registrar exame');
-      }
-    } finally { setSalvandoExame(false); }
-  }
-
   function fecharNova() { setModalNova(false); setPacienteId(''); setMedicoId(''); setDataConsulta(dataHojeLocal()); setErro(''); }
   function fecharAnotacao() { setModalAnotacao(false); setAnotacoes(''); setErro(''); }
   function fecharTriagem() { setModalTriagem(false); setPressaoArterial(''); setTemperatura(''); setObservacoes(''); setErro(''); }
   function fecharReceita() { setModalReceita(false); setTipoReceita('Comum'); setTipoUso('Oral'); setMedicamentos([medVazio()]); setErro(''); }
-  function fecharExame() { setModalExame(false); setFormExame(exameVazio()); setArquivoExame(null); setErro(''); }
 
   const podeVerProntuario = usuario?.perfil === 'Medico' || usuario?.perfil === 'Enfermeiro';
 
@@ -582,7 +538,7 @@ export default function ConsultasPage() {
                     </Button>
                     <Button fullWidth variant="outlined" color="secondary" size="large"
                       startIcon={<ScienceIcon />}
-                      onClick={() => setModalExame(true)}
+                      onClick={() => { fecharDrawer(); navigate(`/prontuario/${consultaDrawer.id}?aba=exames`); }}
                       sx={{ borderRadius: 2, justifyContent: 'flex-start', px: 2 }}>
                       Registrar Exame
                     </Button>
@@ -832,80 +788,6 @@ export default function ConsultasPage() {
             startIcon={gerando ? <CircularProgress size={16} color="inherit" /> : <MedicationIcon />}
             disabled={gerando}>
             {gerando ? 'Gerando...' : 'Gerar e Baixar Receita'}
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Modal Exame */}
-      <Dialog open={modalExame} onClose={fecharExame} fullWidth maxWidth="sm">
-        <Box sx={{ background: 'linear-gradient(135deg, #4a148c 0%, #7b1fa2 100%)', p: 3 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Avatar sx={{ bgcolor: 'rgba(255,255,255,0.2)', width: 52, height: 52, border: '2px solid rgba(255,255,255,0.4)' }}>
-              <ScienceIcon sx={{ color: 'white', fontSize: 28 }} />
-            </Avatar>
-            <Box>
-              <Typography variant="h6" sx={{ color: 'white', fontWeight: 'bold' }}>Registrar Exame</Typography>
-              <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.8)' }}>{consultaDrawer?.nomePaciente}</Typography>
-            </Box>
-          </Box>
-        </Box>
-        <DialogContent sx={{ pt: 3 }}>
-          {erro && <Alert severity="error" sx={{ mb: 2 }}>{erro}</Alert>}
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
-            <FormControl sx={{ flex: '1 1 160px' }} size="small">
-              <InputLabel>Categoria</InputLabel>
-              <Select value={formExame.categoria} label="Categoria"
-                onChange={(e) => setFormExame(f => ({ ...f, categoria: e.target.value }))}>
-                {CATEGORIAS.map(c => <MenuItem key={c} value={c}>{categoriaLabel[c]}</MenuItem>)}
-              </Select>
-            </FormControl>
-            <TextField label="Nome do exame *" size="small" value={formExame.nome} sx={{ flex: '2 1 200px' }}
-              onChange={(e) => setFormExame(f => ({ ...f, nome: e.target.value }))} />
-            <TextField label="Médico solicitante *" size="small" value={formExame.medicoSolicitante} sx={{ flex: '2 1 200px' }}
-              onChange={(e) => setFormExame(f => ({ ...f, medicoSolicitante: e.target.value }))} />
-            <TextField label="Data do exame" type="date" size="small" value={formExame.dataExame} sx={{ flex: '1 1 160px' }}
-              onChange={(e) => setFormExame(f => ({ ...f, dataExame: e.target.value }))}
-              slotProps={{ inputLabel: { shrink: true } }} />
-            <TextField label="Descrição" size="small" value={formExame.descricao} sx={{ flex: '1 1 100%' }}
-              onChange={(e) => setFormExame(f => ({ ...f, descricao: e.target.value }))} />
-            <TextField label="Observações / valores relevantes" size="small" multiline rows={2}
-              value={formExame.observacoes} sx={{ flex: '1 1 100%' }}
-              onChange={(e) => setFormExame(f => ({ ...f, observacoes: e.target.value }))}
-              placeholder="Ex: Glicose: 95 mg/dL; Colesterol: 180 mg/dL" />
-            <Box sx={{ flex: '1 1 100%' }}>
-              <Button variant="outlined" component="label" size="small" startIcon={<AttachFileIcon />}>
-                {arquivoExame ? arquivoExame.name : 'Anexar arquivo (opcional)'}
-                <input type="file" hidden accept=".pdf,.jpg,.jpeg,.png"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (!file) return;
-
-                    const extensoesValidas = ['.pdf', '.jpg', '.jpeg', '.png'];
-                    const extensao = '.' + file.name.split('.').pop()?.toLowerCase();
-
-                    if (!extensoesValidas.includes(extensao)) {
-                      setErro('Formato inválido. Envie apenas PDF, JPG ou PNG.');
-                      e.target.value = '';
-                      return;
-                    }
-                    if (file.size > 10 * 1024 * 1024) {
-                      setErro('Arquivo muito grande. Tamanho máximo: 10MB.');
-                      e.target.value = '';
-                      return;
-                    }
-                    setErro('');
-                    setArquivoExame(file);
-                  }} />
-              </Button>
-            </Box>
-          </Box>
-        </DialogContent>
-        <DialogActions sx={{ p: 2, gap: 1 }}>
-          <Button onClick={fecharExame} variant="outlined" disabled={salvandoExame}>Cancelar</Button>
-          <Button onClick={handleSalvarExame} variant="contained" color="secondary"
-            startIcon={salvandoExame ? <CircularProgress size={16} color="inherit" /> : <ScienceIcon />}
-            disabled={salvandoExame}>
-            {salvandoExame ? 'Salvando...' : 'Registrar Exame'}
           </Button>
         </DialogActions>
       </Dialog>

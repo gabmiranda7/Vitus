@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Box, Card, CardContent, Chip, Paper, Typography,
   Alert, useTheme, Avatar, Button, Collapse, Divider,
@@ -26,7 +26,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import TratamentosAcompanhados from '../receitas/TratamentosAcompanhados';
 import ExameAnaliseIaPanel from './ExameAnaliseIaPanel';
 import { situacaoVencimento } from '../receitas/vencimento';
-import { Prontuario, Receita, Triagem, Consulta, Paciente, Exame, Medicamento } from '../../types';
+import { Prontuario, Receita, Triagem, Consulta, Paciente, Exame, Medicamento, Medico } from '../../types';
 
 const MAXIMO_ARQUIVOS_EXAME = 15;
 const CATEGORIAS = ['Sangue', 'Imagem', 'Urina', 'Cardiologico', 'Fisico', 'Outro'];
@@ -196,6 +196,8 @@ interface ProntuarioConteudoProps {
   paciente: Paciente | null;
   exames: Exame[];
   consultaId?: string;
+  abaInicial?: number;
+  abrirNovoExame?: boolean;
   onExamesAtualizados: () => Promise<void>;
 }
 
@@ -204,21 +206,33 @@ export default function ProntuarioConteudo({
   paciente,
   exames,
   consultaId,
+  abaInicial = 1,
+  abrirNovoExame = false,
   onExamesAtualizados,
 }: ProntuarioConteudoProps): React.ReactElement {
   const { usuario } = useAuth();
   const isMedico = usuario?.perfil === 'Medico';
   const theme = useTheme();
 
-  // Inicia na aba 1 (Histórico), deixando Dados na aba 0 (à esquerda)
-  const [abaAtiva, setAbaAtiva] = useState(1);
-  const [formularioAberto, setFormularioAberto] = useState(false);
+  // Inicia na aba passada por prop (padrão: 1 - Histórico)
+  const [abaAtiva, setAbaAtiva] = useState(abaInicial);
+  const [formularioAberto, setFormularioAberto] = useState(abrirNovoExame);
   const [form, setForm] = useState(exameVazio());
+  const [medicos, setMedicos] = useState<Medico[]>([]);
+  const [arquivosNovoExame, setArquivosNovoExame] = useState<File[]>([]);
   const [salvando, setSalvando] = useState(false);
   const [erroForm, setErroForm] = useState('');
   const [erroExame, setErroExame] = useState('');
   const [uploadingId, setUploadingId] = useState<string | null>(null);
   const [analisandoId, setAnalisandoId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (isMedico) {
+      api.get('/api/medicos')
+        .then(r => setMedicos(r.data))
+        .catch(() => { /* mantém campo livre se falhar */ });
+    }
+  }, [isMedico]);
 
   const isDark = theme.palette.mode === 'dark';
   const paperBg = isDark ? theme.palette.grey[900] : theme.palette.background.paper;
@@ -263,6 +277,32 @@ export default function ProntuarioConteudo({
       ].filter(i => i.value)
     : [];
 
+  function handleSelecionarArquivosNovoExame(fileList: FileList) {
+    const novos = Array.from(fileList);
+    if (novos.length === 0) return;
+
+    if (arquivosNovoExame.length + novos.length > MAXIMO_ARQUIVOS_EXAME) {
+      setErroForm(`Limite máximo de ${MAXIMO_ARQUIVOS_EXAME} arquivos por exame.`);
+      return;
+    }
+
+    const extensoesValidas = ['.pdf', '.jpg', '.jpeg', '.png'];
+    for (const arquivo of novos) {
+      const extensao = '.' + arquivo.name.split('.').pop()?.toLowerCase();
+      if (!extensoesValidas.includes(extensao)) {
+        setErroForm(`Formato inválido (${arquivo.name}). Envie apenas PDF, JPG ou PNG.`);
+        return;
+      }
+      if (arquivo.size > 10 * 1024 * 1024) {
+        setErroForm(`O arquivo "${arquivo.name}" excede o limite de 10MB.`);
+        return;
+      }
+    }
+
+    setErroForm('');
+    setArquivosNovoExame(prev => [...prev, ...novos]);
+  }
+
   async function handleSalvarExame() {
     if (!form.nome.trim()) return setErroForm('Nome é obrigatório');
     if (!form.medicoSolicitante.trim()) return setErroForm('Médico solicitante é obrigatório');
@@ -270,21 +310,35 @@ export default function ProntuarioConteudo({
     setSalvando(true);
     setErroForm('');
     try {
-      await api.post('/api/exames', {
+      const rExame = await api.post('/api/exames', {
         prontuarioId: prontuario.id,
         consultaId: consultaId ?? null,
         categoria: form.categoria,
         nome: form.nome,
         descricao: form.descricao || null,
-        medicoSolicitante: form.medicoSolicitante,
+        medicoSolicitante: form.medicoSolicitante.trim(),
         dataExame: form.dataExame,
         observacoes: form.observacoes || null,
       });
+
+      if (arquivosNovoExame.length > 0 && rExame.data?.id) {
+        const formData = new FormData();
+        arquivosNovoExame.forEach(arq => formData.append('arquivos', arq));
+        await api.post(`/api/exames/${rExame.data.id}/arquivos`, formData, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        });
+      }
+
       setForm(exameVazio());
+      setArquivosNovoExame([]);
       setFormularioAberto(false);
       await onExamesAtualizados();
     } catch (error: any) {
-      setErroForm(error.mensagemBack ?? 'Erro ao salvar exame');
+      if (!error.response) {
+        setErroForm('Não foi possível enviar os arquivos. Verifique o tamanho (máx. 10MB cada) e sua conexão.');
+      } else {
+        setErroForm(error.mensagemBack ?? 'Erro ao salvar exame');
+      }
     } finally {
       setSalvando(false);
     }
@@ -844,13 +898,26 @@ export default function ProntuarioConteudo({
                       onChange={e => setForm(f => ({ ...f, nome: e.target.value }))}
                       sx={{ flex: '2 1 200px' }}
                     />
-                    <TextField
-                      label="Médico solicitante *"
-                      size="small"
-                      value={form.medicoSolicitante}
-                      onChange={e => setForm(f => ({ ...f, medicoSolicitante: e.target.value }))}
-                      sx={{ flex: '2 1 200px' }}
-                    />
+                    
+                    {/* Seletor padronizado idêntico ao de Categoria, sem opção "Outro" */}
+                    <FormControl sx={{ flex: '2 1 220px' }} size="small">
+                      <InputLabel>Médico solicitante *</InputLabel>
+                      <Select
+                        value={form.medicoSolicitante}
+                        label="Médico solicitante *"
+                        onChange={e => setForm(f => ({ ...f, medicoSolicitante: e.target.value }))}
+                      >
+                        <MenuItem value="">
+                          <em>Selecione o médico...</em>
+                        </MenuItem>
+                        {medicos.map(m => (
+                          <MenuItem key={m.id} value={m.nome}>
+                            {m.nome} {m.especialidade ? `(${m.especialidade})` : ''}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+
                     <TextField
                       label="Data do exame"
                       type="date"
@@ -877,9 +944,64 @@ export default function ProntuarioConteudo({
                       sx={{ flex: '1 1 100%' }}
                       placeholder="Ex: Glicose: 95 mg/dL; Colesterol: 180 mg/dL"
                     />
+                    <Box sx={{ flex: '1 1 100%', display: 'flex', flexDirection: 'column', gap: 1 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
+                        <Button
+                          variant="outlined"
+                          component="label"
+                          size="small"
+                          startIcon={<AttachFileIcon />}
+                          disabled={salvando || arquivosNovoExame.length >= MAXIMO_ARQUIVOS_EXAME}
+                        >
+                          {arquivosNovoExame.length > 0
+                            ? `Adicionar mais arquivos (${arquivosNovoExame.length}/${MAXIMO_ARQUIVOS_EXAME})`
+                            : 'Anexar arquivo(s) (opcional)'}
+                          <input
+                            type="file"
+                            hidden
+                            multiple
+                            accept=".pdf,.jpg,.jpeg,.png"
+                            onChange={e => {
+                              if (e.target.files) {
+                                handleSelecionarArquivosNovoExame(e.target.files);
+                                e.target.value = '';
+                              }
+                            }}
+                          />
+                        </Button>
+                        <Typography variant="caption" color="text.secondary">
+                          PDF, JPG ou PNG (máx. 10MB cada)
+                        </Typography>
+                      </Box>
+
+                      {arquivosNovoExame.length > 0 && (
+                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75 }}>
+                          {arquivosNovoExame.map((arq, idx) => (
+                            <Chip
+                              key={`${arq.name}-${idx}`}
+                              label={arq.name}
+                              size="small"
+                              color="primary"
+                              variant="outlined"
+                              onDelete={() =>
+                                setArquivosNovoExame(prev => prev.filter((_, i) => i !== idx))
+                              }
+                            />
+                          ))}
+                        </Box>
+                      )}
+                    </Box>
                   </Box>
                   <Box sx={{ display: 'flex', gap: 1, mt: 2, justifyContent: 'flex-end' }}>
-                    <Button size="small" variant="outlined" onClick={() => { setFormularioAberto(false); setErroForm(''); }}>
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      onClick={() => {
+                        setFormularioAberto(false);
+                        setArquivosNovoExame([]);
+                        setErroForm('');
+                      }}
+                    >
                       Cancelar
                     </Button>
                     <Button size="small" variant="contained" onClick={handleSalvarExame} disabled={salvando}>
