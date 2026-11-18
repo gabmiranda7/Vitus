@@ -120,31 +120,52 @@ namespace Vitus.Infrastructure.Services
                 }
             };
 
-            var url = $"{_settings.BaseUrl.TrimEnd('/')}/models/{_settings.Model}:generateContent?key={_settings.ApiKey}";
+            var modelos = new[] { _settings.Model, _settings.FallbackModel }
+                .Where(m => !string.IsNullOrWhiteSpace(m))
+                .Distinct()
+                .ToArray();
 
-            const int maxTentativas = 3;
             string body = string.Empty;
+            int ultimoStatus = 0;
 
-            for (int tentativa = 1; tentativa <= maxTentativas; tentativa++)
+            foreach (var modelo in modelos)
             {
-                using var response = await _httpClient.PostAsJsonAsync(url, payload, ct);
-                body = await response.Content.ReadAsStringAsync(ct);
+                var url = $"{_settings.BaseUrl.TrimEnd('/')}/models/{modelo}:generateContent?key={_settings.ApiKey}";
+                const int maxTentativas = 2;
 
-                if (response.IsSuccessStatusCode)
+                for (int tentativa = 1; tentativa <= maxTentativas; tentativa++)
+                {
+                    using var response = await _httpClient.PostAsJsonAsync(url, payload, ct);
+                    body = await response.Content.ReadAsStringAsync(ct);
+
+                    if (response.IsSuccessStatusCode)
+                        goto Sucesso;
+
+                    ultimoStatus = (int)response.StatusCode;
+                    Console.WriteLine($"[GeminiErro] Modelo {modelo} | Tentativa {tentativa} | HTTP {ultimoStatus}: {body}");
+
+                    // Se bateu limite de cota (429) ou modelo não encontrado (404), pula direto para o FallbackModel
+                    if (ultimoStatus == (int)HttpStatusCode.TooManyRequests ||
+                        ultimoStatus == (int)HttpStatusCode.NotFound)
+                        break;
+
+                    // Se for sobrecarga temporária (503), aguarda e tenta novamente no mesmo modelo antes de trocar
+                    if (ultimoStatus == (int)HttpStatusCode.ServiceUnavailable && tentativa < maxTentativas)
+                    {
+                        await Task.Delay(TimeSpan.FromSeconds(tentativa * 2), ct);
+                        continue;
+                    }
+
                     break;
-
-                var statusCode = (int)response.StatusCode;
-                Console.WriteLine($"[GeminiErro] HTTP {statusCode}: {body}");
-
-                if (statusCode == (int)HttpStatusCode.TooManyRequests)
-                    throw new DomainException("Limite temporário de requisições da IA atingido. Aguarde 1 minuto e tente novamente.");
-
-                if (statusCode != (int)HttpStatusCode.ServiceUnavailable || tentativa == maxTentativas)
-                    throw new DomainException($"Falha ao processar exame com IA (HTTP {statusCode}). Tente novamente em instantes.");
-
-                await Task.Delay(TimeSpan.FromSeconds(tentativa * 2), ct);
+                }
             }
 
+            if (ultimoStatus == (int)HttpStatusCode.TooManyRequests)
+                throw new DomainException("Limite temporário de requisições da IA atingido. Aguarde 1 minuto e tente novamente.");
+
+            throw new DomainException($"Falha ao processar exame com IA (HTTP {ultimoStatus}). Tente novamente em instantes.");
+
+        Sucesso:
             using var doc = JsonDocument.Parse(body);
             var textoJson = doc.RootElement
                 .GetProperty("candidates")[0]

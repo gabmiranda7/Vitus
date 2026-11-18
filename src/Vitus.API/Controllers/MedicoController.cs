@@ -7,7 +7,7 @@ namespace Vitus.API.Controllers
 {
     [ApiController]
     [Route("api/medicos")]
-    [Authorize(Roles = "Recepcionista")]
+    [Authorize(Roles = "Recepcionista, Medico")]
     public class MedicoController : ControllerBase
     {
         [HttpGet]
