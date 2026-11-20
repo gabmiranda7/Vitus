@@ -8,6 +8,7 @@ import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import FolderSharedIcon from '@mui/icons-material/FolderShared';
 import PersonIcon from '@mui/icons-material/Person';
+import ConfirmDialog from '../../components/ConfirmDialog';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import EditNoteIcon from '@mui/icons-material/EditNote';
 import Layout from '../../components/layout/Layout';
@@ -54,6 +55,8 @@ export default function AgendaPage() {
   const [consultas, setConsultas] = useState<Consulta[]>([]);
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState('');
+  const [finalizar, setFinalizar] = useState<Consulta | null>(null);
+  const [finalizando, setFinalizando] = useState(false);
 
   useEffect(() => {
     carregar();
@@ -79,6 +82,14 @@ export default function AgendaPage() {
     } catch (error: any) {
       setErro(error.mensagemBack ?? 'Erro ao atualizar consulta');
     }
+  }
+
+  async function confirmarFinalizacao() {
+    if (!finalizar) return;
+    setFinalizando(true);
+    await mudarStatus(finalizar.id, 'finalizar');
+    setFinalizando(false);
+    setFinalizar(null);
   }
 
   const hoje = new Date().toDateString();
@@ -238,7 +249,7 @@ export default function AgendaPage() {
                       variant="contained"
                       sx={{ bgcolor: 'white', color: '#2e7d32', fontWeight: 600, borderRadius: 2, '&:hover': { bgcolor: 'rgba(255,255,255,0.9)' } }}
                       startIcon={<CheckCircleIcon />}
-                      onClick={() => mudarStatus(proxima.id, 'finalizar')}
+                      onClick={() => setFinalizar(proxima)}
                     >
                       Finalizar
                     </Button>
@@ -385,7 +396,7 @@ export default function AgendaPage() {
                               color="success"
                               sx={{ borderRadius: 2 }}
                               startIcon={<CheckCircleIcon />}
-                              onClick={() => mudarStatus(c.id, 'finalizar')}
+                              onClick={() => setFinalizar(c)}
                             >
                               Finalizar
                             </Button>
@@ -413,6 +424,17 @@ export default function AgendaPage() {
           )}
         </CardContent>
       </Card>
+      <ConfirmDialog
+        open={!!finalizar}
+        tipo="finalizar"
+        titulo="Finalizar consulta"
+        subtitulo={finalizar?.nomePaciente}
+        mensagem="Tem certeza que deseja finalizar esta consulta? O atendimento será encerrado."
+        confirmarLabel="Sim, finalizar"
+        loading={finalizando}
+        onClose={() => setFinalizar(null)}
+        onConfirm={confirmarFinalizacao}
+      />
     </Layout>
   );
 }

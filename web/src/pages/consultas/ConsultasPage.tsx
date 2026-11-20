@@ -76,6 +76,11 @@ function dataHojeLocal() {
   const pad = (n: number) => String(n).padStart(2, '0');
   return `${agora.getFullYear()}-${pad(agora.getMonth() + 1)}-${pad(agora.getDate())}T${pad(agora.getHours())}:${pad(agora.getMinutes())}`;
 }
+function hojeLocalData() {
+  const d = new Date();
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
 
 function rotuloDia(data: string) {
   const d = new Date(data);
@@ -97,6 +102,8 @@ export default function ConsultasPage() {
   const [medicos, setMedicos] = useState<Medico[]>([]);
   const [aba, setAba] = useState(0);
   const [busca, setBusca] = useState('');
+  const [erroAcao, setErroAcao] = useState('');
+  const [confirmando, setConfirmando] = useState(false);
 
   // Filtros
   const [filtrosVisiveis, setFiltrosVisiveis] = useState(false);
@@ -185,8 +192,30 @@ export default function ConsultasPage() {
 
   async function confirmarAcao() {
     if (!confirmAcao) return;
-    await api.patch(`/api/consultas/${confirmAcao.id}/${confirmAcao.acao}`);
-    setModalConfirm(false); setConfirmAcao(null); carregar();
+    setConfirmando(true);
+    setErroAcao('');
+    try {
+      await api.patch(`/api/consultas/${confirmAcao.id}/${confirmAcao.acao}`);
+    } catch (e: any) {
+      setErroAcao(e.mensagemBack ?? 'Erro ao atualizar a consulta');
+    } finally {
+      setConfirmando(false);
+      setModalConfirm(false);
+      setConfirmAcao(null);
+      carregar();
+    }
+  }
+
+  async function acaoRapida(id: string, acao: string) {
+    setErroAcao('');
+    try {
+      await api.patch(`/api/consultas/${id}/${acao}`);
+    } catch (e: any) {
+      setErroAcao(e.mensagemBack ?? 'Erro ao atualizar a consulta');
+    } finally {
+      fecharDrawer();
+      carregar();
+    }
   }
 
   async function handleSalvarAnotacao() {
@@ -201,15 +230,24 @@ export default function ConsultasPage() {
   async function handleSalvarTriagem() {
     if (!consultaDrawer) return;
     setErro('');
+    const temp = parseFloat(temperatura);
+    if (!pressaoArterial.trim() || Number.isNaN(temp)) {
+      return setErro('Preencha pressão arterial e temperatura');
+    }
     try {
-      await api.patch(`/api/consultas/${consultaDrawer.id}/iniciar-triagem`);
+      if (consultaDrawer.status === 'Agendada') {
+        await api.patch(`/api/consultas/${consultaDrawer.id}/iniciar-triagem`);
+      }
       await api.post('/api/triagens', {
         consultaId: consultaDrawer.id,
-        pressaoArterial, temperatura: parseFloat(temperatura), observacoes,
+        pressaoArterial, temperatura: temp, observacoes,
       });
       await api.patch(`/api/consultas/${consultaDrawer.id}/aguardar-atendimento`);
       fecharTriagem(); carregar();
-    } catch (e: any) { setErro(e.mensagemBack ?? 'Erro ao registrar triagem'); }
+    } catch (e: any) {
+      setErro(e.mensagemBack ?? 'Erro ao registrar triagem');
+      carregar();
+    }
   }
 
   async function handleGerarReceita() {
@@ -371,6 +409,12 @@ export default function ConsultasPage() {
         </Box>
       </Box>
 
+      {erroAcao && (
+        <Alert severity="error" sx={{ mb: 2 }} onClose={() => setErroAcao('')}>
+          {erroAcao}
+        </Alert>
+      )}
+
       <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
         <Tabs value={aba} onChange={(_, v) => { setAba(v); setBusca(''); limparFiltros(); }}>
           <Tab label={`Ativas (${consultasAtivas.length})`} />
@@ -509,16 +553,17 @@ export default function ConsultasPage() {
                     </Button>
                   )}
                   {usuario?.perfil === 'Enfermeiro' && consultaDrawer.status === 'EmTriagem' && (
-                    <Button fullWidth variant="contained" size="large"
-                      onClick={() => api.patch(`/api/consultas/${consultaDrawer.id}/aguardar-atendimento`).then(() => { fecharDrawer(); carregar(); })}
+                    <Button fullWidth variant="contained" color="warning" size="large"
+                      startIcon={<MedicalServicesIcon />}
+                      onClick={() => { fecharDrawer(); setModalTriagem(true); }}
                       sx={{ borderRadius: 2, justifyContent: 'flex-start', px: 2 }}>
-                      Mover para Aguardando
+                      Registrar Sinais Vitais
                     </Button>
                   )}
                   {ehMinhaConsulta && consultaDrawer.status === 'AguardandoAtendimento' && (
                     <Button fullWidth variant="contained" color="primary" size="large"
                       startIcon={<PersonIcon />}
-                      onClick={() => api.patch(`/api/consultas/${consultaDrawer.id}/iniciar-atendimento`).then(() => { fecharDrawer(); carregar(); })}
+                      onClick={() => acaoRapida(consultaDrawer.id, 'iniciar-atendimento')}
                       sx={{ borderRadius: 2, justifyContent: 'flex-start', px: 2 }}>
                       Iniciar Atendimento
                     </Button>
@@ -622,7 +667,7 @@ export default function ConsultasPage() {
             <TextField label="Data" type="date" sx={{ flex: 1 }}
               value={dataConsulta.split('T')[0]}
               onChange={(e) => setDataConsulta(`${e.target.value}T${dataConsulta.split('T')[1] ?? '08:00'}`)}
-              slotProps={{ inputLabel: { shrink: true }, htmlInput: { min: new Date().toISOString().split('T')[0] } }} />
+              slotProps={{ inputLabel: { shrink: true }, htmlInput: { min: hojeLocalData() } }} />
             <TextField label="Horário" type="time" sx={{ flex: 1 }}
               value={dataConsulta.split('T')[1]?.substring(0, 5) ?? '08:00'}
               onChange={(e) => setDataConsulta(`${dataConsulta.split('T')[0]}T${e.target.value}`)}
@@ -802,6 +847,7 @@ export default function ConsultasPage() {
           ? 'Tem certeza que deseja cancelar esta consulta? Esta ação não pode ser desfeita.'
           : 'Tem certeza que deseja finalizar esta consulta? O atendimento será encerrado.'}
         confirmarLabel={confirmAcao?.cor === 'error' ? 'Sim, cancelar' : 'Sim, finalizar'}
+        loading={confirmando}
         onClose={() => setModalConfirm(false)}
         onConfirm={confirmarAcao}
       />

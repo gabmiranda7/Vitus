@@ -1,5 +1,7 @@
 import axios from 'axios';
 
+const CHAVES_SESSAO = ['token', 'nome', 'email', 'perfil', 'medicoId', 'temFoto'];
+
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || ''
 });
@@ -29,6 +31,18 @@ api.interceptors.response.use(
       else if (error.response.status === 401) mensagem = 'Sessão expirada. Faça login novamente';
       else if (error.response.status === 403) mensagem = 'Você não tem permissão para realizar esta ação';
       else mensagem = 'Ocorreu um erro inesperado';
+    }
+
+    const sessaoExpirada =
+      error.response?.status === 401 &&
+      !!localStorage.getItem('token') &&
+      !error.config?.url?.includes('/api/auth/login');
+
+    if (sessaoExpirada) {
+      CHAVES_SESSAO.forEach((chave) => localStorage.removeItem(chave));
+      if (window.location.pathname !== '/login') {
+        window.location.href = '/login';
+      }
     }
 
     error.mensagemBack = mensagem;
