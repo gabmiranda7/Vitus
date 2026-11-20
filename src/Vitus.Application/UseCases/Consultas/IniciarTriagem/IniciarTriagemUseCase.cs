@@ -1,4 +1,5 @@
 ﻿using Vitus.Communication.Consulta.Responses;
+using Vitus.Domain.Exceptions;
 using Vitus.Domain.Interfaces;
 
 namespace Vitus.Application.UseCases.Consultas.IniciarTriagem
@@ -24,7 +25,7 @@ namespace Vitus.Application.UseCases.Consultas.IniciarTriagem
             var consulta = await _consultaRepository.GetById(id);
 
             if (consulta == null)
-                throw new Exception("Consulta não encontrada");
+                throw new DomainException("Consulta não encontrada");
 
             consulta.IniciarTriagem();
 

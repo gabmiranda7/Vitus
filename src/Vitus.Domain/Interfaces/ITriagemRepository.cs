@@ -7,5 +7,6 @@ namespace Vitus.Domain.Interfaces
         Task Add(Triagem triagem);
         Task<Triagem?> GetById(Guid id);
         Task<List<Triagem>> GetAll();
+        Task<bool> ExistePorConsulta(Guid consultaId);
     }
 }

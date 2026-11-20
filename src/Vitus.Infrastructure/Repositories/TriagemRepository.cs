@@ -33,5 +33,12 @@ namespace Vitus.Infrastructure.Repositories
                 .AsNoTracking()
                 .ToListAsync();
         }
+
+        public async Task<bool> ExistePorConsulta(Guid consultaId)
+        {
+            return await _context.Triagens
+                .AsNoTracking()
+                .AnyAsync(t => t.ConsultaId == consultaId);
+        }
     }
 }
