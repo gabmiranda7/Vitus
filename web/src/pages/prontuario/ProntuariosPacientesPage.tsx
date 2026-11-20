@@ -15,6 +15,7 @@ import AccessAlarmIcon from '@mui/icons-material/AccessAlarm';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import FilterListOffIcon from '@mui/icons-material/FilterListOff';
 import Layout from '../../components/layout/Layout';
+import { pacienteCombinaComBusca } from '../../utils/busca';
 import api from '../../services/api';
 import { situacaoVencimento } from '../../components/receitas/vencimento';
 import { AcompanhamentoPaciente, Paciente, Tratamento } from '../../types';
@@ -88,8 +89,7 @@ export default function ProntuariosPacientesPage(): React.ReactElement {
 
   const filtrados = pacientes
     .filter(p => {
-      const buscaOk = p.nome.toLowerCase().includes(busca.toLowerCase()) ||
-        (p.cpf?.replace(/\D/g, '').includes(busca.replace(/\D/g, '')) && busca.length >= 3);
+      const buscaOk = pacienteCombinaComBusca(p, busca);
       return buscaOk && passaSituacao(tratamentosPorPaciente.get(p.id) ?? []);
     })
     .sort((a, b) => {

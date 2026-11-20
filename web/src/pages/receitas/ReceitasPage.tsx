@@ -18,6 +18,7 @@ import AccessAlarmIcon from '@mui/icons-material/AccessAlarm';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import FilterListOffIcon from '@mui/icons-material/FilterListOff';
 import Layout from '../../components/layout/Layout';
+import { pacienteCombinaComBusca } from '../../utils/busca';
 import AcompanhamentoVencimento from '../../components/receitas/AcompanhamentoVencimento';
 import { situacaoVencimento } from '../../components/receitas/vencimento';
 import api from '../../services/api';
@@ -229,7 +230,6 @@ export default function ReceitasPage() {
 
   const filtrados = useMemo(() => {
     setPagina(1);
-    const q = busca.toLowerCase();
 
     function passaSituacao(trats: Tratamento[]): boolean {
       if (situacao === 'todos') return true;
@@ -247,8 +247,7 @@ export default function ReceitasPage() {
 
     return pacientes
       .filter(p => {
-        const buscaOk = p.nome.toLowerCase().includes(q) ||
-          (p.cpf?.replace(/\D/g, '').includes(busca.replace(/\D/g, '')) && busca.length >= 3);
+        const buscaOk = pacienteCombinaComBusca(p, busca);
         return buscaOk && passaSituacao(tratamentosPorPaciente.get(p.id) ?? []);
       })
       .sort((a, b) => {

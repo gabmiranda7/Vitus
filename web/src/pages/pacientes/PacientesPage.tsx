@@ -19,6 +19,7 @@ import MedicalInformationIcon from '@mui/icons-material/MedicalInformation';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import FilterListOffIcon from '@mui/icons-material/FilterListOff';
 import Layout from '../../components/layout/Layout';
+import { pacienteCombinaComBusca } from '../../utils/busca';
 import ConfirmDialog from '../../components/ConfirmDialog';
 import FabNovo from '../../components/FabNovo';
 import api from '../../services/api';
@@ -213,12 +214,10 @@ export default function PacientesPage() {
   function limparFiltros() { setFiltroSexo(''); setFiltroFaixa('Todas'); }
 
   const filtrados = useMemo(() => {
-    const q = busca.toLowerCase();
     const faixa = FAIXAS_ETARIAS.find(f => f.label === filtroFaixa) ?? FAIXAS_ETARIAS[0];
 
     return pacientes.filter(p => {
-      const buscaOk = p.nome.toLowerCase().includes(q) ||
-        (p.cpf?.replace(/\D/g, '').includes(busca.replace(/\D/g, '')) && busca.length >= 3);
+      const buscaOk = pacienteCombinaComBusca(p, busca);
       const sexoOk = filtroSexo === '' || p.sexo === filtroSexo;
       const idade = calcularIdade(p.dataNascimento ?? undefined);
       const faixaOk = filtroFaixa === 'Todas' || (idade !== null && idade >= faixa.min && idade <= faixa.max);

@@ -81,8 +81,8 @@ export default function CadastroPage() {
       setSucesso('Cadastro enviado! Aguarde a aprovação de um administrador para acessar o sistema.');
       setTimeout(() => navigate('/login'), 4000);
     } catch (err: unknown) {
-      const e = err as { response?: { data?: { messages?: string[] } } };
-      setErro(e.response?.data?.messages?.[0] ?? 'Erro ao realizar cadastro');
+      const e = err as { mensagemBack?: string };
+      setErro(e.mensagemBack ?? 'Erro ao realizar cadastro');
       setStep(0);
     } finally {
       setLoading(false);
