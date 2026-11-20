@@ -1,4 +1,5 @@
-﻿using Vitus.Application.UseCases.Receitas.Acompanhamento;
+﻿using System.Globalization;
+using Vitus.Application.UseCases.Receitas.Acompanhamento;
 using Vitus.Communication.Receita.Requests;
 using Vitus.Domain.Entities;
 using Vitus.Domain.Enums;
@@ -45,8 +46,8 @@ namespace Vitus.Application.UseCases.Receitas.GerarReceita
                 throw new DomainException("Consulta não encontrada");
             await _acessoService.GarantirMedicoResponsavel(consulta);
 
-            if (consulta.Status == StatusConsulta.Cancelada)
-                throw new DomainException("Não é possível gerar receita para consulta cancelada");
+            if (consulta.Status != StatusConsulta.EmAtendimento)
+                throw new DomainException("Receita só pode ser criada durante o atendimento");
 
             var paciente = await _pacienteRepository.GetById(consulta.PacienteId);
             if (paciente == null)
@@ -66,14 +67,15 @@ namespace Vitus.Application.UseCases.Receitas.GerarReceita
             if (!Enum.TryParse<TipoUso>(request.TipoUso, ignoreCase: true, out var tipoUso))
                 throw new DomainException("Tipo de uso inválido. Use: Oral, Interno ou Externo");
 
+            // Monta e valida a receita em memória; nada é gravado ainda
             var receita = new Receita(consulta.Id, prontuario.Id);
             foreach (var m in request.Medicamentos)
                 receita.AdicionarMedicamento(
                     m.Nome, m.Dosagem, m.Posologia, m.Quantidade,
                     m.AcompanharVencimento, m.ValidadeDias);
 
-            await _receitaRepository.Add(receita);
-            await _auditoriaService.Registrar(AcaoAuditoria.EmissaoReceita, "Receita", receita.Id);
+            var dataFormatada = AcompanhamentoReceitas.DataLocal(receita.DataEmissao)
+                .ToString("dd/MM/yyyy", CultureInfo.InvariantCulture);
 
             var medicamentosDoc = request.Medicamentos
                 .Select((m, idx) =>
@@ -84,24 +86,18 @@ namespace Vitus.Application.UseCases.Receitas.GerarReceita
                 })
                 .ToList();
 
-            var dataFormatada = AcompanhamentoReceitas.DataFormatada();
+            // O documento é gerado primeiro: se falhar, nenhuma receita fica registrada
+            var arquivo = await _documentoService.GerarReceita(
+                tipoReceita,
+                tipoUso,
+                paciente.Nome,
+                paciente.Endereco,
+                medico.Nome,
+                dataFormatada,
+                medicamentosDoc);
 
-            byte[] arquivo;
-            try
-            {
-                arquivo = await _documentoService.GerarReceita(
-                    tipoReceita,
-                    tipoUso,
-                    paciente.Nome,
-                    paciente.Endereco,
-                    medico.Nome,
-                    dataFormatada,
-                    medicamentosDoc);
-            }
-            catch (Exception ex)
-            {
-                throw new DomainException($"Erro ao gerar documento: {ex.GetType().Name} - {ex.Message}");
-            }
+            await _receitaRepository.Add(receita);
+            await _auditoriaService.Registrar(AcaoAuditoria.EmissaoReceita, "Receita", receita.Id);
 
             var nomeArquivo = $"Receita_{tipoReceita}_{paciente.Nome.Replace(" ", "_")}_{dataFormatada.Replace("/", "-")}.docx";
 
