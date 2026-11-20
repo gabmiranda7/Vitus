@@ -12,7 +12,7 @@ namespace Vitus.Infrastructure.Mappings
             builder.HasKey(e => e.Id);
             builder.Property(e => e.Nome).IsRequired().HasMaxLength(200);
             builder.Property(e => e.COREN).IsRequired().HasMaxLength(50);
-            builder.Property(e => e.Especializacao).IsRequired().HasMaxLength(200);
+            builder.Property(e => e.Especializacao).HasMaxLength(200);
         }
     }
 }

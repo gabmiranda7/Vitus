@@ -131,7 +131,6 @@ namespace Vitus.Infrastructure.Migrations
                         .HasColumnName("coren");
 
                     b.Property<string>("Especializacao")
-                        .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)")
                         .HasColumnName("especializacao");

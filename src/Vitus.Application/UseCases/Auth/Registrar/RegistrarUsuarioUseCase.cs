@@ -42,22 +42,35 @@ namespace Vitus.Application.UseCases.Auth.Registrar
 
             var senhaHash = BCrypt.Net.BCrypt.HashPassword(request.Senha);
             var usuario = new Usuario(request.Nome, emailNormalizado, senhaHash, perfil);
-            await _usuarioRepository.Add(usuario);
+
+            // Constrói e valida os cadastros profissionais antes de gravar qualquer coisa,
+            // para não deixar um usuário órfão quando os dados forem inválidos.
+            Medico? medico = null;
+            Enfermeiro? enfermeiro = null;
 
             if (perfil == PerfilUsuario.Medico)
             {
                 var crm = request.CRM ?? $"CRM-PROVISÓRIO-{Guid.NewGuid().ToString()[..8].ToUpper()}";
                 var especialidade = request.Especialidade ?? "Clínico Geral";
-                var medico = new Medico(request.Nome, especialidade, crm, usuario.Id);
-                await _medicoRepository.Add(medico);
+                medico = new Medico(request.Nome, especialidade, crm, usuario.Id);
             }
 
             if (perfil == PerfilUsuario.Enfermeiro)
             {
                 var coren = request.COREN ?? $"COREN-PROVISÓRIO-{Guid.NewGuid().ToString()[..8].ToUpper()}";
-                var enfermeiro = new Enfermeiro(request.Nome, coren, request.Especializacao);
-                await _enfermeiroRepository.Add(enfermeiro);
+                var especializacao = string.IsNullOrWhiteSpace(request.Especializacao)
+                    ? null
+                    : request.Especializacao.Trim();
+                enfermeiro = new Enfermeiro(request.Nome, coren, especializacao);
             }
+
+            await _usuarioRepository.Add(usuario);
+
+            if (medico != null)
+                await _medicoRepository.Add(medico);
+
+            if (enfermeiro != null)
+                await _enfermeiroRepository.Add(enfermeiro);
 
             return new RegistroResponseJson
             {
