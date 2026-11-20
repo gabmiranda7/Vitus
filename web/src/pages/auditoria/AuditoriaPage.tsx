@@ -37,7 +37,11 @@ const acaoLabels: Record<string, string> = {
   RecusaCadastro: 'Recusa de Cadastro',
   AtualizacaoPerfil: 'Atualização de Perfil',
   LoginSucesso: 'Login Realizado',
-  LoginFalha: 'Falha no Login'
+  LoginFalha: 'Falha no Login',
+  AnaliseIaExame: 'Análise de Exame por IA',
+  AnotacaoClinica: 'Anotação Clínica',
+  InicioAtendimento: 'Início de Atendimento',
+  FinalizacaoConsulta: 'Finalização de Consulta'
 };
 
 const acaoCores: Record<string, string> = {
@@ -56,7 +60,11 @@ const acaoCores: Record<string, string> = {
   RecusaCadastro: '#c62828',
   AtualizacaoPerfil: '#00838f',
   LoginSucesso: '#2e7d32',
-  LoginFalha: '#d32f2f'
+  LoginFalha: '#d32f2f',
+  AnaliseIaExame: '#7b1fa2',
+  AnotacaoClinica: '#0277bd',
+  InicioAtendimento: '#6a1b9a',
+  FinalizacaoConsulta: '#2e7d32'
 };
 
 const POR_PAGINA = 10;
