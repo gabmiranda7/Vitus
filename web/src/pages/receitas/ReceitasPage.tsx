@@ -202,7 +202,7 @@ export default function ReceitasPage() {
         const texto = await error.response.data.text();
         try {
           const json = JSON.parse(texto);
-          mensagem = json.Messages?.[0] ?? json.mensagem ?? json.title ?? mensagem;
+          mensagem = json.Messages?.[0] ?? json.messages?.[0] ?? json.mensagem ?? json.title ?? mensagem;
         } catch { mensagem = texto; }
       } else {
         mensagem = error.response?.data?.mensagem ?? mensagem;

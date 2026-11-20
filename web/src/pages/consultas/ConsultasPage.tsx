@@ -272,7 +272,7 @@ export default function ConsultasPage() {
       let msg = 'Erro ao gerar receita';
       if (e.response?.data instanceof Blob) {
         const txt = await e.response.data.text();
-        try { const j = JSON.parse(txt); msg = j.Messages?.[0] ?? j.mensagem ?? msg; } catch { msg = txt; }
+        try { const j = JSON.parse(txt); msg = j.Messages?.[0] ?? j.messages?.[0] ?? j.mensagem ?? msg; } catch { msg = txt; }
       }
       setErro(msg);
     } finally { setGerando(false); }
@@ -707,7 +707,9 @@ export default function ConsultasPage() {
           <Divider sx={{ mb: 2 }} />
           <TextField label="Queixa principal / observações" fullWidth multiline rows={4}
             value={observacoes} onChange={(e) => setObservacoes(e.target.value)}
-            placeholder="Descreva a queixa principal do paciente..." />
+            placeholder="Descreva a queixa principal do paciente..."
+            slotProps={{ htmlInput: { maxLength: 500 } }}
+          />
         </DialogContent>
         <DialogActions sx={{ p: 2, gap: 1 }}>
           <Button onClick={fecharTriagem} variant="outlined" fullWidth>Cancelar</Button>
@@ -742,9 +744,11 @@ export default function ConsultasPage() {
           <TextField label="Anotações da consulta" fullWidth multiline rows={10}
             value={anotacoes} onChange={(e) => setAnotacoes(e.target.value)}
             placeholder={`Ex:\nQueixa principal: dor lombar há 3 dias\nExame físico: PA 130/85, FC 78bpm\nHipótese diagnóstica: lombalgia mecânica\nConduta: analgésico + repouso relativo`}
-            sx={{ '& .MuiInputBase-root': { fontFamily: 'monospace', fontSize: 14, lineHeight: 1.7 } }} />
+            sx={{ '& .MuiInputBase-root': { fontFamily: 'monospace', fontSize: 14, lineHeight: 1.7 } }}
+            slotProps={{ htmlInput: { maxLength: 2000 } }}
+          />
           <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 1 }}>
-            <Typography variant="caption" color="text.secondary">{anotacoes.length} caracteres</Typography>
+            <Typography variant="caption" color="text.secondary">{anotacoes.length}/2000 caracteres</Typography>
             <Typography variant="caption" color="text.secondary">Ctrl+Enter para salvar</Typography>
           </Box>
         </DialogContent>

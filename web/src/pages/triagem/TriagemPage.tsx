@@ -238,7 +238,8 @@ export default function TriagemPage() {
           <Divider sx={{ mb: 2 }} />
           <TextField label="Queixa principal / observações" fullWidth multiline rows={4}
             value={observacoes} onChange={(e) => setObservacoes(e.target.value)}
-            placeholder="Descreva a queixa principal do paciente, sintomas relatados, etc." />
+            placeholder="Descreva a queixa principal do paciente, sintomas relatados, etc." 
+            slotProps={{ htmlInput: { maxLength: 500 } }}/>
         </DialogContent>
         <DialogActions sx={{ p: 2, gap: 1 }}>
           <Button onClick={fecharModalTriagem} variant="outlined" fullWidth disabled={salvando}>Cancelar</Button>
