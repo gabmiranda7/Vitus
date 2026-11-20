@@ -6,12 +6,15 @@ using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Scalar.AspNetCore;
+using System.Security.Claims;
 using System.Text;
 using System.Text.Json;
 using System.Threading.RateLimiting;
 using Vitus.API.Extensions;
 using Vitus.API.Middlewares;
 using Vitus.Application.Validators.Pacientes;
+using Vitus.Domain.Enums;
+using Vitus.Domain.Interfaces;
 using Vitus.Infrastructure.Data;
 using Vitus.Infrastructure.Security;
 
@@ -44,6 +47,27 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             IssuerSigningKey = new SymmetricSecurityKey(
                 Encoding.UTF8.GetBytes(jwtKey!)),
             RoleClaimType = "http://schemas.microsoft.com/ws/2008/06/identity/claims/role"
+        };
+
+        options.Events = new JwtBearerEvents
+        {
+            OnTokenValidated = async context =>
+            {
+                var idClaim = context.Principal?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+                if (!Guid.TryParse(idClaim, out var usuarioId))
+                {
+                    context.Fail("Token sem identificação de usuário");
+                    return;
+                }
+
+                var repositorio = context.HttpContext.RequestServices
+                    .GetRequiredService<IUsuarioRepository>();
+                var usuario = await repositorio.GetById(usuarioId);
+
+                if (usuario == null || usuario.Status != StatusUsuario.Aprovado)
+                    context.Fail("Usuário inativo ou não aprovado");
+            }
         };
     });
 

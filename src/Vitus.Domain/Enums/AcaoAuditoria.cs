@@ -18,6 +18,9 @@
         AtualizacaoPerfil,
         LoginSucesso,
         LoginFalha,
-        AnaliseIaExame
+        AnaliseIaExame,
+        AnotacaoClinica,
+        InicioAtendimento,
+        FinalizacaoConsulta
     }
 }

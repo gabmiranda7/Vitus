@@ -8,15 +8,18 @@ namespace Vitus.Application.UseCases.Consultas.GetConsultaById
         private readonly IConsultaRepository _consultaRepository;
         private readonly IPacienteRepository _pacienteRepository;
         private readonly IMedicoRepository _medicoRepository;
+        private readonly IConsultaAcessoService _acessoService;
 
         public GetConsultaByIdUseCase(
             IConsultaRepository consultaRepository,
             IPacienteRepository pacienteRepository,
-            IMedicoRepository medicoRepository)
+            IMedicoRepository medicoRepository,
+            IConsultaAcessoService acessoService)
         {
             _consultaRepository = consultaRepository;
             _pacienteRepository = pacienteRepository;
             _medicoRepository = medicoRepository;
+            _acessoService = acessoService;
         }
 
         public async Task<ConsultaResponseJson?> Execute(Guid id)
@@ -25,6 +28,8 @@ namespace Vitus.Application.UseCases.Consultas.GetConsultaById
 
             if (consulta == null)
                 return null;
+
+            await _acessoService.GarantirResponsavelSeMedico(consulta);
 
             var paciente = await _pacienteRepository.GetById(consulta.PacienteId);
             var medico = await _medicoRepository.GetById(consulta.MedicoId);
