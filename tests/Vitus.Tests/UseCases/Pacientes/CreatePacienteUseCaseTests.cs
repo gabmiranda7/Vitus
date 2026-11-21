@@ -52,15 +52,26 @@ namespace Vitus.Tests.UseCases.Pacientes
         public async Task Execute_Success_ComCamposOpcionais()
         {
             var request = RequestValido("Maria Souza");
-            request.Cpf = "123.456.789-00";
+            request.Cpf = "529.982.247-25";
             request.Sexo = "Feminino";
             request.DataNascimento = new DateOnly(1990, 5, 15);
 
             var resultado = await _useCase.Execute(request);
 
             resultado.Nome.Should().Be("Maria Souza");
-            resultado.Cpf.Should().Be("123.456.789-00");
+            resultado.Cpf.Should().Be("529.982.247-25");
             resultado.Sexo.Should().Be("Feminino");
+        }
+
+        [Fact]
+        public async Task Execute_Success_CpfSoComDigitos_EGravadoFormatado()
+        {
+            var request = RequestValido();
+            request.Cpf = "52998224725";
+
+            var resultado = await _useCase.Execute(request);
+
+            resultado.Cpf.Should().Be("529.982.247-25");
         }
 
         [Fact]
@@ -72,6 +83,45 @@ namespace Vitus.Tests.UseCases.Pacientes
 
             await act.Should().ThrowAsync<DomainException>()
                 .WithMessage("Nome é obrigatório");
+        }
+
+        [Fact]
+        public async Task Execute_Fail_CpfInvalido()
+        {
+            var request = RequestValido();
+            request.Cpf = "123.456.789-00";
+
+            var act = async () => await _useCase.Execute(request);
+
+            await act.Should().ThrowAsync<DomainException>().WithMessage("CPF inválido");
+            _repositoryMock.Verify(r => r.Add(It.IsAny<Vitus.Domain.Entities.Paciente>()), Times.Never);
+        }
+
+        [Fact]
+        public async Task Execute_Fail_CpfJaCadastrado()
+        {
+            var request = RequestValido();
+            request.Cpf = "529.982.247-25";
+            _repositoryMock.Setup(r => r.ExisteCpf("529.982.247-25", null)).ReturnsAsync(true);
+
+            var act = async () => await _useCase.Execute(request);
+
+            await act.Should().ThrowAsync<DomainException>()
+                .WithMessage("Já existe um paciente cadastrado com este CPF");
+            _repositoryMock.Verify(r => r.Add(It.IsAny<Vitus.Domain.Entities.Paciente>()), Times.Never);
+        }
+
+        [Fact]
+        public async Task Execute_Fail_SemConsentimento()
+        {
+            var request = RequestValido();
+            request.AceitaTermos = false;
+
+            var act = async () => await _useCase.Execute(request);
+
+            await act.Should().ThrowAsync<DomainException>()
+                .WithMessage("O paciente precisa aceitar os termos de uso de dados");
+            _repositoryMock.Verify(r => r.Add(It.IsAny<Vitus.Domain.Entities.Paciente>()), Times.Never);
         }
     }
 }

@@ -10,6 +10,9 @@ namespace Vitus.Application.Validators.Pacientes
             RuleFor(x => x.Nome)
                 .NotEmpty().WithMessage("Nome é obrigatório")
                 .MaximumLength(200).WithMessage("Nome deve ter no máximo 200 caracteres");
+
+            RuleFor(x => x.AceitaTermos)
+                .Equal(true).WithMessage("O paciente precisa aceitar os termos de uso de dados");
         }
     }
 }

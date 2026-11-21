@@ -2,6 +2,7 @@
 using Vitus.Communication.Paciente.Responses;
 using Vitus.Domain.Entities;
 using Vitus.Domain.Enums;
+using Vitus.Domain.Exceptions;
 using Vitus.Domain.Interfaces;
 
 namespace Vitus.Application.UseCases.Pacientes.CreatePaciente
@@ -25,6 +26,9 @@ namespace Vitus.Application.UseCases.Pacientes.CreatePaciente
                 request.Profissao, request.EstadoCivil, request.InformacoesAdicionais,
                 request.AceitaTermos
             );
+
+            if (paciente.Cpf != null && await _pacienteRepository.ExisteCpf(paciente.Cpf, null))
+                throw new DomainException("Já existe um paciente cadastrado com este CPF");
 
             paciente.CriarProntuario();
             await _pacienteRepository.Add(paciente);

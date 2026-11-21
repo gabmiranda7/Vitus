@@ -3,6 +3,7 @@ using Vitus.Domain.Entities;
 using Vitus.Domain.Enums;
 using Vitus.Domain.Exceptions;
 using Vitus.Domain.Interfaces;
+using Vitus.Domain.ValueObjects;
 
 namespace Vitus.Application.UseCases.Pacientes.UpdatePaciente
 {
@@ -25,12 +26,17 @@ namespace Vitus.Application.UseCases.Pacientes.UpdatePaciente
                 throw new DomainException("Paciente não encontrado.");
 
             var camposAlterados = ObterCamposAlterados(paciente, request);
+            var cpfAnterior = paciente.Cpf;
 
             paciente.Atualizar(
                 request.Nome, request.Cpf, request.CartaoSus, request.DataNascimento,
                 request.Sexo, request.NomePai, request.NomeMae, request.Endereco,
                 request.Profissao, request.EstadoCivil, request.InformacoesAdicionais
             );
+
+            if (paciente.Cpf != null && paciente.Cpf != cpfAnterior
+                && await _repository.ExisteCpf(paciente.Cpf, paciente.Id))
+                throw new DomainException("Já existe um paciente cadastrado com este CPF");
 
             await _repository.Update(paciente);
 
@@ -46,7 +52,7 @@ namespace Vitus.Application.UseCases.Pacientes.UpdatePaciente
             var campos = new List<string>();
 
             if (paciente.Nome != request.Nome) campos.Add("Nome");
-            if (paciente.Cpf != request.Cpf) campos.Add("CPF");
+            if (CpfBrasileiro.SomenteDigitos(paciente.Cpf) != CpfBrasileiro.SomenteDigitos(request.Cpf)) campos.Add("CPF");
             if (paciente.CartaoSus != request.CartaoSus) campos.Add("Cartão SUS");
             if (paciente.DataNascimento != request.DataNascimento) campos.Add("Data de Nascimento");
             if (paciente.Sexo != request.Sexo) campos.Add("Sexo");

@@ -1,4 +1,5 @@
 ﻿using Vitus.Domain.Exceptions;
+using Vitus.Domain.ValueObjects;
 
 namespace Vitus.Domain.Entities
 {
@@ -26,9 +27,12 @@ namespace Vitus.Domain.Entities
             string? sexo, string? nomePai, string? nomeMae, string? endereco,
             string? profissao, string? estadoCivil, string? informacoesAdicionais, bool aceitaTermos)
         {
+            if (!aceitaTermos)
+                throw new DomainException("O paciente precisa aceitar os termos de uso de dados");
+
             Id = Guid.NewGuid();
             DefinirNome(nome);
-            Cpf = cpf;
+            DefinirCpf(cpf);
             CartaoSus = cartaoSus;
             DataNascimento = dataNascimento;
             Sexo = sexo;
@@ -53,7 +57,7 @@ namespace Vitus.Domain.Entities
             string? profissao, string? estadoCivil, string? informacoesAdicionais)
         {
             DefinirNome(nome);
-            Cpf = cpf;
+            DefinirCpf(cpf);
             CartaoSus = cartaoSus;
             DataNascimento = dataNascimento;
             Sexo = sexo;
@@ -70,6 +74,15 @@ namespace Vitus.Domain.Entities
             if (Prontuario != null)
                 throw new DomainException("Paciente já possui prontuário");
             Prontuario = new Prontuario(Id);
+        }
+
+        private void DefinirCpf(string? cpf)
+        {
+            // Um CPF legado igual ao já gravado é mantido, para não bloquear a edição dos outros campos
+            if (Cpf != null && CpfBrasileiro.SomenteDigitos(cpf) == CpfBrasileiro.SomenteDigitos(Cpf))
+                return;
+
+            Cpf = CpfBrasileiro.Normalizar(cpf);
         }
     }
 }
