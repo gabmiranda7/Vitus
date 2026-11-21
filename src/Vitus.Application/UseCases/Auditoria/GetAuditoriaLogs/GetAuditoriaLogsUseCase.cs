@@ -18,33 +18,23 @@ namespace Vitus.Application.UseCases.Auditoria.GetAuditoriaLogs
             DateTime? dataInicio = null,
             DateTime? dataFim = null)
         {
-            var logs = await _auditoriaRepository.GetAll();
+            var logs = await _auditoriaRepository.Buscar(
+                usuarioId,
+                entidadeAfetada,
+                dataInicio?.ToUniversalTime(),
+                dataFim?.ToUniversalTime());
 
-            if (usuarioId.HasValue)
-                logs = logs.Where(l => l.UsuarioId == usuarioId.Value).ToList();
-
-            if (!string.IsNullOrWhiteSpace(entidadeAfetada))
-                logs = logs.Where(l => l.EntidadeAfetada == entidadeAfetada).ToList();
-
-            if (dataInicio.HasValue)
-                logs = logs.Where(l => l.DataHora >= dataInicio.Value.ToUniversalTime()).ToList();
-
-            if (dataFim.HasValue)
-                logs = logs.Where(l => l.DataHora <= dataFim.Value.ToUniversalTime()).ToList();
-
-            return logs
-                .OrderByDescending(l => l.DataHora)
-                .Select(l => new AuditoriaLogResponseJson
-                {
-                    Id = l.Id,
-                    UsuarioId = l.UsuarioId,
-                    UsuarioNome = l.UsuarioNome,
-                    Acao = l.Acao.ToString(),
-                    EntidadeAfetada = l.EntidadeAfetada,
-                    EntidadeId = l.EntidadeId,
-                    DataHora = l.DataHora,
-                    Detalhes = l.Detalhes
-                }).ToList();
+            return logs.Select(l => new AuditoriaLogResponseJson
+            {
+                Id = l.Id,
+                UsuarioId = l.UsuarioId,
+                UsuarioNome = l.UsuarioNome,
+                Acao = l.Acao.ToString(),
+                EntidadeAfetada = l.EntidadeAfetada,
+                EntidadeId = l.EntidadeId,
+                DataHora = l.DataHora,
+                Detalhes = l.Detalhes
+            }).ToList();
         }
     }
 }
