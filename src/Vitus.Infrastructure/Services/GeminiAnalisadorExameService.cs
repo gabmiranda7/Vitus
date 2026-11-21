@@ -130,12 +130,19 @@ namespace Vitus.Infrastructure.Services
 
             foreach (var modelo in modelos)
             {
-                var url = $"{_settings.BaseUrl.TrimEnd('/')}/models/{modelo}:generateContent?key={_settings.ApiKey}";
+                var url = $"{_settings.BaseUrl.TrimEnd('/')}/models/{modelo}:generateContent";
                 const int maxTentativas = 2;
 
                 for (int tentativa = 1; tentativa <= maxTentativas; tentativa++)
                 {
-                    using var response = await _httpClient.PostAsJsonAsync(url, payload, ct);
+                    using var requisicao = new HttpRequestMessage(HttpMethod.Post, url)
+                    {
+                        Content = JsonContent.Create(payload)
+                    };
+
+                    requisicao.Headers.Add("x-goog-api-key", _settings.ApiKey);
+
+                    using var response = await _httpClient.SendAsync(requisicao, ct);
                     body = await response.Content.ReadAsStringAsync(ct);
 
                     if (response.IsSuccessStatusCode)

@@ -4,10 +4,10 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_DB: VitusDB
-      POSTGRES_USER: ${DB_USER}
-      POSTGRES_PASSWORD: ${DB_PASS}
+      POSTGRES_USER: ${DB_USER:?defina DB_USER no .env}
+      POSTGRES_PASSWORD: ${DB_PASS:?defina DB_PASS no .env}
     ports:
-      - "5433:5432"
+      - "${BIND_ADDRESS:-127.0.0.1}:5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -22,7 +22,7 @@ services:
       dockerfile: src/Vitus.API/Dockerfile
     restart: unless-stopped
     ports:
-      - "5000:8080"
+      - "${BIND_ADDRESS:-127.0.0.1}:5000:8080"
     depends_on:
       db:
         condition: service_healthy
@@ -30,8 +30,9 @@ services:
       DB_USER: ${DB_USER}
       DB_PASS: ${DB_PASS}
       ConnectionStrings__DefaultConnection: "Host=db;Port=5432;Database=VitusDB;Username=${DB_USER};Password=${DB_PASS}"
-      JWT_KEY: ${JWT_KEY}
-      ENCRYPTION_KEY: ${ENCRYPTION_KEY}
+      JWT_KEY: ${JWT_KEY:?defina JWT_KEY no .env}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:?defina ENCRYPTION_KEY no .env}
+      Gemini__ApiKey: ${GEMINI_API_KEY:-}
       ASPNETCORE_ENVIRONMENT: Production
       Storage__Raiz: /app/storage
       Storage__Templates: /app/storage/templates
@@ -43,10 +44,10 @@ services:
     build:
       context: ./web
       args:
-        VITE_API_URL: ${VITE_API_URL:-http://localhost:5000}
+        VITE_API_URL: ${VITE_API_URL:-}
     restart: unless-stopped
     ports:
-      - "3000:80"
+      - "${BIND_ADDRESS:-127.0.0.1}:3000:80"
     depends_on:
       - api
 

@@ -41,6 +41,13 @@ namespace Vitus.API.Middlewares
             {
                 await HandleExceptionAsync(context, HttpStatusCode.BadRequest, new List<string> { ex.Message });
             }
+            catch (BadHttpRequestException ex)
+            {
+                var mensagem = ex.StatusCode == StatusCodes.Status413PayloadTooLarge
+                    ? "Os arquivos enviados excedem o tamanho máximo permitido. Reduza o tamanho e tente novamente"
+                    : "Requisição inválida";
+                await HandleExceptionAsync(context, (HttpStatusCode)ex.StatusCode, new List<string> { mensagem });
+            }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Erro não tratado em {Metodo} {Caminho}", context.Request.Method, context.Request.Path);
