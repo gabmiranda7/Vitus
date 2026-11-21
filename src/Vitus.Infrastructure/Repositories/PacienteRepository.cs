@@ -45,5 +45,12 @@ namespace Vitus.Infrastructure.Repositories
                 .AsNoTracking()
                 .ToListAsync();
         }
+
+        public async Task<bool> ExisteCpf(string cpf, Guid? ignorarId)
+        {
+            return await _context.Pacientes
+                .AsNoTracking()
+                .AnyAsync(p => p.Cpf == cpf && (ignorarId == null || p.Id != ignorarId));
+        }
     }
 }

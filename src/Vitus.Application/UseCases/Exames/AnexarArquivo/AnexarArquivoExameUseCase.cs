@@ -13,6 +13,8 @@ namespace Vitus.Application.UseCases.Exames.AnexarArquivo
         private readonly IExameRepository _exameRepository;
         private readonly IArquivoService _arquivoService;
         private readonly IAuditoriaService _auditoriaService;
+        private readonly IConsultaRepository _consultaRepository;
+        private readonly IConsultaAcessoService _acessoService;
 
         private static readonly Dictionary<string, byte[][]> AssinaturasValidas = new()
         {
@@ -25,11 +27,15 @@ namespace Vitus.Application.UseCases.Exames.AnexarArquivo
         public AnexarArquivoExameUseCase(
             IExameRepository exameRepository,
             IArquivoService arquivoService,
-            IAuditoriaService auditoriaService)
+            IAuditoriaService auditoriaService,
+            IConsultaRepository consultaRepository,
+            IConsultaAcessoService acessoService)
         {
             _exameRepository = exameRepository;
             _arquivoService = arquivoService;
             _auditoriaService = auditoriaService;
+            _consultaRepository = consultaRepository;
+            _acessoService = acessoService;
         }
 
         // Mantém compatibilidade com o endpoint atual POST /api/exames/{id}/arquivo
@@ -46,6 +52,8 @@ namespace Vitus.Application.UseCases.Exames.AnexarArquivo
 
             if (exame == null)
                 throw new DomainException("Exame não encontrado");
+
+            await GarantirAcesso(exame);
 
             if (exame.TotalArquivos() + arquivos.Count > Exame.MaximoArquivos)
                 throw new DomainException($"Limite máximo de {Exame.MaximoArquivos} arquivos por exame.");
@@ -77,6 +85,18 @@ namespace Vitus.Application.UseCases.Exames.AnexarArquivo
                 $"Prontuário {exame.ProntuarioId} (+{arquivos.Count} arquivo(s))");
 
             return RegistrarExameUseCase.MapToResponse(exame);
+        }
+
+        private async Task GarantirAcesso(Exame exame)
+        {
+            if (!exame.ConsultaId.HasValue)
+                return;
+
+            var consulta = await _consultaRepository.GetById(exame.ConsultaId.Value);
+
+            // exames.consulta_id não tem chave estrangeira: sem a consulta não há responsável a conferir
+            if (consulta != null)
+                await _acessoService.GarantirMedicoResponsavel(consulta);
         }
 
         private static async Task ValidarConteudoReal(IFormFile arquivo, string extensao)

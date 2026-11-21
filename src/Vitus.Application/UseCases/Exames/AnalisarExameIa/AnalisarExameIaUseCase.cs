@@ -17,6 +17,8 @@ namespace Vitus.Application.UseCases.Exames.AnalisarExameIa
         private readonly IArquivoService _arquivoService;
         private readonly IAnalisadorExameIaService _analisadorIaService;
         private readonly IAuditoriaService _auditoriaService;
+        private readonly IConsultaRepository _consultaRepository;
+        private readonly IConsultaAcessoService _acessoService;
 
         public AnalisarExameIaUseCase(
             IExameRepository exameRepository,
@@ -24,8 +26,12 @@ namespace Vitus.Application.UseCases.Exames.AnalisarExameIa
             IPacienteRepository pacienteRepository,
             IArquivoService arquivoService,
             IAnalisadorExameIaService analisadorIaService,
-            IAuditoriaService auditoriaService)
+            IAuditoriaService auditoriaService,
+            IConsultaRepository consultaRepository,
+            IConsultaAcessoService acessoService)
         {
+            _consultaRepository = consultaRepository;
+            _acessoService = acessoService;
             _exameRepository = exameRepository;
             _prontuarioRepository = prontuarioRepository;
             _pacienteRepository = pacienteRepository;
@@ -39,6 +45,15 @@ namespace Vitus.Application.UseCases.Exames.AnalisarExameIa
             var exame = await _exameRepository.GetById(exameId);
             if (exame == null)
                 throw new DomainException("Exame não encontrado");
+
+            if (exame.ConsultaId.HasValue)
+            {
+                var consulta = await _consultaRepository.GetById(exame.ConsultaId.Value);
+
+                // exames.consulta_id não tem chave estrangeira: sem a consulta não há responsável a conferir
+                if (consulta != null)
+                    await _acessoService.GarantirMedicoResponsavel(consulta);
+            }
 
             var listaArquivos = ObterListaArquivos(exame);
             if (listaArquivos.Count == 0)
