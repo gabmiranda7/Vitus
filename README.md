@@ -13,12 +13,12 @@
 
 O **Vitus** é um sistema de prontuário eletrônico desenvolvido como Trabalho de Conclusão de Curso em **Engenharia de Software** na **Associação Educacional Dom Bosco (AEDB)** — Resende, RJ.
 
-O objetivo do sistema é centralizar o histórico clínico de pacientes em uma única plataforma, permitindo o registro e consulta de informações médicas por diferentes profissionais de saúde, com controle de acesso por perfil, rastreabilidade de atendimentos e conformidade com a **Lei Geral de Proteção de Dados (LGPD)**.
+O objetivo é centralizar o histórico clínico de pacientes em uma única plataforma, permitindo o registro e a consulta de informações médicas por diferentes profissionais de saúde, com controle de acesso por perfil, rastreabilidade das ações e atenção à **Lei Geral de Proteção de Dados (LGPD)**.
 
-A aplicação segue os princípios de **Clean Architecture** e **Domain-Driven Design (DDD)**, com foco em organização, escalabilidade e facilidade de manutenção.
+A aplicação segue os princípios de **Clean Architecture** e **Domain-Driven Design (DDD)**.
 
 > **Autor:** Carlos Gabriel Miranda da Silva e Gustavo Pimentel de Andrade  
-> **Curso:** Engenharia de Software — 7º Período  
+> **Curso:** Engenharia de Software — 8º Período  
 > **Instituição:** Associação Educacional Dom Bosco (AEDB) — Resende, RJ  
 > **Repositório:** [github.com/gabmiranda7/Vitus](https://github.com/gabmiranda7/Vitus)
 
@@ -35,88 +35,86 @@ A aplicação segue os princípios de **Clean Architecture** e **Domain-Driven D
 | Banco de Dados | PostgreSQL |
 | Autenticação | JWT (JSON Web Tokens) |
 | Validação | FluentValidation |
+| Documentos | OpenXML (receitas em Word) |
+| IA | Google Gemini (apoio à leitura de exames) |
 | Testes | xUnit + Moq + FluentAssertions |
 | Containerização | Docker + Docker Compose |
-| Versionamento | Git + GitHub |
 
 ---
 
 ## 👥 Perfis de Usuário
 
-O Vitus possui três perfis de acesso, cada um com permissões específicas:
+Todo cadastro novo (Médico, Enfermeiro ou Recepcionista) nasce **pendente** e só consegue entrar depois de aprovado por um Administrador. O Administrador é criado manualmente (veja *Primeiro administrador*).
+
+### 🟫 Administrador
+- Aprovar ou recusar cadastros pendentes
+- Desativar e reativar o acesso de usuários
+- Consultar a trilha de auditoria, com filtros e exportação para Excel
 
 ### 🟦 Recepcionista
-Responsável pela gestão administrativa do sistema.
 - Cadastrar, editar e excluir pacientes
-- Cadastrar médicos
 - Agendar e cancelar consultas
-- Visualizar o dashboard geral
+- Consultar a lista de médicos
 
 ### 🟧 Enfermeiro
-Responsável pelo acompanhamento e triagem dos pacientes.
-- Realizar triagem (pressão arterial, temperatura, observações)
-- Acompanhar pacientes em espera
+- Registrar a triagem (pressão arterial, temperatura e observações)
+- Acompanhar a fila de pacientes
 - Visualizar prontuários
-- Visualizar o dashboard geral
 
 ### 🟩 Médico
-Responsável pelo atendimento clínico.
-- Visualizar e gerenciar sua agenda diária
-- Iniciar, anotar e finalizar consultas
-- Emitir receitas com medicamentos
-- Visualizar prontuários completos de pacientes
-- Buscar prontuário por paciente
+- Ver apenas as próprias consultas e a agenda do dia
+- Iniciar, anotar, finalizar e cancelar suas consultas
+- Emitir receitas (comum ou especial) em Word, com validade para acompanhar vencimentos
+- Registrar exames, anexar arquivos e pedir a análise por IA
+- Visualizar prontuários completos
+
+Todos os perfis podem editar o nome e a foto no próprio perfil.
 
 ---
 
 ## 🔄 Fluxo Clínico
-
-O fluxo de atendimento segue os seguintes estados:
 
 ```
 Agendada → Em Triagem → Aguardando Atendimento → Em Atendimento → Finalizada
                                                                  ↘ Cancelada
 ```
 
-1. A **Recepcionista** agenda a consulta → status `Agendada`
-2. O **Enfermeiro** inicia a triagem, registra sinais vitais → status `Em Triagem` → `Aguardando Atendimento`
-3. O **Médico** inicia o atendimento → status `Em Atendimento`
-4. O **Médico** registra anotações clínicas, emite receitas e finaliza → status `Finalizada`
+1. A **Recepcionista** agenda a consulta → `Agendada`
+2. O **Enfermeiro** registra os sinais vitais → `Em Triagem` → `Aguardando Atendimento` (a triagem é obrigatória para avançar)
+3. O **Médico** responsável inicia o atendimento → `Em Atendimento`
+4. O **Médico** registra anotações, receitas e exames, e finaliza → `Finalizada`
 
 ---
 
-## 🔒 Privacidade e LGPD
+## 🔒 Segurança e LGPD
 
-O Vitus foi desenvolvido com atenção à **Lei Geral de Proteção de Dados (Lei nº 13.709/2018)**:
-
-- O cadastro de pacientes exige **consentimento explícito** antes de qualquer coleta de dados pessoais
-- Campos sensíveis como CPF, Cartão SUS, data de nascimento, filiação e informações médicas adicionais são **opcionais**
-- O paciente pode solicitar a **exclusão de seus dados** a qualquer momento
-- O acesso aos dados clínicos é restrito por perfil — somente Médicos e Enfermeiros visualizam prontuários
-- Dados de escrita (cadastro, edição, exclusão de pacientes) são restritos exclusivamente à Recepcionista
+- **Autenticação:** JWT com expiração de 8 horas. A cada requisição o status do usuário é conferido, então desativar ou recusar uma conta derruba a sessão na hora.
+- **Controle de acesso por perfil** e restrição do médico às próprias consultas.
+- **Criptografia AES** por coluna nas anotações clínicas e nas observações de triagem (chave em `ENCRYPTION_KEY`).
+- **Auditoria** de login, acesso a prontuários, anotações, receitas, exames, aprovações e alterações de pacientes.
+- **Bloqueio de tentativas de login** (por e-mail) e **rate limiting** por IP.
+- **Cadastro de pacientes:** consentimento explícito exigido pela API, CPF validado e sem duplicidade. CPF, cartão SUS e dados de filiação são opcionais.
+- **Exclusão de paciente** remove também os arquivos de exame do disco.
+- **Análise de exames por IA:** o conteúdo dos arquivos é enviado ao serviço Gemini. As instruções pedem que dados pessoais sejam ignorados e o contexto clínico enviado é anonimizado, mas isso **não garante** que identificadores impressos no próprio documento deixem de ser enviados. Use com essa ciência. O resultado é um apoio e não substitui a avaliação médica.
 
 ---
 
 ## 🧱 Arquitetura
 
-O projeto segue Clean Architecture, separando responsabilidades em camadas independentes:
-
-### Camadas do Back-end
+### Back-end
 
 ```
 src/
 ├── Vitus.API            → Controllers, middlewares, configuração JWT, DI
-├── Vitus.Application    → Use Cases, regras de fluxo, interfaces
-├── Vitus.Communication  → DTOs de requisição e resposta (Request/Response JSON)
-├── Vitus.Domain         → Entidades, enums, regras de negócio puras, exceções
-└── Vitus.Infrastructure → EF Core, DbContext, implementações de repositórios
+├── Vitus.Application    → Use Cases, validadores, regras de fluxo
+├── Vitus.Communication  → DTOs de requisição e resposta
+├── Vitus.Domain         → Entidades, enums, regras de negócio, exceções
+└── Vitus.Infrastructure → EF Core, repositórios, arquivos, documentos, IA
 ```
-
-### Dependências entre Camadas
 
 | Camada | Depende de |
 |---|---|
-| API | Application, Communication |
+| API | Application, Communication, Infrastructure |
 | Application | Domain, Communication |
 | Communication | — |
 | Domain | — |
@@ -125,47 +123,32 @@ src/
 ### Front-end
 
 ```
-web/
-├── src/
-│   ├── components/   → Layout, componentes reutilizáveis
-│   ├── contexts/     → AuthContext (autenticação + tema)
-│   ├── pages/        → Telas por domínio (consultas, pacientes, prontuários...)
-│   ├── routes/       → Definição de rotas com PrivateRoute por perfil
-│   ├── services/     → Instância Axios com interceptors
-│   └── types/        → Interfaces TypeScript
+web/src/
+├── components/   → Layout e componentes reutilizáveis
+├── contexts/     → AuthContext (sessão, foto e tema)
+├── pages/        → Telas por domínio
+├── routes/       → Rotas protegidas por perfil
+├── services/     → Instância Axios com interceptors
+├── types/        → Interfaces TypeScript
+└── utils/        → Funções auxiliares
 ```
-
----
-
-## 🧠 Conceitos Aplicados
-
-- **Clean Architecture** — separação de responsabilidades em camadas independentes
-- **Domain-Driven Design (DDD)** — modelagem orientada ao domínio clínico
-- **SOLID** — princípios aplicados nos Use Cases e repositórios
-- **JWT** — autenticação stateless com controle de perfil via claims
-- **FluentValidation** — validação de entrada com mensagens padronizadas
-- **Conventional Commits** — padronização do histórico de commits
-- **LGPD** — consentimento explícito e controle de acesso a dados sensíveis
 
 ---
 
 ## ⚙️ Variáveis de Ambiente
 
-### `.env` (raiz do projeto — usado pelo Docker Compose)
+Copie `.env.example` para `.env` na raiz do projeto (usado pelo Docker Compose):
 
-```env
-DB_USER=postgres
-DB_PASS=suasenha
-JWT_KEY=sua-chave-secreta-longa
-```
+| Variável | Obrigatória | Descrição |
+|---|---|---|
+| `DB_USER` / `DB_PASS` | Sim | Credenciais do PostgreSQL |
+| `JWT_KEY` | Sim | Chave de assinatura dos tokens (longa e aleatória) |
+| `ENCRYPTION_KEY` | Sim | Chave da criptografia AES. **Guarde uma cópia: sem ela, os dados criptografados ficam ilegíveis** |
+| `GEMINI_API_KEY` | Não | Habilita a análise de exames por IA |
+| `VITE_API_URL` | Não | Deixe **vazio** no Docker: o nginx encaminha `/api` para a API |
+| `BIND_ADDRESS` | Não | Padrão `127.0.0.1`. Use `0.0.0.0` para acessar de outra máquina |
 
-### `web/.env` (usado localmente com Vite)
-
-```env
-VITE_API_URL=http://localhost:5000
-```
-
-> Em produção via Docker, o `VITE_API_URL` deve ser deixado vazio — o nginx faz o proxy automaticamente para `/api/`.
+Para desenvolvimento local do front, crie `web/.env` com `VITE_API_URL=http://localhost:5000`.
 
 ---
 
@@ -173,95 +156,114 @@ VITE_API_URL=http://localhost:5000
 
 ### 🐳 Via Docker (Recomendado)
 
-A maneira mais simples de rodar toda a aplicação (API + banco + front-end) é via Docker.
-
-**Pré-requisitos:** Git e Docker Desktop instalados.
+**Pré-requisitos:** Git e Docker Desktop.
 
 ```bash
-# 1. Clone o repositório
 git clone https://github.com/gabmiranda7/Vitus
 cd Vitus
-
-# 2. Crie o arquivo .env na raiz com as variáveis acima
-
-# 3. Crie o arquivo web/.env com VITE_API_URL vazio
-
-# 4. Suba os containers
-docker-compose up --build
+cp .env.example .env     # edite e preencha as chaves
+docker compose up --build
 ```
 
-A aplicação estará disponível em `http://localhost:3000`.  
-A documentação interativa da API (Scalar) estará em `http://localhost:5000/scalar/v1`.
+- Aplicação: `http://localhost:3000`
+- Documentação da API (Scalar): `http://localhost:5000/scalar/v1`
 
----
+Por padrão as portas só escutam em `127.0.0.1`.
 
 ### 💻 Execução Local (Desenvolvimento)
 
-**Pré-requisitos:** .NET 10 SDK, Node.js 20+, PostgreSQL rodando localmente.
+**Pré-requisitos:** .NET 10 SDK, Node.js 20+ e PostgreSQL.
 
-**Back-end:**
 ```bash
+# Back-end
 cd src/Vitus.API
-dotnet run
-```
-> A API sobe em `http://localhost:5000`.
+dotnet run            # http://localhost:5063
 
-**Front-end:**
-```bash
+# Front-end
 cd web
 npm install
-npm run dev
+npm run dev           # http://localhost:5173
 ```
-> O front sobe em `http://localhost:5173`.
+
+Configure `ConnectionStrings`, `JWT_KEY`, `ENCRYPTION_KEY` e `DB_USER`/`DB_PASS` por variáveis de ambiente ou *user secrets*.
+
+### Primeiro administrador
+
+O cadastro público bloqueia o perfil Administrador. Para criar o primeiro, cadastre uma conta como Recepcionista e promova no banco:
+
+```sql
+UPDATE usuarios SET perfil = 'Administrador', status = 1 WHERE email = 'seu@email.com';
+```
+
+---
+
+## 🌐 Deploy em servidor (VPS)
+
+1. Suba o projeto com `docker compose up -d --build` (as portas ficam em `127.0.0.1`).
+2. Instale o nginx no servidor e use-o como proxy HTTPS na frente do container `frontend` (porta 3000):
+
+```nginx
+server {
+    server_name seu-dominio.com.br;
+    client_max_body_size 16m;
+
+    location / {
+        proxy_pass http://127.0.0.1:3000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $remote_addr;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 400s;
+    }
+}
+```
+
+3. Gere o certificado: `sudo certbot --nginx -d seu-dominio.com.br`.
+4. Faça backup periódico do volume `postgres_data`, do volume `storage_data` (exames e fotos) e da `ENCRYPTION_KEY`.
 
 ---
 
 ## 🧪 Testes
-
-A aplicação conta com testes automatizados utilizando **xUnit**, **Moq** e **FluentAssertions**, cobrindo os principais Use Cases do sistema.
 
 ```bash
 cd tests/Vitus.Tests
 dotnet test
 ```
 
-### Cobertura atual
+Os testes são unitários (repositórios simulados) e cobrem:
 
 | Módulo | Casos testados |
 |---|---|
-| Auth | Login com sucesso, email inválido, senha inválida, perfil inválido, email duplicado, CRM provisório |
-| Consultas | Criação, fluxo completo de status (Domain) |
-| Médicos | Criação, listagem, busca por ID |
-| Pacientes | Criação, listagem, busca por ID, edição, exclusão |
+| Auth | Login, cadastro, atualização de perfil e foto, bloqueio de tentativas |
+| Consultas | Criação, fluxo de status, acesso por médico, triagem obrigatória, auditoria, validação de data |
+| Médicos | Listagem (apenas contas aprovadas) e busca por ID |
+| Pacientes | Criação (CPF e consentimento), listagem, busca, edição, exclusão |
+| Prontuários | Acompanhamento de receitas |
+| Receitas | Criação, geração do documento, acompanhamento de vencimento |
+| Triagens | Registro de triagem |
+| Validadores | Tamanho de textos criptografados e data de consulta |
 
 ---
 
 ## 🗺️ Roadmap
 
-- [x] Estrutura inicial do projeto
-- [x] Configuração da arquitetura (Clean Architecture + DDD)
-- [x] Autenticação e autorização (JWT + perfis)
-- [x] Cadastro de pacientes (CRUD completo + LGPD)
-- [x] Cadastro de médicos
-- [x] Agendamento de consultas
-- [x] Fluxo de status da consulta (Triagem → Atendimento → Finalização)
-- [x] Registro de triagem com sinais vitais
-- [x] Registro de receitas e medicamentos
+- [x] Arquitetura (Clean Architecture + DDD)
+- [x] Autenticação, perfis e aprovação de cadastros
+- [x] Cadastro de pacientes com consentimento (LGPD)
+- [x] Agendamento e fluxo de status das consultas
+- [x] Triagem com sinais vitais
+- [x] Receitas em Word com acompanhamento de validade
 - [x] Prontuário único por paciente com histórico completo
-- [x] Busca de prontuário por paciente (Médico/Enfermeiro)
-- [x] Agenda diária do médico
-- [x] Dashboard com gráficos e estatísticas
-- [x] Middleware de tratamento de erros
-- [x] Validação de inputs (FluentValidation)
-- [x] Testes automatizados
+- [x] Exames com anexos e análise de apoio por IA
+- [x] Auditoria e exportação em Excel
+- [x] Criptografia de dados clínicos sensíveis
 - [x] Containerização com Docker
-- [x] Conformidade com LGPD
-- [x] Anexo de exames vinculados ao prontuário
-- [x] Geração de receitas automaticamente
-- [ ] Deploy em produção
+- [ ] Deploy em produção (VPS, HTTPS)
+- [ ] Pipeline de CI/CD
+- [ ] Recuperação de senha por e-mail
+- [ ] Validação de senha forte
 
 ---
 
 ## 📌 Status do Projeto
 
-✅ Funcionalidades principais implementadas e testadas. Em fase de finalização para entrega do TCC.
+✅ Funcionalidades principais implementadas e testadas. Em fase de correções e finalização para a entrega do TCC.
