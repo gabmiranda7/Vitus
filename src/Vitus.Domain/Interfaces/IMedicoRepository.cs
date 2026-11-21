@@ -8,6 +8,7 @@ namespace Vitus.Domain.Interfaces
         Task<Medico?> GetById(Guid id);
         Task<Medico?> GetByUsuarioId(Guid usuarioId);
         Task<List<Medico>> GetAll();
+        Task<List<Medico>> GetByIds(IReadOnlyCollection<Guid> ids);
         Task Update(Medico medico);
     }
 }

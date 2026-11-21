@@ -39,8 +39,13 @@ namespace Vitus.Application.UseCases.Prontuarios.GetProntuarioByPacienteId
 
             await _auditoriaService.Registrar(AcaoAuditoria.AcessoProntuario, "Prontuario", prontuario.Id);
 
-            var pacientes = await _pacienteRepository.GetAll();
-            var medicos = await _medicoRepository.GetAll();
+            var pacientes = new List<Paciente>();
+            var paciente = await _pacienteRepository.GetById(prontuario.PacienteId);
+            if (paciente != null)
+                pacientes.Add(paciente);
+
+            var medicos = await _medicoRepository.GetByIds(
+                prontuario.Consultas.Select(c => c.MedicoId).Distinct().ToList());
 
             return MapToResponse(prontuario, pacientes, medicos);
         }

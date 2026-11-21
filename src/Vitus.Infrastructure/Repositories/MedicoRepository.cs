@@ -40,6 +40,13 @@ namespace Vitus.Infrastructure.Repositories
                 .AsNoTracking()
                 .ToListAsync();
         }
+        public async Task<List<Medico>> GetByIds(IReadOnlyCollection<Guid> ids)
+        {
+            return await _context.Medicos
+                .AsNoTracking()
+                .Where(m => ids.Contains(m.Id))
+                .ToListAsync();
+        }
 
         public async Task Update(Medico medico)
         {

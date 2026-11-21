@@ -56,17 +56,7 @@ namespace Vitus.Application.UseCases.Consultas.CreateConsulta
             await _consultaRepository.Add(consulta);
             await _auditoriaService.Registrar(AcaoAuditoria.CriacaoConsulta, "Consulta", consulta.Id);
 
-            return new ConsultaResponseJson
-            {
-                Id = consulta.Id,
-                PacienteId = consulta.PacienteId,
-                MedicoId = consulta.MedicoId,
-                DataConsulta = consulta.DataConsulta,
-                Status = consulta.Status.ToString(),
-                NomePaciente = paciente.Nome,
-                NomeMedico = medico.Nome,
-                Anotacoes = consulta.Anotacoes
-            };
+            return ConsultaMapper.ToResponse(consulta, paciente, medico);
         }
     }
 }

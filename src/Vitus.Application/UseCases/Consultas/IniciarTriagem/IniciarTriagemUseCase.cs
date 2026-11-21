@@ -34,16 +34,7 @@ namespace Vitus.Application.UseCases.Consultas.IniciarTriagem
             var paciente = await _pacienteRepository.GetById(consulta.PacienteId);
             var medico = await _medicoRepository.GetById(consulta.MedicoId);
 
-            return new ConsultaResponseJson
-            {
-                Id = consulta.Id,
-                PacienteId = consulta.PacienteId,
-                MedicoId = consulta.MedicoId,
-                DataConsulta = consulta.DataConsulta,
-                Status = consulta.Status.ToString(),
-                NomePaciente = paciente!.Nome,
-                NomeMedico = medico!.Nome
-            };
+            return ConsultaMapper.ToResponse(consulta, paciente!, medico!);
         }
     }
 }

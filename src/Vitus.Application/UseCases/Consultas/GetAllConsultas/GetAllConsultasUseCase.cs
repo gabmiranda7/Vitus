@@ -49,17 +49,7 @@ namespace Vitus.Application.UseCases.Consultas.GetAllConsultas
                 var paciente = pacientes.First(p => p.Id == c.PacienteId);
                 var medico = medicos.First(m => m.Id == c.MedicoId);
 
-                return new ConsultaResponseJson
-                {
-                    Id = c.Id,
-                    PacienteId = c.PacienteId,
-                    MedicoId = c.MedicoId,
-                    DataConsulta = c.DataConsulta,
-                    Status = c.Status.ToString(),
-                    NomePaciente = paciente.Nome,
-                    NomeMedico = medico.Nome,
-                    Anotacoes = c.Anotacoes
-                };
+                return ConsultaMapper.ToResponse(c, paciente, medico);
             }).ToList();
         }
     }

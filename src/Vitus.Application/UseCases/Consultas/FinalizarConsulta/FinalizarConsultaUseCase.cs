@@ -43,17 +43,7 @@ namespace Vitus.Application.UseCases.Consultas.FinalizarConsulta
             var paciente = await _pacienteRepository.GetById(consulta.PacienteId);
             var medico = await _medicoRepository.GetById(consulta.MedicoId);
 
-            return new ConsultaResponseJson
-            {
-                Id = consulta.Id,
-                PacienteId = consulta.PacienteId,
-                MedicoId = consulta.MedicoId,
-                DataConsulta = consulta.DataConsulta,
-                Status = consulta.Status.ToString(),
-                NomePaciente = paciente!.Nome,
-                NomeMedico = medico!.Nome,
-                Anotacoes = consulta.Anotacoes
-            };
+            return ConsultaMapper.ToResponse(consulta, paciente!, medico!);
         }
     }
 }

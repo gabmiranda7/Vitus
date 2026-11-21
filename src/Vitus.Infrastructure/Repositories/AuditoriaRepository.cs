@@ -54,5 +54,26 @@ namespace Vitus.Infrastructure.Repositories
                 .OrderByDescending(a => a.DataHora)
                 .ToListAsync();
         }
+        public async Task<List<AuditoriaLog>> Buscar(
+            Guid? usuarioId, string? entidadeAfetada, DateTime? inicio, DateTime? fim)
+        {
+            var consulta = _context.Auditorias.AsNoTracking().AsQueryable();
+
+            if (usuarioId.HasValue)
+                consulta = consulta.Where(a => a.UsuarioId == usuarioId.Value);
+
+            if (!string.IsNullOrWhiteSpace(entidadeAfetada))
+                consulta = consulta.Where(a => a.EntidadeAfetada == entidadeAfetada);
+
+            if (inicio.HasValue)
+                consulta = consulta.Where(a => a.DataHora >= inicio.Value);
+
+            if (fim.HasValue)
+                consulta = consulta.Where(a => a.DataHora <= fim.Value);
+
+            return await consulta
+                .OrderByDescending(a => a.DataHora)
+                .ToListAsync();
+        }
     }
 }

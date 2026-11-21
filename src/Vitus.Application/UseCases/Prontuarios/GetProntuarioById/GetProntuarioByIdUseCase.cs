@@ -3,6 +3,7 @@ using Vitus.Communication.Consulta.Responses;
 using Vitus.Communication.Prontuario.Responses;
 using Vitus.Communication.Receita.Responses;
 using Vitus.Communication.Triagem.Responses;
+using Vitus.Domain.Entities;
 using Vitus.Domain.Enums;
 using Vitus.Domain.Exceptions;
 using Vitus.Domain.Interfaces;
@@ -37,8 +38,13 @@ namespace Vitus.Application.UseCases.Prontuarios.GetProntuarioById
 
             await _auditoriaService.Registrar(AcaoAuditoria.AcessoProntuario, "Prontuario", id);
 
-            var pacientes = await _pacienteRepository.GetAll();
-            var medicos = await _medicoRepository.GetAll();
+            var pacientes = new List<Paciente>();
+            var paciente = await _pacienteRepository.GetById(prontuario.PacienteId);
+            if (paciente != null)
+                pacientes.Add(paciente);
+
+            var medicos = await _medicoRepository.GetByIds(
+                prontuario.Consultas.Select(c => c.MedicoId).Distinct().ToList());
 
             return GetProntuarioByPacienteIdUseCase.MapToResponse(prontuario, pacientes, medicos);
         }
