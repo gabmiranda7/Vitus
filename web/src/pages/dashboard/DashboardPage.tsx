@@ -128,7 +128,7 @@ export default function DashboardPage() {
       rota: '/auditoria',
     },
     {
-      label: 'Usuários Ativos',
+      label: 'Usuários com Atividade',
       valor: usuariosUnicos,
       cor: '#7b1fa2',
       icon: <PeopleIcon />,
