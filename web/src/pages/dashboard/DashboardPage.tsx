@@ -15,73 +15,12 @@ import HistoryIcon from '@mui/icons-material/History';
 import TodayIcon from '@mui/icons-material/Today';
 import HowToRegIcon from '@mui/icons-material/HowToReg';
 import Layout from '../../components/layout/Layout';
+import { iniciais, corAvatar } from '../../utils/pessoas';
+import { statusCores, statusLabels } from '../../utils/consulta';
+import { acaoLabels, acaoCores } from '../../utils/auditoria';
 import api from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
 import { Consulta, AuditoriaLog } from '../../types';
-
-const statusCores: Record<string, string> = {
-  Agendada: '#1976d2',
-  EmTriagem: '#ed6c02',
-  AguardandoAtendimento: '#0288d1',
-  EmAtendimento: '#7b1fa2',
-  Finalizada: '#2e7d32',
-  Cancelada: '#d32f2f',
-};
-
-const statusLabels: Record<string, string> = {
-  Agendada: 'Agendada',
-  EmTriagem: 'Em Triagem',
-  AguardandoAtendimento: 'Aguardando',
-  EmAtendimento: 'Em Atendimento',
-  Finalizada: 'Finalizada',
-  Cancelada: 'Cancelada',
-};
-
-const acaoLabels: Record<string, string> = {
-  AcessoProntuario: 'Acesso a Prontuário',
-  CriacaoConsulta: 'Criação de Consulta',
-  CancelamentoConsulta: 'Cancelamento de Consulta',
-  RegistroTriagem: 'Registro de Triagem',
-  EmissaoReceita: 'Emissão de Receita',
-  CriacaoPaciente: 'Criação de Paciente',
-  EdicaoPaciente: 'Edição de Paciente',
-  ExclusaoPaciente: 'Exclusão de Paciente',
-  RegistroExame: 'Registro de Exame',
-  AnexoExame: 'Anexo de Arquivo em Exame',
-  DownloadExame: 'Download de Arquivo de Exame',
-  AprovacaoCadastro: 'Aprovação de Cadastro',
-  RecusaCadastro: 'Recusa de Cadastro',
-  AtualizacaoPerfil: 'Atualização de Perfil',
-  LoginSucesso: 'Login Realizado',
-  LoginFalha: 'Falha no Login',
-  AnaliseIaExame: 'Análise de Exame por IA',
-  AnotacaoClinica: 'Anotação Clínica',
-  InicioAtendimento: 'Início de Atendimento',
-  FinalizacaoConsulta: 'Finalização de Consulta',
-};
-
-const acaoCores: Record<string, string> = {
-  AcessoProntuario: '#0288d1',
-  CriacaoConsulta: '#1976d2',
-  CancelamentoConsulta: '#d32f2f',
-  RegistroTriagem: '#ed6c02',
-  EmissaoReceita: '#2e7d32',
-  CriacaoPaciente: '#6a1b9a',
-  EdicaoPaciente: '#5d4037',
-  ExclusaoPaciente: '#b71c1c',
-  RegistroExame: '#00796b',
-  AnexoExame: '#0097a7',
-  DownloadExame: '#455a64',
-  AprovacaoCadastro: '#388e3c',
-  RecusaCadastro: '#c62828',
-  AtualizacaoPerfil: '#00838f',
-  LoginSucesso: '#2e7d32',
-  LoginFalha: '#d32f2f',
-  AnaliseIaExame: '#7b1fa2',
-  AnotacaoClinica: '#0277bd',
-  InicioAtendimento: '#6a1b9a',
-  FinalizacaoConsulta: '#2e7d32',
-};
 
 const statusAtivos = [
   'EmAtendimento',
@@ -91,15 +30,6 @@ const statusAtivos = [
 ];
 
 const LIMITE_LISTA = 5;
-
-function iniciais(nome: string) {
-  return nome.split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase();
-}
-
-function corAvatar(nome: string) {
-  const cores = ['#1976d2', '#388e3c', '#7b1fa2', '#c62828', '#f57c00', '#0097a7'];
-  return cores[nome.charCodeAt(0) % cores.length];
-}
 
 function saudacao() {
   const h = new Date().getHours();

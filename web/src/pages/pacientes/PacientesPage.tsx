@@ -19,6 +19,7 @@ import MedicalInformationIcon from '@mui/icons-material/MedicalInformation';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import FilterListOffIcon from '@mui/icons-material/FilterListOff';
 import Layout from '../../components/layout/Layout';
+import { iniciais, corAvatar, calcularIdade, idadeLabel } from '../../utils/pessoas';
 import { pacienteCombinaComBusca } from '../../utils/busca';
 import ConfirmDialog from '../../components/ConfirmDialog';
 import FabNovo from '../../components/FabNovo';
@@ -36,30 +37,6 @@ const FAIXAS_ETARIAS = [
   { label: 'Adulto (18–59)', min: 18, max: 59 },
   { label: 'Idoso (60+)', min: 60, max: 999 },
 ];
-
-function iniciais(nome: string) {
-  return nome.split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase();
-}
-
-function corAvatar(nome: string) {
-  const cores = ['#1976d2', '#388e3c', '#7b1fa2', '#c62828', '#f57c00', '#0097a7', '#5d4037'];
-  return cores[nome.charCodeAt(0) % cores.length];
-}
-
-function calcularIdade(dataNascimento?: string): number | null {
-  if (!dataNascimento) return null;
-  const hoje = new Date();
-  const nasc = new Date(dataNascimento);
-  let idade = hoje.getFullYear() - nasc.getFullYear();
-  const m = hoje.getMonth() - nasc.getMonth();
-  if (m < 0 || (m === 0 && hoje.getDate() < nasc.getDate())) idade--;
-  return idade;
-}
-
-function idadeLabel(dataNascimento?: string): string {
-  const idade = calcularIdade(dataNascimento);
-  return idade !== null ? `${idade} anos` : '';
-}
 
 function formatarCpf(cpf: string): string {
   const s = cpf.replace(/\D/g, '').substring(0, 11);

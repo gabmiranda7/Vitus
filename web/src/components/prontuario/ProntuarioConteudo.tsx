@@ -22,6 +22,8 @@ import AddIcon from '@mui/icons-material/Add';
 import AccessAlarmIcon from '@mui/icons-material/AccessAlarm';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import api from '../../services/api';
+import { iniciais, idadeLabel } from '../../utils/pessoas';
+import { statusCores, statusLabels } from '../../utils/consulta';
 import { useAuth } from '../../contexts/AuthContext';
 import TratamentosAcompanhados from '../receitas/TratamentosAcompanhados';
 import ExameAnaliseIaPanel from './ExameAnaliseIaPanel';
@@ -41,37 +43,12 @@ const categoriaCor: Record<string, string> = {
   Cardiologico: '#ad1457', Fisico: '#2e7d32', Outro: '#546e7a',
 };
 
-const statusCores: Record<string, string> = {
-  Agendada: '#1976d2', EmTriagem: '#ed6c02', AguardandoAtendimento: '#0288d1',
-  EmAtendimento: '#7b1fa2', Finalizada: '#2e7d32', Cancelada: '#d32f2f',
-};
-
-const statusLabels: Record<string, string> = {
-  Agendada: 'Agendada', EmTriagem: 'Em Triagem',
-  AguardandoAtendimento: 'Aguardando', EmAtendimento: 'Em Atendimento',
-  Finalizada: 'Finalizada', Cancelada: 'Cancelada',
-};
-
-function iniciais(nome: string) {
-  return nome.split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase();
-}
-
 function dataChave(data: string) {
   return new Date(data).toLocaleDateString('pt-BR');
 }
 
 function horaFormatada(data: string) {
   return new Date(data).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-}
-
-function calcularIdade(dataNascimento?: string): string {
-  if (!dataNascimento) return '';
-  const hoje = new Date();
-  const nasc = new Date(dataNascimento);
-  let idade = hoje.getFullYear() - nasc.getFullYear();
-  const m = hoje.getMonth() - nasc.getMonth();
-  if (m < 0 || (m === 0 && hoje.getDate() < nasc.getDate())) idade--;
-  return `${idade} anos`;
 }
 
 function formatarCpf(cpf?: string) {
@@ -448,7 +425,7 @@ export default function ProntuarioConteudo({
                   {paciente.dataNascimento && (
                     <Chip
                       icon={<PersonIcon sx={{ fontSize: 14, color: 'white !important' }} />}
-                      label={`${calcularIdade(paciente.dataNascimento)}${paciente.sexo ? ` · ${paciente.sexo}` : ''}`}
+                      label={`${idadeLabel(paciente.dataNascimento)}${paciente.sexo ? ` · ${paciente.sexo}` : ''}`}
                       size="small"
                       sx={{ bgcolor: 'rgba(255,255,255,0.15)', color: 'white', fontSize: 11 }}
                     />

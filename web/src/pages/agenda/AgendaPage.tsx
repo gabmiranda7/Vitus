@@ -12,36 +12,11 @@ import ConfirmDialog from '../../components/ConfirmDialog';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import EditNoteIcon from '@mui/icons-material/EditNote';
 import Layout from '../../components/layout/Layout';
+import { iniciais, corAvatar } from '../../utils/pessoas';
+import { statusCores, statusLabels } from '../../utils/consulta';
 import api from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
 import { Consulta } from '../../types';
-
-const statusCores: Record<string, string> = {
-  Agendada: '#1976d2',
-  EmTriagem: '#ed6c02',
-  AguardandoAtendimento: '#0288d1',
-  EmAtendimento: '#7b1fa2',
-  Finalizada: '#2e7d32',
-  Cancelada: '#d32f2f',
-};
-
-const statusLabels: Record<string, string> = {
-  Agendada: 'Agendada',
-  EmTriagem: 'Em Triagem',
-  AguardandoAtendimento: 'Aguardando',
-  EmAtendimento: 'Em Atendimento',
-  Finalizada: 'Finalizada',
-  Cancelada: 'Cancelada',
-};
-
-function iniciais(nome: string) {
-  return nome.split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase();
-}
-
-function corAvatar(nome: string) {
-  const cores = ['#1976d2', '#388e3c', '#7b1fa2', '#c62828', '#f57c00', '#0097a7'];
-  return cores[nome.charCodeAt(0) % cores.length];
-}
 
 function horaFormatada(data: string) {
   return new Date(data).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });

@@ -31,20 +31,11 @@ import Layout from '../../components/layout/Layout';
 import AcompanhamentoVencimento from '../../components/receitas/AcompanhamentoVencimento';
 import api from '../../services/api';
 import ConfirmDialog from '../../components/ConfirmDialog';
+import { iniciais, corAvatar } from '../../utils/pessoas';
+import { statusCores, statusLabels } from '../../utils/consulta';
 import FabNovo from '../../components/FabNovo';
 import { Consulta, Medico, Paciente, Medicamento } from '../../types';
 import { useAuth } from '../../contexts/AuthContext';
-
-const statusCores: Record<string, string> = {
-  Agendada: '#1976d2', EmTriagem: '#ed6c02', AguardandoAtendimento: '#0288d1',
-  EmAtendimento: '#7b1fa2', Finalizada: '#2e7d32', Cancelada: '#d32f2f',
-};
-
-const statusLabels: Record<string, string> = {
-  Agendada: 'Agendada', EmTriagem: 'Em Triagem',
-  AguardandoAtendimento: 'Aguardando', EmAtendimento: 'Em Atendimento',
-  Finalizada: 'Finalizada', Cancelada: 'Cancelada',
-};
 
 const statusAtivos = ['Agendada', 'EmTriagem', 'AguardandoAtendimento', 'EmAtendimento'];
 const statusHistorico = ['Finalizada', 'Cancelada'];
@@ -64,13 +55,6 @@ const medVazio = (): Medicamento => ({
   acompanharVencimento: false, validadeDias: null,
 });
 
-function iniciais(nome: string) {
-  return nome.split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase();
-}
-function corAvatar(nome: string) {
-  const cores = ['#1976d2', '#388e3c', '#7b1fa2', '#c62828', '#f57c00', '#0097a7'];
-  return cores[nome.charCodeAt(0) % cores.length];
-}
 function dataHojeLocal() {
   const agora = new Date(Date.now() + 10 * 60000);
   const pad = (n: number) => String(n).padStart(2, '0');

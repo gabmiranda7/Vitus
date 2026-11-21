@@ -18,6 +18,7 @@ import AccessAlarmIcon from '@mui/icons-material/AccessAlarm';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import FilterListOffIcon from '@mui/icons-material/FilterListOff';
 import Layout from '../../components/layout/Layout';
+import { iniciais, corAvatar } from '../../utils/pessoas';
 import { pacienteCombinaComBusca } from '../../utils/busca';
 import AcompanhamentoVencimento from '../../components/receitas/AcompanhamentoVencimento';
 import { situacaoVencimento } from '../../components/receitas/vencimento';
@@ -26,15 +27,6 @@ import { useAuth } from '../../contexts/AuthContext';
 import { AcompanhamentoPaciente, Consulta, Medicamento, Paciente, Prontuario, Tratamento } from '../../types';
 
 const POR_PAGINA = 12;
-
-function iniciais(nome: string) {
-  return nome.split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase();
-}
-
-function corAvatar(nome: string) {
-  const cores = ['#1976d2', '#388e3c', '#7b1fa2', '#c62828', '#f57c00', '#0097a7'];
-  return cores[nome.charCodeAt(0) % cores.length];
-}
 
 const TIPOS_RECEITA = [
   { value: 'Comum', label: 'Receita Comum (1 via)' },

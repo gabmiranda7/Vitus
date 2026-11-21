@@ -9,6 +9,7 @@ import ThermostatIcon from '@mui/icons-material/Thermostat';
 import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import Layout from '../../components/layout/Layout';
+import { iniciais, corAvatar } from '../../utils/pessoas';
 import api from '../../services/api';
 import { Consulta } from '../../types';
 
@@ -24,15 +25,6 @@ function tempoLabel(min: number): string {
   const h = Math.floor(min / 60);
   const m = min % 60;
   return m > 0 ? `${h}h ${m}min` : `${h}h`;
-}
-
-function iniciais(nome: string) {
-  return nome.split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase();
-}
-
-function corAvatar(nome: string) {
-  const cores = ['#1976d2', '#388e3c', '#7b1fa2', '#c62828', '#f57c00', '#0097a7'];
-  return cores[nome.charCodeAt(0) % cores.length];
 }
 
 const statusConfig: Record<string, { label: string; cor: string }> = {

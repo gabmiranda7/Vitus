@@ -15,29 +15,11 @@ import AccessAlarmIcon from '@mui/icons-material/AccessAlarm';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import FilterListOffIcon from '@mui/icons-material/FilterListOff';
 import Layout from '../../components/layout/Layout';
+import { iniciais, corAvatar, idadeLabel } from '../../utils/pessoas';
 import { pacienteCombinaComBusca } from '../../utils/busca';
 import api from '../../services/api';
 import { situacaoVencimento } from '../../components/receitas/vencimento';
 import { AcompanhamentoPaciente, Paciente, Tratamento } from '../../types';
-
-function iniciais(nome: string) {
-  return nome.split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase();
-}
-
-function corAvatar(nome: string) {
-  const cores = ['#1976d2', '#388e3c', '#7b1fa2', '#c62828', '#f57c00', '#0097a7', '#5d4037'];
-  return cores[nome.charCodeAt(0) % cores.length];
-}
-
-function calcularIdade(dataNascimento?: string): string {
-  if (!dataNascimento) return '';
-  const hoje = new Date();
-  const nasc = new Date(dataNascimento);
-  let idade = hoje.getFullYear() - nasc.getFullYear();
-  const m = hoje.getMonth() - nasc.getMonth();
-  if (m < 0 || (m === 0 && hoje.getDate() < nasc.getDate())) idade--;
-  return `${idade} anos`;
-}
 
 export default function ProntuariosPacientesPage(): React.ReactElement {
   const navigate = useNavigate();
@@ -217,7 +199,7 @@ export default function ProntuariosPacientesPage(): React.ReactElement {
                     <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', mt: 0.5 }}>
                       {p.dataNascimento && (
                         <Typography variant="caption" color="text.secondary">
-                          {calcularIdade(p.dataNascimento)}
+                          {idadeLabel(p.dataNascimento)}
                         </Typography>
                       )}
                       {p.sexo && (

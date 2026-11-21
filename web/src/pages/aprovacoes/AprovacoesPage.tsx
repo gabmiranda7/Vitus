@@ -17,6 +17,7 @@ import PeopleIcon from '@mui/icons-material/People';
 import SearchIcon from '@mui/icons-material/Search';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import Layout from '../../components/layout/Layout';
+import { iniciais } from '../../utils/pessoas';
 import api from '../../services/api';
 
 interface UsuarioItem {
@@ -34,10 +35,6 @@ const perfilInfo: Record<string, { label: string; cor: string; Icon: React.Eleme
   Enfermeiro:    { label: 'Enfermeiro(a)', cor: '#2e7d32', Icon: VaccinesIcon },
   Recepcionista: { label: 'Recepcionista', cor: '#6a1b9a', Icon: SupportAgentIcon },
 };
-
-function iniciais(nome: string) {
-  return nome.split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase();
-}
 
 type Acao = 'aprovar' | 'recusar' | 'desativar' | 'reativar';
 
