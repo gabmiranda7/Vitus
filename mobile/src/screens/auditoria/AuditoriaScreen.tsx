@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo } from "react";
 import {
   View,
   ScrollView,
@@ -8,7 +8,7 @@ import {
   Platform,
   RefreshControl,
   Alert,
-} from 'react-native';
+} from "react-native";
 import {
   Text,
   Card,
@@ -20,25 +20,25 @@ import {
   Button,
   Snackbar,
   useTheme,
-} from 'react-native-paper';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
-import * as FileSystem from 'expo-file-system/legacy';
-import * as Sharing from 'expo-sharing';
-import * as Clipboard from 'expo-clipboard';
-import api from '../../services/api';
-import { AuditoriaLog } from '../../types';
-import { cores } from '../../theme';
-import { acaoIcones, acaoCores, acaoLabel } from '../../utils/auditoria';
+} from "react-native-paper";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
+import * as FileSystem from "expo-file-system/legacy";
+import * as Sharing from "expo-sharing";
+import * as Clipboard from "expo-clipboard";
+import api from "../../services/api";
+import { AuditoriaLog } from "../../types";
+import { cores } from "../../theme";
+import { acaoIcones, acaoCores, acaoLabel } from "../../utils/auditoria";
 
-type PeriodoFiltro = 'todos' | 'hoje' | '7dias' | 'mes';
+type PeriodoFiltro = "todos" | "hoje" | "7dias" | "mes";
 const TAMANHO_PAGINA = 20;
 
 function escaparHtml(valor: string): string {
   return valor
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
 }
 
 export default function AuditoriaScreen() {
@@ -47,13 +47,13 @@ export default function AuditoriaScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [exportando, setExportando] = useState(false);
-  const [erro, setErro] = useState('');
-  const [copiadoMsg, setCopiadoMsg] = useState('');
+  const [erro, setErro] = useState("");
+  const [copiadoMsg, setCopiadoMsg] = useState("");
 
-  const [busca, setBusca] = useState('');
+  const [busca, setBusca] = useState("");
   const [filtrosAbertos, setFiltrosAbertos] = useState(false);
-  const [periodo, setPeriodo] = useState<PeriodoFiltro>('todos');
-  const [filtroAcao, setFiltroAcao] = useState('');
+  const [periodo, setPeriodo] = useState<PeriodoFiltro>("todos");
+  const [filtroAcao, setFiltroAcao] = useState("");
   const [expandidoId, setExpandidoId] = useState<string | null>(null);
   const [limiteExibido, setLimiteExibido] = useState(TAMANHO_PAGINA);
 
@@ -68,11 +68,11 @@ export default function AuditoriaScreen() {
 
   async function carregar() {
     try {
-      const response = await api.get('/api/auditoria');
+      const response = await api.get("/api/auditoria");
       setLogs(response.data);
-      setErro('');
+      setErro("");
     } catch {
-      setErro('Erro ao carregar logs de auditoria');
+      setErro("Erro ao carregar logs de auditoria");
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -86,19 +86,19 @@ export default function AuditoriaScreen() {
 
   function alternarExpansao(id: string) {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    setExpandidoId(prev => (prev === id ? null : id));
+    setExpandidoId((prev) => (prev === id ? null : id));
   }
 
   function alternarFiltros() {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    setFiltrosAbertos(prev => !prev);
+    setFiltrosAbertos((prev) => !prev);
   }
 
   function limparFiltros() {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    setBusca('');
-    setPeriodo('todos');
-    setFiltroAcao('');
+    setBusca("");
+    setPeriodo("todos");
+    setFiltroAcao("");
   }
 
   async function copiarId(label: string, valor: string) {
@@ -107,13 +107,17 @@ export default function AuditoriaScreen() {
   }
 
   const logsOrdenados = useMemo(
-    () => [...logs].sort((a, b) => new Date(b.dataHora).getTime() - new Date(a.dataHora).getTime()),
-    [logs]
+    () =>
+      [...logs].sort(
+        (a, b) =>
+          new Date(b.dataHora).getTime() - new Date(a.dataHora).getTime(),
+      ),
+    [logs],
   );
 
   const acoesDisponiveis = useMemo(
-    () => [...new Set(logs.map(l => l.acao))].sort(),
-    [logs]
+    () => [...new Set(logs.map((l) => l.acao))].sort(),
+    [logs],
   );
 
   const filtrados = useMemo(() => {
@@ -121,18 +125,19 @@ export default function AuditoriaScreen() {
     const agora = new Date();
     const hojeStr = agora.toDateString();
 
-    return logsOrdenados.filter(log => {
+    return logsOrdenados.filter((log) => {
       if (filtroAcao && log.acao !== filtroAcao) return false;
 
-      if (periodo !== 'todos') {
+      if (periodo !== "todos") {
         const dataLog = new Date(log.dataHora);
-        if (periodo === 'hoje' && dataLog.toDateString() !== hojeStr) return false;
-        if (periodo === '7dias') {
+        if (periodo === "hoje" && dataLog.toDateString() !== hojeStr)
+          return false;
+        if (periodo === "7dias") {
           const limite = new Date(agora);
           limite.setDate(agora.getDate() - 7);
           if (dataLog < limite) return false;
         }
-        if (periodo === 'mes') {
+        if (periodo === "mes") {
           if (
             dataLog.getMonth() !== agora.getMonth() ||
             dataLog.getFullYear() !== agora.getFullYear()
@@ -154,29 +159,31 @@ export default function AuditoriaScreen() {
 
   const visiveis = useMemo(
     () => filtrados.slice(0, limiteExibido),
-    [filtrados, limiteExibido]
+    [filtrados, limiteExibido],
   );
 
   const hojeStr = new Date().toDateString();
-  const logsHoje = logs.filter(l => new Date(l.dataHora).toDateString() === hojeStr).length;
-  const usuariosUnicos = new Set(logs.map(l => l.usuarioId)).size;
+  const logsHoje = logs.filter(
+    (l) => new Date(l.dataHora).toDateString() === hojeStr,
+  ).length;
+  const usuariosUnicos = new Set(logs.map((l) => l.usuarioId)).size;
 
-  const qtdFiltrosAtivos = (periodo !== 'todos' ? 1 : 0) + (filtroAcao ? 1 : 0);
+  const qtdFiltrosAtivos = (periodo !== "todos" ? 1 : 0) + (filtroAcao ? 1 : 0);
   const temAlgumFiltro = Boolean(busca || qtdFiltrosAtivos > 0);
 
   async function exportarRelatorio() {
     if (filtrados.length === 0) return;
     setExportando(true);
     try {
-      const emitidoEm = new Date().toLocaleString('pt-BR');
+      const emitidoEm = new Date().toLocaleString("pt-BR");
       const linhasHtml = filtrados
         .map((l, idx) => {
-          const bg = idx % 2 === 0 ? '#ffffff' : '#f1f5f9';
+          const bg = idx % 2 === 0 ? "#ffffff" : "#f1f5f9";
           const label = acaoLabel[l.acao] ?? l.acao;
-          const detalhes = (l.detalhes ?? '—').replace(/\r?\n/g, ' ');
+          const detalhes = (l.detalhes ?? "—").replace(/\r?\n/g, " ");
           return `
             <tr style="background-color:${bg};height:24pt;">
-              <td style="text-align:center;white-space:nowrap;">${escaparHtml(new Date(l.dataHora).toLocaleString('pt-BR'))}</td>
+              <td style="text-align:center;white-space:nowrap;">${escaparHtml(new Date(l.dataHora).toLocaleString("pt-BR"))}</td>
               <td>${escaparHtml(l.usuarioNome)}</td>
               <td style="font-weight:600;">${escaparHtml(label)}</td>
               <td style="text-align:center;">${escaparHtml(l.entidadeAfetada)}</td>
@@ -185,7 +192,7 @@ export default function AuditoriaScreen() {
             </tr>
           `;
         })
-        .join('');
+        .join("");
 
       const html = `
         <html xmlns:o="urn:schemas-microsoft-com:office:office"
@@ -221,18 +228,18 @@ export default function AuditoriaScreen() {
       const nomeArquivo = `auditoria_vitus_${new Date().toISOString().slice(0, 10)}.xls`;
       const caminho = FileSystem.cacheDirectory + nomeArquivo;
 
-      await FileSystem.writeAsStringAsync(caminho, '\uFEFF' + html, {
+      await FileSystem.writeAsStringAsync(caminho, "\uFEFF" + html, {
         encoding: FileSystem.EncodingType.UTF8,
       });
 
       if (await Sharing.isAvailableAsync()) {
         await Sharing.shareAsync(caminho, {
-          mimeType: 'application/vnd.ms-excel',
-          dialogTitle: 'Exportar Auditoria Vitus',
+          mimeType: "application/vnd.ms-excel",
+          dialogTitle: "Exportar Auditoria Vitus",
         });
       }
     } catch {
-      Alert.alert('Erro', 'Não foi possível exportar o relatório.');
+      Alert.alert("Erro", "Não foi possível exportar o relatório.");
     } finally {
       setExportando(false);
     }
@@ -276,28 +283,62 @@ export default function AuditoriaScreen() {
 
       <ScrollView
         contentContainerStyle={styles.conteudo}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
       >
         {/* Cards compactos de resumo */}
         <View style={styles.statsRow}>
           <Card style={[styles.statCard, { borderLeftColor: cores.primaria }]}>
             <Card.Content style={styles.statContent}>
-              <Text variant="labelSmall" style={{ color: theme.colors.onSurfaceVariant }}>Total</Text>
-              <Text variant="titleMedium" style={[styles.statValor, { color: cores.primaria }]}>{logs.length}</Text>
+              <Text
+                variant="labelSmall"
+                style={{ color: theme.colors.onSurfaceVariant }}
+              >
+                Total
+              </Text>
+              <Text
+                variant="titleMedium"
+                style={[styles.statValor, { color: cores.primaria }]}
+              >
+                {logs.length}
+              </Text>
             </Card.Content>
           </Card>
 
           <Card style={[styles.statCard, { borderLeftColor: cores.sucesso }]}>
             <Card.Content style={styles.statContent}>
-              <Text variant="labelSmall" style={{ color: theme.colors.onSurfaceVariant }}>Hoje</Text>
-              <Text variant="titleMedium" style={[styles.statValor, { color: cores.sucesso }]}>{logsHoje}</Text>
+              <Text
+                variant="labelSmall"
+                style={{ color: theme.colors.onSurfaceVariant }}
+              >
+                Hoje
+              </Text>
+              <Text
+                variant="titleMedium"
+                style={[styles.statValor, { color: cores.sucesso }]}
+              >
+                {logsHoje}
+              </Text>
             </Card.Content>
           </Card>
 
-          <Card style={[styles.statCard, { borderLeftColor: cores.secundaria }]}>
+          <Card
+            style={[styles.statCard, { borderLeftColor: cores.secundaria }]}
+          >
             <Card.Content style={styles.statContent}>
-              <Text variant="labelSmall" style={{ color: theme.colors.onSurfaceVariant }}>Usuários</Text>
-              <Text variant="titleMedium" style={[styles.statValor, { color: cores.secundaria }]}>{usuariosUnicos}</Text>
+              <Text
+                variant="labelSmall"
+                style={{ color: theme.colors.onSurfaceVariant }}
+              >
+                Usuários
+              </Text>
+              <Text
+                variant="titleMedium"
+                style={[styles.statValor, { color: cores.secundaria }]}
+              >
+                {usuariosUnicos}
+              </Text>
             </Card.Content>
           </Card>
         </View>
@@ -329,17 +370,17 @@ export default function AuditoriaScreen() {
             <Text
               variant="labelMedium"
               style={{
-                fontWeight: '700',
+                fontWeight: "700",
                 color:
                   filtrosAbertos || qtdFiltrosAtivos > 0
                     ? theme.colors.onSecondaryContainer
                     : theme.colors.onSurfaceVariant,
               }}
             >
-              Filtros{qtdFiltrosAtivos > 0 ? ` (${qtdFiltrosAtivos})` : ''}
+              Filtros{qtdFiltrosAtivos > 0 ? ` (${qtdFiltrosAtivos})` : ""}
             </Text>
             <MaterialCommunityIcons
-              name={filtrosAbertos ? 'chevron-up' : 'chevron-down'}
+              name={filtrosAbertos ? "chevron-up" : "chevron-down"}
               size={18}
               color={
                 filtrosAbertos || qtdFiltrosAtivos > 0
@@ -351,11 +392,19 @@ export default function AuditoriaScreen() {
 
           <View style={styles.filtroHeaderDireita}>
             {temAlgumFiltro && (
-              <Button compact onPress={limparFiltros} icon="close" textColor={cores.erro}>
+              <Button
+                compact
+                onPress={limparFiltros}
+                icon="close"
+                textColor={cores.erro}
+              >
                 Limpar
               </Button>
             )}
-            <Text variant="labelSmall" style={{ color: theme.colors.onSurfaceVariant }}>
+            <Text
+              variant="labelSmall"
+              style={{ color: theme.colors.onSurfaceVariant }}
+            >
               {visiveis.length} de {filtrados.length}
             </Text>
           </View>
@@ -365,16 +414,22 @@ export default function AuditoriaScreen() {
         {filtrosAbertos && (
           <Card style={styles.filtroCard}>
             <Card.Content style={styles.filtroCardContent}>
-              <Text variant="labelSmall" style={[styles.filtroSecaoLabel, { color: theme.colors.onSurfaceVariant }]}>
+              <Text
+                variant="labelSmall"
+                style={[
+                  styles.filtroSecaoLabel,
+                  { color: theme.colors.onSurfaceVariant },
+                ]}
+              >
                 Período
               </Text>
               <View style={styles.chipsWrap}>
                 {(
                   [
-                    { key: 'todos', label: 'Todos' },
-                    { key: 'hoje', label: 'Hoje' },
-                    { key: '7dias', label: '7 dias' },
-                    { key: 'mes', label: 'Este mês' },
+                    { key: "todos", label: "Todos" },
+                    { key: "hoje", label: "Hoje" },
+                    { key: "7dias", label: "7 dias" },
+                    { key: "mes", label: "Este mês" },
                   ] as const
                 ).map((item) => (
                   <Chip
@@ -392,14 +447,20 @@ export default function AuditoriaScreen() {
               {acoesDisponiveis.length > 0 && (
                 <>
                   <Divider style={styles.filtroDivider} />
-                  <Text variant="labelSmall" style={[styles.filtroSecaoLabel, { color: theme.colors.onSurfaceVariant }]}>
+                  <Text
+                    variant="labelSmall"
+                    style={[
+                      styles.filtroSecaoLabel,
+                      { color: theme.colors.onSurfaceVariant },
+                    ]}
+                  >
                     Tipo de Ação
                   </Text>
                   <View style={styles.chipsWrap}>
                     <Chip
                       compact
-                      selected={filtroAcao === ''}
-                      onPress={() => setFiltroAcao('')}
+                      selected={filtroAcao === ""}
+                      onPress={() => setFiltroAcao("")}
                       textStyle={styles.chipTexto}
                     >
                       Todas
@@ -409,7 +470,7 @@ export default function AuditoriaScreen() {
                         key={a}
                         compact
                         selected={filtroAcao === a}
-                        onPress={() => setFiltroAcao(filtroAcao === a ? '' : a)}
+                        onPress={() => setFiltroAcao(filtroAcao === a ? "" : a)}
                         textStyle={styles.chipTexto}
                       >
                         {acaoLabel[a] ?? a}
@@ -424,37 +485,72 @@ export default function AuditoriaScreen() {
 
         {/* Lista paginada de logs */}
         {visiveis.length === 0 ? (
-          <Text style={[styles.textoVazio, { color: theme.colors.onSurfaceVariant }]}>
-            {temAlgumFiltro ? 'Nenhum registro encontrado com os filtros atuais' : 'Nenhum registro de auditoria'}
+          <Text
+            style={[
+              styles.textoVazio,
+              { color: theme.colors.onSurfaceVariant },
+            ]}
+          >
+            {temAlgumFiltro
+              ? "Nenhum registro encontrado com os filtros atuais"
+              : "Nenhum registro de auditoria"}
           </Text>
         ) : (
           <>
             {visiveis.map((log) => {
               const cor = acaoCores[log.acao] ?? cores.textoSecundario;
-              const icone = acaoIcones[log.acao] ?? 'information';
+              const icone = acaoIcones[log.acao] ?? "information";
               const label = acaoLabel[log.acao] ?? log.acao;
               const expandido = expandidoId === log.id;
 
               return (
-                <TouchableOpacity key={log.id} onPress={() => alternarExpansao(log.id)} activeOpacity={0.7}>
-                  <Card style={[styles.card, { borderLeftColor: cor, borderLeftWidth: 4 }]}>
+                <TouchableOpacity
+                  key={log.id}
+                  onPress={() => alternarExpansao(log.id)}
+                  activeOpacity={0.7}
+                >
+                  <Card
+                    style={[
+                      styles.card,
+                      { borderLeftColor: cor, borderLeftWidth: 4 },
+                    ]}
+                  >
                     <Card.Content>
                       <View style={styles.cardContent}>
-                        <MaterialCommunityIcons name={icone as any} size={24} color={cor} style={styles.icone} />
+                        <MaterialCommunityIcons
+                          name={icone as any}
+                          size={24}
+                          color={cor}
+                          style={styles.icone}
+                        />
                         <View style={styles.info}>
                           <View style={styles.tituloRow}>
-                            <Text variant="titleSmall" style={styles.titulo}>{label}</Text>
+                            <Text variant="titleSmall" style={styles.titulo}>
+                              {label}
+                            </Text>
                             <MaterialCommunityIcons
-                              name={expandido ? 'chevron-up' : 'chevron-down'}
+                              name={expandido ? "chevron-up" : "chevron-down"}
                               size={20}
                               color={theme.colors.onSurfaceVariant}
                             />
                           </View>
-                          <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant, marginTop: 2 }}>
+                          <Text
+                            variant="bodySmall"
+                            style={{
+                              color: theme.colors.onSurfaceVariant,
+                              marginTop: 2,
+                            }}
+                          >
                             {log.usuarioNome} · {log.entidadeAfetada}
                           </Text>
-                          <Text variant="bodySmall" style={[styles.data, { color: theme.colors.onSurfaceVariant }]}>
-                            {new Date(log.dataHora).toLocaleString('pt-BR')}
+                          <Text
+                            variant="bodySmall"
+                            style={[
+                              styles.data,
+                              { color: theme.colors.onSurfaceVariant },
+                            ]}
+                          >
+                            {new Date(log.dataHora).toLocaleString("pt-BR")}
                           </Text>
                         </View>
                       </View>
@@ -463,37 +559,71 @@ export default function AuditoriaScreen() {
                         <View style={styles.detalhes}>
                           <Divider style={styles.divider} />
                           <View style={styles.detalheLinha}>
-                            <Text variant="bodySmall" style={[styles.detalheLabel, { color: theme.colors.onSurfaceVariant }]}>
+                            <Text
+                              variant="bodySmall"
+                              style={[
+                                styles.detalheLabel,
+                                { color: theme.colors.onSurfaceVariant },
+                              ]}
+                            >
                               Ação
                             </Text>
                             <Chip
                               compact
-                              style={{ backgroundColor: cor + (theme.dark ? '33' : '20') }}
-                              textStyle={[styles.chipTexto, { color: theme.dark ? '#e8eef5' : cor }]}
+                              style={{
+                                backgroundColor:
+                                  cor + (theme.dark ? "33" : "20"),
+                              }}
+                              textStyle={[
+                                styles.chipTexto,
+                                { color: theme.dark ? "#e8eef5" : cor },
+                              ]}
                             >
                               {log.acao}
                             </Chip>
                           </View>
                           <View style={styles.detalheLinha}>
-                            <Text variant="bodySmall" style={[styles.detalheLabel, { color: theme.colors.onSurfaceVariant }]}>
+                            <Text
+                              variant="bodySmall"
+                              style={[
+                                styles.detalheLabel,
+                                { color: theme.colors.onSurfaceVariant },
+                              ]}
+                            >
                               Entidade Afetada
                             </Text>
-                            <Text variant="bodySmall" style={styles.detalheValor}>{log.entidadeAfetada}</Text>
+                            <Text
+                              variant="bodySmall"
+                              style={styles.detalheValor}
+                            >
+                              {log.entidadeAfetada}
+                            </Text>
                           </View>
 
                           {/* ID da Entidade clicável para copiar */}
                           <TouchableOpacity
-                            onPress={() => copiarId('ID da Entidade', log.entidadeId)}
+                            onPress={() =>
+                              copiarId("ID da Entidade", log.entidadeId)
+                            }
                             activeOpacity={0.6}
                             style={styles.detalheLinha}
                           >
-                            <Text variant="bodySmall" style={[styles.detalheLabel, { color: theme.colors.onSurfaceVariant }]}>
+                            <Text
+                              variant="bodySmall"
+                              style={[
+                                styles.detalheLabel,
+                                { color: theme.colors.onSurfaceVariant },
+                              ]}
+                            >
                               ID da Entidade
                             </Text>
                             <View style={styles.copyRow}>
                               <Text
                                 variant="bodySmall"
-                                style={[styles.detalheValorMono, { color: theme.colors.onSurfaceVariant }]}
+                                style={[
+                                  styles.detalheValorMono,
+                                  { color: theme.colors.onSurfaceVariant },
+                                ]}
                                 numberOfLines={1}
                               >
                                 {log.entidadeId}
@@ -508,25 +638,47 @@ export default function AuditoriaScreen() {
                           </TouchableOpacity>
 
                           <View style={styles.detalheLinha}>
-                            <Text variant="bodySmall" style={[styles.detalheLabel, { color: theme.colors.onSurfaceVariant }]}>
+                            <Text
+                              variant="bodySmall"
+                              style={[
+                                styles.detalheLabel,
+                                { color: theme.colors.onSurfaceVariant },
+                              ]}
+                            >
                               Usuário
                             </Text>
-                            <Text variant="bodySmall" style={styles.detalheValor}>{log.usuarioNome}</Text>
+                            <Text
+                              variant="bodySmall"
+                              style={styles.detalheValor}
+                            >
+                              {log.usuarioNome}
+                            </Text>
                           </View>
 
                           {/* ID do Usuário clicável para copiar */}
                           <TouchableOpacity
-                            onPress={() => copiarId('ID do Usuário', log.usuarioId)}
+                            onPress={() =>
+                              copiarId("ID do Usuário", log.usuarioId)
+                            }
                             activeOpacity={0.6}
                             style={styles.detalheLinha}
                           >
-                            <Text variant="bodySmall" style={[styles.detalheLabel, { color: theme.colors.onSurfaceVariant }]}>
+                            <Text
+                              variant="bodySmall"
+                              style={[
+                                styles.detalheLabel,
+                                { color: theme.colors.onSurfaceVariant },
+                              ]}
+                            >
                               ID do Usuário
                             </Text>
                             <View style={styles.copyRow}>
                               <Text
                                 variant="bodySmall"
-                                style={[styles.detalheValorMono, { color: theme.colors.onSurfaceVariant }]}
+                                style={[
+                                  styles.detalheValorMono,
+                                  { color: theme.colors.onSurfaceVariant },
+                                ]}
                                 numberOfLines={1}
                               >
                                 {log.usuarioId}
@@ -541,19 +693,34 @@ export default function AuditoriaScreen() {
                           </TouchableOpacity>
 
                           <View style={styles.detalheLinha}>
-                            <Text variant="bodySmall" style={[styles.detalheLabel, { color: theme.colors.onSurfaceVariant }]}>
+                            <Text
+                              variant="bodySmall"
+                              style={[
+                                styles.detalheLabel,
+                                { color: theme.colors.onSurfaceVariant },
+                              ]}
+                            >
                               Data e Hora
                             </Text>
-                            <Text variant="bodySmall" style={styles.detalheValor}>
-                              {new Date(log.dataHora).toLocaleString('pt-BR', {
-                                dateStyle: 'long',
-                                timeStyle: 'medium',
+                            <Text
+                              variant="bodySmall"
+                              style={styles.detalheValor}
+                            >
+                              {new Date(log.dataHora).toLocaleString("pt-BR", {
+                                dateStyle: "long",
+                                timeStyle: "medium",
                               })}
                             </Text>
                           </View>
                           {log.detalhes && (
                             <View style={styles.detalhesTexto}>
-                              <Text variant="bodySmall" style={[styles.detalheLabel, { color: theme.colors.onSurfaceVariant }]}>
+                              <Text
+                                variant="bodySmall"
+                                style={[
+                                  styles.detalheLabel,
+                                  { color: theme.colors.onSurfaceVariant },
+                                ]}
+                              >
                                 Detalhes
                               </Text>
                               <Text
@@ -561,7 +728,8 @@ export default function AuditoriaScreen() {
                                 style={[
                                   styles.detalheTextoLivre,
                                   {
-                                    backgroundColor: theme.colors.surfaceVariant,
+                                    backgroundColor:
+                                      theme.colors.surfaceVariant,
                                     color: theme.colors.onSurfaceVariant,
                                   },
                                 ]}
@@ -583,7 +751,9 @@ export default function AuditoriaScreen() {
               <Button
                 mode="outlined"
                 icon="chevron-down"
-                onPress={() => setLimiteExibido(prev => prev + TAMANHO_PAGINA)}
+                onPress={() =>
+                  setLimiteExibido((prev) => prev + TAMANHO_PAGINA)
+                }
                 style={styles.carregarMaisBtn}
               >
                 Carregar mais ({filtrados.length - visiveis.length} restantes)
@@ -595,7 +765,7 @@ export default function AuditoriaScreen() {
 
       <Snackbar
         visible={!!copiadoMsg}
-        onDismiss={() => setCopiadoMsg('')}
+        onDismiss={() => setCopiadoMsg("")}
         duration={2000}
       >
         {copiadoMsg}
@@ -605,11 +775,11 @@ export default function AuditoriaScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: 'transparent' },
-  centro: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  container: { flex: 1, backgroundColor: "transparent" },
+  centro: { flex: 1, justifyContent: "center", alignItems: "center" },
   topBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: 16,
     paddingTop: 12,
     paddingBottom: 6,
@@ -618,28 +788,28 @@ const styles = StyleSheet.create({
   busca: { flex: 1 },
   conteudo: { padding: 16, paddingTop: 6, paddingBottom: 32 },
 
-  statsRow: { flexDirection: 'row', gap: 8, marginBottom: 12 },
+  statsRow: { flexDirection: "row", gap: 8, marginBottom: 12 },
   statCard: { flex: 1, borderRadius: 10, borderLeftWidth: 4 },
   statContent: { paddingVertical: 8, paddingHorizontal: 10 },
-  statValor: { fontWeight: '800', marginTop: 2 },
+  statValor: { fontWeight: "800", marginTop: 2 },
 
   filtroHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     marginBottom: 10,
   },
   filtroToggleBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 6,
     paddingHorizontal: 12,
     paddingVertical: 7,
     borderRadius: 20,
   },
   filtroHeaderDireita: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 8,
   },
   filtroCard: {
@@ -650,51 +820,55 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   filtroSecaoLabel: {
-    fontWeight: '700',
+    fontWeight: "700",
     marginBottom: 8,
   },
   filtroDivider: {
     marginVertical: 10,
   },
   chipsWrap: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
     gap: 6,
   },
   chipTexto: { fontSize: 12, lineHeight: 16, marginVertical: 2 },
 
   card: { marginBottom: 10, borderRadius: 12 },
-  cardContent: { flexDirection: 'row', alignItems: 'flex-start' },
+  cardContent: { flexDirection: "row", alignItems: "flex-start" },
   icone: { marginRight: 12, marginTop: 2 },
   info: { flex: 1 },
-  tituloRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  titulo: { fontWeight: '600' },
+  tituloRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  titulo: { fontWeight: "600" },
   data: { marginTop: 2, fontSize: 11 },
-  textoVazio: { textAlign: 'center', marginTop: 40 },
+  textoVazio: { textAlign: "center", marginTop: 40 },
   erro: { color: cores.erro },
 
   detalhes: { marginTop: 4 },
   divider: { marginVertical: 10 },
   detalheLinha: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     paddingVertical: 6,
     gap: 12,
   },
-  detalheLabel: { fontWeight: '600' },
-  detalheValor: { fontWeight: '500', flexShrink: 1, textAlign: 'right' },
+  detalheLabel: { fontWeight: "600" },
+  detalheValor: { fontWeight: "500", flexShrink: 1, textAlign: "right" },
   copyRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     flexShrink: 1,
-    maxWidth: '62%',
+    maxWidth: "62%",
   },
   detalheValorMono: {
-    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+    fontFamily: Platform.OS === "ios" ? "Courier" : "monospace",
     fontSize: 11,
     flexShrink: 1,
-    textAlign: 'right',
+    textAlign: "right",
   },
   detalhesTexto: { marginTop: 8 },
   detalheTextoLivre: {

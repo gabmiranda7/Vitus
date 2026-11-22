@@ -1,27 +1,32 @@
-import React, { useState } from 'react';
-import { View, StyleSheet, ActivityIndicator, TouchableOpacity } from 'react-native';
-import { Text, Button, Chip, TextInput, useTheme } from 'react-native-paper';
-import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
-import * as ImagePicker from 'expo-image-picker';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
-import api from '../../services/api';
-import { useAuth } from '../../contexts/AuthContext';
-import { cores } from '../../theme';
-import AvatarUsuario from '../../components/AvatarUsuario';
-import ConfirmModal from '../../components/ConfirmModal';
+import React, { useState } from "react";
+import {
+  View,
+  StyleSheet,
+  ActivityIndicator,
+  TouchableOpacity,
+} from "react-native";
+import { Text, Button, Chip, TextInput, useTheme } from "react-native-paper";
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
+import * as ImagePicker from "expo-image-picker";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
+import api from "../../services/api";
+import { useAuth } from "../../contexts/AuthContext";
+import { cores } from "../../theme";
+import AvatarUsuario from "../../components/AvatarUsuario";
+import ConfirmModal from "../../components/ConfirmModal";
 
 const perfilLabels: Record<string, string> = {
-  Medico: 'Médico',
-  Enfermeiro: 'Enfermeiro(a)',
-  Recepcionista: 'Recepcionista',
-  Administrador: 'Administrador',
+  Medico: "Médico",
+  Enfermeiro: "Enfermeiro(a)",
+  Recepcionista: "Recepcionista",
+  Administrador: "Administrador",
 };
 
 const perfilCores: Record<string, string> = {
   Medico: cores.primariaEscura,
   Enfermeiro: cores.sucesso,
   Recepcionista: cores.secundaria,
-  Administrador: '#37474f',
+  Administrador: "#37474f",
 };
 
 const TAMANHO_MAXIMO = 2 * 1024 * 1024;
@@ -29,22 +34,22 @@ const TAMANHO_MAXIMO = 2 * 1024 * 1024;
 export default function PerfilScreen() {
   const { usuario, logout, atualizarUsuario, recarregarFoto } = useAuth();
   const theme = useTheme();
-  const [nome, setNome] = useState(usuario?.nome ?? '');
+  const [nome, setNome] = useState(usuario?.nome ?? "");
   const [salvando, setSalvando] = useState(false);
   const [enviandoFoto, setEnviandoFoto] = useState(false);
   const [confirmarRemocao, setConfirmarRemocao] = useState(false);
-  const [erro, setErro] = useState('');
-  const [sucesso, setSucesso] = useState('');
+  const [erro, setErro] = useState("");
+  const [sucesso, setSucesso] = useState("");
 
-  const cor = perfilCores[usuario?.perfil ?? ''] ?? cores.primaria;
-  const nomeAlterado = nome.trim() !== '' && nome.trim() !== usuario?.nome;
+  const cor = perfilCores[usuario?.perfil ?? ""] ?? cores.primaria;
+  const nomeAlterado = nome.trim() !== "" && nome.trim() !== usuario?.nome;
 
   async function escolherFoto() {
-    setErro('');
-    setSucesso('');
+    setErro("");
+    setSucesso("");
 
     const resultado = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
+      mediaTypes: ["images"],
       allowsEditing: true,
       aspect: [1, 1],
       quality: 0.5,
@@ -54,30 +59,34 @@ export default function PerfilScreen() {
     const asset = resultado.assets[0];
 
     if (asset.fileSize && asset.fileSize > TAMANHO_MAXIMO) {
-      setErro('Imagem muito grande (máx. 2MB). Escolha outra ou recorte uma área menor.');
+      setErro(
+        "Imagem muito grande (máx. 2MB). Escolha outra ou recorte uma área menor.",
+      );
       return;
     }
 
-    const ehPng = (asset.mimeType ?? '').includes('png') || asset.uri.toLowerCase().endsWith('.png');
+    const ehPng =
+      (asset.mimeType ?? "").includes("png") ||
+      asset.uri.toLowerCase().endsWith(".png");
 
     setEnviandoFoto(true);
     try {
       const formData = new FormData();
-      formData.append('arquivo', {
+      formData.append("arquivo", {
         uri: asset.uri,
-        name: ehPng ? 'perfil.png' : 'perfil.jpg',
-        type: ehPng ? 'image/png' : 'image/jpeg',
+        name: ehPng ? "perfil.png" : "perfil.jpg",
+        type: ehPng ? "image/png" : "image/jpeg",
       } as any);
 
-      await api.post('/api/auth/me/foto', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
+      await api.post("/api/auth/me/foto", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
       });
 
       await atualizarUsuario({ temFoto: true });
       recarregarFoto();
-      setSucesso('Foto atualizada com sucesso');
+      setSucesso("Foto atualizada com sucesso");
     } catch (e: any) {
-      setErro(e.mensagemBack ?? 'Erro ao enviar a foto');
+      setErro(e.mensagemBack ?? "Erro ao enviar a foto");
     } finally {
       setEnviandoFoto(false);
     }
@@ -85,43 +94,43 @@ export default function PerfilScreen() {
 
   async function removerFoto() {
     setConfirmarRemocao(false);
-    setErro('');
-    setSucesso('');
+    setErro("");
+    setSucesso("");
     setEnviandoFoto(true);
     try {
-      await api.delete('/api/auth/me/foto');
+      await api.delete("/api/auth/me/foto");
       await atualizarUsuario({ temFoto: false });
-      setSucesso('Foto removida');
+      setSucesso("Foto removida");
     } catch (e: any) {
-      setErro(e.mensagemBack ?? 'Erro ao remover a foto');
+      setErro(e.mensagemBack ?? "Erro ao remover a foto");
     } finally {
       setEnviandoFoto(false);
     }
   }
 
   async function salvarNome() {
-    setErro('');
-    setSucesso('');
+    setErro("");
+    setSucesso("");
     if (!nome.trim()) {
-      setErro('Nome é obrigatório');
+      setErro("Nome é obrigatório");
       return;
     }
 
     setSalvando(true);
     try {
-      const response = await api.put('/api/auth/me', { nome: nome.trim() });
+      const response = await api.put("/api/auth/me", { nome: nome.trim() });
       await atualizarUsuario(
         {
           nome: response.data.nome,
           medicoId: response.data.medicoId ?? undefined,
           temFoto: !!response.data.temFoto,
         },
-        response.data.token
+        response.data.token,
       );
       setNome(response.data.nome);
-      setSucesso('Nome atualizado com sucesso');
+      setSucesso("Nome atualizado com sucesso");
     } catch (e: any) {
-      setErro(e.mensagemBack ?? 'Erro ao atualizar o nome');
+      setErro(e.mensagemBack ?? "Erro ao atualizar o nome");
     } finally {
       setSalvando(false);
     }
@@ -134,29 +143,62 @@ export default function PerfilScreen() {
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={styles.conteudo}
       >
-        <View style={[styles.cartao, { backgroundColor: theme.colors.surface }]}>
-          <TouchableOpacity onPress={escolherFoto} disabled={enviandoFoto} style={styles.avatarArea}>
-            <View style={[styles.avatarBorda, { borderColor: theme.colors.surfaceVariant }]}>
+        <View
+          style={[styles.cartao, { backgroundColor: theme.colors.surface }]}
+        >
+          <TouchableOpacity
+            onPress={escolherFoto}
+            disabled={enviandoFoto}
+            style={styles.avatarArea}
+          >
+            <View
+              style={[
+                styles.avatarBorda,
+                { borderColor: theme.colors.surfaceVariant },
+              ]}
+            >
               <AvatarUsuario size={112} cor={cor} />
             </View>
-            <View style={[styles.cameraBadge, { borderColor: theme.colors.surface }]}>
-              {enviandoFoto
-                ? <ActivityIndicator size={14} color="white" />
-                : <MaterialCommunityIcons name="camera" size={16} color="white" />}
+            <View
+              style={[
+                styles.cameraBadge,
+                { borderColor: theme.colors.surface },
+              ]}
+            >
+              {enviandoFoto ? (
+                <ActivityIndicator size={14} color="white" />
+              ) : (
+                <MaterialCommunityIcons name="camera" size={16} color="white" />
+              )}
             </View>
           </TouchableOpacity>
 
-          <Text variant="headlineSmall" style={styles.nome}>{usuario?.nome}</Text>
-          <Text variant="bodyMedium" style={[styles.email, { color: theme.colors.onSurfaceVariant }]}>
+          <Text variant="headlineSmall" style={styles.nome}>
+            {usuario?.nome}
+          </Text>
+          <Text
+            variant="bodyMedium"
+            style={[styles.email, { color: theme.colors.onSurfaceVariant }]}
+          >
             {usuario?.email}
           </Text>
-          <Chip compact style={[styles.chip, { backgroundColor: cor }]} textStyle={{ color: 'white', fontWeight: 'bold' }}>
-            {perfilLabels[usuario?.perfil ?? ''] ?? usuario?.perfil}
+          <Chip
+            compact
+            style={[styles.chip, { backgroundColor: cor }]}
+            textStyle={{ color: "white", fontWeight: "bold" }}
+          >
+            {perfilLabels[usuario?.perfil ?? ""] ?? usuario?.perfil}
           </Chip>
 
           <View style={styles.botoesFoto}>
-            <Button mode="outlined" icon="camera" compact onPress={escolherFoto} disabled={enviandoFoto}>
-              {usuario?.temFoto ? 'Trocar foto' : 'Adicionar foto'}
+            <Button
+              mode="outlined"
+              icon="camera"
+              compact
+              onPress={escolherFoto}
+              disabled={enviandoFoto}
+            >
+              {usuario?.temFoto ? "Trocar foto" : "Adicionar foto"}
             </Button>
             {usuario?.temFoto && (
               <Button
@@ -171,7 +213,10 @@ export default function PerfilScreen() {
               </Button>
             )}
           </View>
-          <Text variant="bodySmall" style={[styles.dica, { color: theme.colors.onSurfaceVariant }]}>
+          <Text
+            variant="bodySmall"
+            style={[styles.dica, { color: theme.colors.onSurfaceVariant }]}
+          >
             Você poderá ajustar o enquadramento antes de salvar.
           </Text>
 
@@ -192,7 +237,9 @@ export default function PerfilScreen() {
             />
             <TextInput
               label="Cargo"
-              value={perfilLabels[usuario?.perfil ?? ''] ?? usuario?.perfil ?? ''}
+              value={
+                perfilLabels[usuario?.perfil ?? ""] ?? usuario?.perfil ?? ""
+              }
               mode="outlined"
               disabled
               style={styles.input}
@@ -233,37 +280,37 @@ export default function PerfilScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: 'transparent' },
+  container: { flex: 1, backgroundColor: "transparent" },
   conteudo: { padding: 16, paddingBottom: 32 },
   cartao: {
     borderRadius: 20,
     paddingHorizontal: 20,
     paddingTop: 24,
     paddingBottom: 24,
-    alignItems: 'center',
+    alignItems: "center",
   },
   avatarArea: { marginBottom: 12 },
   avatarBorda: { borderWidth: 3, borderRadius: 60 },
   cameraBadge: {
-    position: 'absolute',
+    position: "absolute",
     right: 2,
     bottom: 2,
     width: 30,
     height: 30,
     borderRadius: 15,
     backgroundColor: cores.primaria,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     borderWidth: 2,
   },
-  nome: { fontWeight: 'bold', textAlign: 'center' },
-  email: { marginTop: 2, marginBottom: 8, textAlign: 'center' },
-  chip: { alignSelf: 'center' },
-  botoesFoto: { flexDirection: 'row', gap: 8, marginTop: 16 },
-  dica: { marginTop: 8, textAlign: 'center' },
-  erro: { color: cores.erro, marginTop: 12, textAlign: 'center' },
-  sucesso: { color: cores.sucesso, marginTop: 12, textAlign: 'center' },
-  form: { alignSelf: 'stretch', marginTop: 20 },
+  nome: { fontWeight: "bold", textAlign: "center" },
+  email: { marginTop: 2, marginBottom: 8, textAlign: "center" },
+  chip: { alignSelf: "center" },
+  botoesFoto: { flexDirection: "row", gap: 8, marginTop: 16 },
+  dica: { marginTop: 8, textAlign: "center" },
+  erro: { color: cores.erro, marginTop: 12, textAlign: "center" },
+  sucesso: { color: cores.sucesso, marginTop: 12, textAlign: "center" },
+  form: { alignSelf: "stretch", marginTop: 20 },
   input: { marginBottom: 12 },
   sair: { marginTop: 16, borderColor: cores.erro },
 });

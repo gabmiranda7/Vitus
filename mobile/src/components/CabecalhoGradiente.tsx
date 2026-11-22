@@ -1,7 +1,7 @@
-import React from 'react';
-import { View, StyleSheet } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import { Text, Avatar } from 'react-native-paper';
+import React from "react";
+import { View, StyleSheet } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
+import { Text, Avatar } from "react-native-paper";
 
 interface Props {
   icone: string;
@@ -10,7 +10,12 @@ interface Props {
   cores: string[];
 }
 
-export default function CabecalhoGradiente({ icone, titulo, subtitulo, cores }: Props) {
+export default function CabecalhoGradiente({
+  icone,
+  titulo,
+  subtitulo,
+  cores,
+}: Props) {
   return (
     <LinearGradient colors={cores as any} style={styles.container}>
       <View style={styles.linha}>
@@ -21,8 +26,14 @@ export default function CabecalhoGradiente({ icone, titulo, subtitulo, cores }: 
           color="white"
         />
         <View style={styles.textos}>
-          <Text variant="titleLarge" style={styles.titulo}>{titulo}</Text>
-          {subtitulo ? <Text variant="bodyMedium" style={styles.subtitulo}>{subtitulo}</Text> : null}
+          <Text variant="titleLarge" style={styles.titulo}>
+            {titulo}
+          </Text>
+          {subtitulo ? (
+            <Text variant="bodyMedium" style={styles.subtitulo}>
+              {subtitulo}
+            </Text>
+          ) : null}
         </View>
       </View>
     </LinearGradient>
@@ -36,22 +47,22 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 16,
   },
   linha: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
   },
   avatar: {
-    backgroundColor: 'rgba(255,255,255,0.2)',
+    backgroundColor: "rgba(255,255,255,0.2)",
   },
   textos: {
     marginLeft: 14,
     flex: 1,
   },
   titulo: {
-    color: 'white',
-    fontWeight: 'bold',
+    color: "white",
+    fontWeight: "bold",
   },
   subtitulo: {
-    color: 'rgba(255,255,255,0.85)',
+    color: "rgba(255,255,255,0.85)",
     marginTop: 2,
   },
 });

@@ -1,25 +1,39 @@
-import React, { useState, useCallback } from 'react';
-import { View, ScrollView, StyleSheet, RefreshControl } from 'react-native';
-import { Text, Card, Chip, ActivityIndicator, Avatar, Button, ProgressBar, useTheme } from 'react-native-paper';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useFocusEffect } from '@react-navigation/native';
-import api from '../../services/api';
-import { Consulta } from '../../types';
-import { corAvatar, iniciais, cores } from '../../theme';
-import TriagemModal from '../../components/TriagemModal';
+import React, { useState, useCallback } from "react";
+import { View, ScrollView, StyleSheet, RefreshControl } from "react-native";
+import {
+  Text,
+  Card,
+  Chip,
+  ActivityIndicator,
+  Avatar,
+  Button,
+  ProgressBar,
+  useTheme,
+} from "react-native-paper";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { useFocusEffect } from "@react-navigation/native";
+import api from "../../services/api";
+import { Consulta } from "../../types";
+import { corAvatar, iniciais, cores } from "../../theme";
+import TriagemModal from "../../components/TriagemModal";
 
 const statusConfig: Record<string, { label: string; cor: string }> = {
-  Agendada: { label: 'Agendada', cor: cores.primaria },
-  EmTriagem: { label: 'Em Triagem', cor: cores.aviso },
-  AguardandoAtendimento: { label: 'Aguardando', cor: cores.info },
+  Agendada: { label: "Agendada", cor: cores.primaria },
+  EmTriagem: { label: "Em Triagem", cor: cores.aviso },
+  AguardandoAtendimento: { label: "Aguardando", cor: cores.info },
 };
 
 function minutosEspera(dataConsulta: string): number {
-  return Math.max(0, Math.floor((new Date().getTime() - new Date(dataConsulta).getTime()) / 1000 / 60));
+  return Math.max(
+    0,
+    Math.floor(
+      (new Date().getTime() - new Date(dataConsulta).getTime()) / 1000 / 60,
+    ),
+  );
 }
 
 function tempoLabel(min: number): string {
-  if (min < 1) return 'Agora';
+  if (min < 1) return "Agora";
   if (min < 60) return `${min} min`;
   const h = Math.floor(min / 60);
   const m = min % 60;
@@ -31,19 +45,24 @@ export default function TriagemScreen() {
   const [consultas, setConsultas] = useState<Consulta[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [erroLista, setErroLista] = useState('');
+  const [erroLista, setErroLista] = useState("");
   const [modalTriagem, setModalTriagem] = useState(false);
-  const [consultaSelecionada, setConsultaSelecionada] = useState<Consulta | null>(null);
+  const [consultaSelecionada, setConsultaSelecionada] =
+    useState<Consulta | null>(null);
 
   const carregar = useCallback(async () => {
     try {
-      const response = await api.get('/api/consultas');
-      setConsultas(response.data.filter((c: Consulta) =>
-        ['Agendada', 'EmTriagem', 'AguardandoAtendimento'].includes(c.status)
-      ));
-      setErroLista('');
+      const response = await api.get("/api/consultas");
+      setConsultas(
+        response.data.filter((c: Consulta) =>
+          ["Agendada", "EmTriagem", "AguardandoAtendimento"].includes(c.status),
+        ),
+      );
+      setErroLista("");
     } catch (e: any) {
-      setErroLista(e.mensagemBack ?? 'Não foi possível carregar a fila de triagem');
+      setErroLista(
+        e.mensagemBack ?? "Não foi possível carregar a fila de triagem",
+      );
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -55,7 +74,7 @@ export default function TriagemScreen() {
       carregar();
       const interval = setInterval(carregar, 15000);
       return () => clearInterval(interval);
-    }, [carregar])
+    }, [carregar]),
   );
 
   function onRefresh() {
@@ -78,12 +97,18 @@ export default function TriagemScreen() {
     carregar();
   }
 
-  const agendadas = consultas.filter(c => c.status === 'Agendada');
-  const emTriagem = consultas.filter(c => c.status === 'EmTriagem');
-  const aguardando = consultas.filter(c => c.status === 'AguardandoAtendimento');
+  const agendadas = consultas.filter((c) => c.status === "Agendada");
+  const emTriagem = consultas.filter((c) => c.status === "EmTriagem");
+  const aguardando = consultas.filter(
+    (c) => c.status === "AguardandoAtendimento",
+  );
 
   const ordenadas = [...consultas].sort((a, b) => {
-    const ordem: Record<string, number> = { EmTriagem: 0, AguardandoAtendimento: 1, Agendada: 2 };
+    const ordem: Record<string, number> = {
+      EmTriagem: 0,
+      AguardandoAtendimento: 1,
+      Agendada: 2,
+    };
     const diff = (ordem[a.status] ?? 99) - (ordem[b.status] ?? 99);
     if (diff !== 0) return diff;
     return minutosEspera(b.dataConsulta) - minutosEspera(a.dataConsulta);
@@ -101,29 +126,40 @@ export default function TriagemScreen() {
     <View style={styles.container}>
       <ScrollView
         contentContainerStyle={styles.conteudo}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
       >
         {erroLista ? <Text style={styles.erro}>{erroLista}</Text> : null}
 
         <View style={styles.statsRow}>
           <Chip
             icon="calendar"
-            style={[styles.statChip, { backgroundColor: cores.primaria + (theme.dark ? '33' : '20') }]}
-            textStyle={{ color: theme.dark ? '#90caf9' : cores.primaria }}
+            style={[
+              styles.statChip,
+              { backgroundColor: cores.primaria + (theme.dark ? "33" : "20") },
+            ]}
+            textStyle={{ color: theme.dark ? "#90caf9" : cores.primaria }}
           >
             {agendadas.length} agendadas
           </Chip>
           <Chip
             icon="stethoscope"
-            style={[styles.statChip, { backgroundColor: cores.aviso + (theme.dark ? '33' : '20') }]}
-            textStyle={{ color: theme.dark ? '#ffb74d' : cores.aviso }}
+            style={[
+              styles.statChip,
+              { backgroundColor: cores.aviso + (theme.dark ? "33" : "20") },
+            ]}
+            textStyle={{ color: theme.dark ? "#ffb74d" : cores.aviso }}
           >
             {emTriagem.length} em triagem
           </Chip>
           <Chip
             icon="clock-outline"
-            style={[styles.statChip, { backgroundColor: cores.info + (theme.dark ? '33' : '20') }]}
-            textStyle={{ color: theme.dark ? '#4fc3f7' : cores.info }}
+            style={[
+              styles.statChip,
+              { backgroundColor: cores.info + (theme.dark ? "33" : "20") },
+            ]}
+            textStyle={{ color: theme.dark ? "#4fc3f7" : cores.info }}
           >
             {aguardando.length} aguardando
           </Chip>
@@ -131,8 +167,17 @@ export default function TriagemScreen() {
 
         {ordenadas.length === 0 ? (
           <View style={styles.vazioContainer}>
-            <MaterialCommunityIcons name="stethoscope" size={64} color={theme.colors.onSurfaceVariant} />
-            <Text style={[styles.textoVazio, { color: theme.colors.onSurfaceVariant }]}>
+            <MaterialCommunityIcons
+              name="stethoscope"
+              size={64}
+              color={theme.colors.onSurfaceVariant}
+            />
+            <Text
+              style={[
+                styles.textoVazio,
+                { color: theme.colors.onSurfaceVariant },
+              ]}
+            >
               Nenhum paciente na fila
             </Text>
           </View>
@@ -140,46 +185,89 @@ export default function TriagemScreen() {
           ordenadas.map((c) => {
             const min = minutosEspera(c.dataConsulta);
             const progresso = Math.min(min / 30, 1);
-            const cfg = statusConfig[c.status] ?? { label: c.status, cor: cores.primaria };
-            const corTextoBadge = theme.dark ? '#e8eef5' : cfg.cor;
+            const cfg = statusConfig[c.status] ?? {
+              label: c.status,
+              cor: cores.primaria,
+            };
+            const corTextoBadge = theme.dark ? "#e8eef5" : cfg.cor;
 
             return (
-              <Card key={c.id} style={[styles.card, { borderLeftColor: cfg.cor, borderLeftWidth: 4 }]}>
+              <Card
+                key={c.id}
+                style={[
+                  styles.card,
+                  { borderLeftColor: cfg.cor, borderLeftWidth: 4 },
+                ]}
+              >
                 <Card.Content>
                   <View style={styles.cardHeader}>
                     <Chip
                       compact
-                      style={{ backgroundColor: cfg.cor + (theme.dark ? '33' : '20') }}
+                      style={{
+                        backgroundColor: cfg.cor + (theme.dark ? "33" : "20"),
+                      }}
                       textStyle={{ color: corTextoBadge, fontSize: 11 }}
                     >
                       {cfg.label}
                     </Chip>
-                    <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
-                      {new Date(c.dataConsulta).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                    <Text
+                      variant="bodySmall"
+                      style={{ color: theme.colors.onSurfaceVariant }}
+                    >
+                      {new Date(c.dataConsulta).toLocaleTimeString("pt-BR", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
                     </Text>
                   </View>
 
                   <View style={styles.pacienteRow}>
-                    <Avatar.Text size={44} label={iniciais(c.nomePaciente)} style={{ backgroundColor: corAvatar(c.nomePaciente) }} />
+                    <Avatar.Text
+                      size={44}
+                      label={iniciais(c.nomePaciente)}
+                      style={{ backgroundColor: corAvatar(c.nomePaciente) }}
+                    />
                     <View style={styles.pacienteInfo}>
                       <Text variant="titleMedium">{c.nomePaciente}</Text>
-                      <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>{c.nomeMedico}</Text>
+                      <Text
+                        variant="bodySmall"
+                        style={{ color: theme.colors.onSurfaceVariant }}
+                      >
+                        {c.nomeMedico}
+                      </Text>
                     </View>
                   </View>
 
                   <View style={styles.esperaRow}>
-                    <MaterialCommunityIcons name="clock-outline" size={14} color={corTextoBadge} />
-                    <Text variant="bodySmall" style={{ color: corTextoBadge, marginLeft: 4, fontWeight: '600' }}>
+                    <MaterialCommunityIcons
+                      name="clock-outline"
+                      size={14}
+                      color={corTextoBadge}
+                    />
+                    <Text
+                      variant="bodySmall"
+                      style={{
+                        color: corTextoBadge,
+                        marginLeft: 4,
+                        fontWeight: "600",
+                      }}
+                    >
                       Esperando {tempoLabel(min)}
                     </Text>
                   </View>
                   <ProgressBar
                     progress={progresso}
-                    color={progresso >= 1 ? cores.erro : progresso >= 0.5 ? cores.aviso : cores.sucesso}
+                    color={
+                      progresso >= 1
+                        ? cores.erro
+                        : progresso >= 0.5
+                          ? cores.aviso
+                          : cores.sucesso
+                    }
                     style={styles.barra}
                   />
 
-                  {c.status === 'Agendada' && (
+                  {c.status === "Agendada" && (
                     <Button
                       mode="contained"
                       buttonColor={cores.aviso}
@@ -190,7 +278,7 @@ export default function TriagemScreen() {
                       Iniciar Triagem
                     </Button>
                   )}
-                  {c.status === 'EmTriagem' && (
+                  {c.status === "EmTriagem" && (
                     <Button
                       mode="contained"
                       buttonColor={cores.info}
@@ -201,10 +289,28 @@ export default function TriagemScreen() {
                       Registrar Sinais Vitais
                     </Button>
                   )}
-                  {c.status === 'AguardandoAtendimento' && (
-                    <View style={[styles.aguardandoBox, { backgroundColor: cores.info + (theme.dark ? '25' : '15') }]}>
-                      <MaterialCommunityIcons name="clock-outline" size={16} color={theme.dark ? '#4fc3f7' : cores.info} />
-                      <Text style={{ color: theme.dark ? '#4fc3f7' : cores.info, marginLeft: 6, fontWeight: '600' }}>
+                  {c.status === "AguardandoAtendimento" && (
+                    <View
+                      style={[
+                        styles.aguardandoBox,
+                        {
+                          backgroundColor:
+                            cores.info + (theme.dark ? "25" : "15"),
+                        },
+                      ]}
+                    >
+                      <MaterialCommunityIcons
+                        name="clock-outline"
+                        size={16}
+                        color={theme.dark ? "#4fc3f7" : cores.info}
+                      />
+                      <Text
+                        style={{
+                          color: theme.dark ? "#4fc3f7" : cores.info,
+                          marginLeft: 6,
+                          fontWeight: "600",
+                        }}
+                      >
                         Aguardando médico
                       </Text>
                     </View>
@@ -228,20 +334,36 @@ export default function TriagemScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: 'transparent' },
-  centro: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  container: { flex: 1, backgroundColor: "transparent" },
+  centro: { flex: 1, justifyContent: "center", alignItems: "center" },
   conteudo: { padding: 16 },
-  erro: { color: cores.erro, textAlign: 'center', marginBottom: 12 },
-  statsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 },
+  erro: { color: cores.erro, textAlign: "center", marginBottom: 12 },
+  statsRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginBottom: 16,
+  },
   statChip: {},
   card: { marginBottom: 12, borderRadius: 12 },
-  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
-  pacienteRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
+  cardHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 10,
+  },
+  pacienteRow: { flexDirection: "row", alignItems: "center", marginBottom: 10 },
   pacienteInfo: { marginLeft: 12, flex: 1 },
-  esperaRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 6 },
+  esperaRow: { flexDirection: "row", alignItems: "center", marginBottom: 6 },
   barra: { height: 6, borderRadius: 3, marginBottom: 12 },
   botao: { borderRadius: 8 },
-  aguardandoBox: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', padding: 10, borderRadius: 8 },
-  vazioContainer: { alignItems: 'center', marginTop: 60 },
+  aguardandoBox: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 10,
+    borderRadius: 8,
+  },
+  vazioContainer: { alignItems: "center", marginTop: 60 },
   textoVazio: { marginTop: 12, fontSize: 16 },
 });

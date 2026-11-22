@@ -1,13 +1,13 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from "react";
 import {
   StyleSheet,
   ViewStyle,
   Platform,
   Keyboard,
   useWindowDimensions,
-} from 'react-native';
-import { Modal, Portal, useTheme } from 'react-native-paper';
-import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+} from "react-native";
+import { Modal, Portal, useTheme } from "react-native-paper";
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 
 interface Props {
   visible: boolean;
@@ -27,8 +27,10 @@ export default function ModalComTeclado({
   const [alturaTeclado, setAlturaTeclado] = useState(0);
 
   useEffect(() => {
-    const eventoShow = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
-    const eventoHide = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+    const eventoShow =
+      Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
+    const eventoHide =
+      Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide";
 
     const subShow = Keyboard.addListener(eventoShow, (e) => {
       setAlturaTeclado(e.endCoordinates.height);
@@ -71,8 +73,8 @@ export default function ModalComTeclado({
         <KeyboardAwareScrollView
           enableOnAndroid
           enableAutomaticScroll
-          extraScrollHeight={Platform.OS === 'android' ? 40 : 20}
-          extraHeight={Platform.OS === 'android' ? 60 : 30}
+          extraScrollHeight={Platform.OS === "android" ? 40 : 20}
+          extraHeight={Platform.OS === "android" ? 60 : 30}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.scrollContent}

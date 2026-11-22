@@ -1,10 +1,10 @@
-import React, { useEffect, useState } from 'react';
-import { View, StyleSheet } from 'react-native';
-import { Text, TextInput, Button, useTheme } from 'react-native-paper';
-import api from '../services/api';
-import CabecalhoGradiente from './CabecalhoGradiente';
-import { cores } from '../theme';
-import ModalComTeclado from './ModalComTeclado';
+import React, { useEffect, useState } from "react";
+import { View, StyleSheet } from "react-native";
+import { Text, TextInput, Button, useTheme } from "react-native-paper";
+import api from "../services/api";
+import CabecalhoGradiente from "./CabecalhoGradiente";
+import { cores } from "../theme";
+import ModalComTeclado from "./ModalComTeclado";
 
 interface Props {
   visible: boolean;
@@ -16,21 +16,27 @@ interface Props {
 
 const PRESSAO_REGEX = /^\d{2,3}\/\d{2,3}$/;
 
-export default function TriagemModal({ visible, consultaId, statusConsulta, onClose, onSucesso }: Props) {
+export default function TriagemModal({
+  visible,
+  consultaId,
+  statusConsulta,
+  onClose,
+  onSucesso,
+}: Props) {
   const theme = useTheme();
-  const [pressao, setPressao] = useState('');
-  const [temperatura, setTemperatura] = useState('');
-  const [observacoes, setObservacoes] = useState('');
-  const [erro, setErro] = useState('');
+  const [pressao, setPressao] = useState("");
+  const [temperatura, setTemperatura] = useState("");
+  const [observacoes, setObservacoes] = useState("");
+  const [erro, setErro] = useState("");
   const [loading, setLoading] = useState(false);
   const [iniciada, setIniciada] = useState(false);
   const [registrada, setRegistrada] = useState(false);
 
   function limpar() {
-    setPressao('');
-    setTemperatura('');
-    setObservacoes('');
-    setErro('');
+    setPressao("");
+    setTemperatura("");
+    setObservacoes("");
+    setErro("");
     setIniciada(false);
     setRegistrada(false);
   }
@@ -42,27 +48,27 @@ export default function TriagemModal({ visible, consultaId, statusConsulta, onCl
 
   async function salvar() {
     if (!consultaId) return;
-    setErro('');
+    setErro("");
 
     const pressaoLimpa = pressao.trim();
     if (!PRESSAO_REGEX.test(pressaoLimpa)) {
-      return setErro('Informe a pressão arterial no formato 120/80');
+      return setErro("Informe a pressão arterial no formato 120/80");
     }
 
-    const temp = parseFloat(temperatura.replace(',', '.'));
+    const temp = parseFloat(temperatura.replace(",", "."));
     if (Number.isNaN(temp) || temp < 30 || temp > 45) {
-      return setErro('Temperatura deve estar entre 30 e 45 °C');
+      return setErro("Temperatura deve estar entre 30 e 45 °C");
     }
 
     setLoading(true);
     try {
       // Cada etapa roda uma única vez, mesmo que o usuário tente de novo depois de uma falha
-      if (statusConsulta !== 'EmTriagem' && !iniciada) {
+      if (statusConsulta !== "EmTriagem" && !iniciada) {
         await api.patch(`/api/consultas/${consultaId}/iniciar-triagem`);
         setIniciada(true);
       }
       if (!registrada) {
-        await api.post('/api/triagens', {
+        await api.post("/api/triagens", {
           consultaId,
           pressaoArterial: pressaoLimpa,
           temperatura: temp,
@@ -73,7 +79,7 @@ export default function TriagemModal({ visible, consultaId, statusConsulta, onCl
       await api.patch(`/api/consultas/${consultaId}/aguardar-atendimento`);
       onSucesso();
     } catch (e: any) {
-      setErro(e.mensagemBack ?? 'Erro ao registrar triagem');
+      setErro(e.mensagemBack ?? "Erro ao registrar triagem");
     } finally {
       setLoading(false);
     }
@@ -116,12 +122,22 @@ export default function TriagemModal({ visible, consultaId, statusConsulta, onCl
         mode="outlined"
         style={styles.input}
       />
-      <Text variant="bodySmall" style={[styles.contador, { color: theme.colors.onSurfaceVariant }]}>
+      <Text
+        variant="bodySmall"
+        style={[styles.contador, { color: theme.colors.onSurfaceVariant }]}
+      >
         {observacoes.length}/500
       </Text>
       <View style={styles.botoes}>
-        <Button onPress={onClose} disabled={loading}>Cancelar</Button>
-        <Button mode="contained" onPress={salvar} loading={loading} disabled={loading}>
+        <Button onPress={onClose} disabled={loading}>
+          Cancelar
+        </Button>
+        <Button
+          mode="contained"
+          onPress={salvar}
+          loading={loading}
+          disabled={loading}
+        >
           Registrar
         </Button>
       </View>
@@ -134,18 +150,18 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   contador: {
-    textAlign: 'right',
+    textAlign: "right",
     marginTop: -8,
     marginBottom: 8,
   },
   botoes: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
+    flexDirection: "row",
+    justifyContent: "flex-end",
     gap: 8,
     marginTop: 8,
   },
   erro: {
-    color: '#d32f2f',
+    color: "#d32f2f",
     marginBottom: 12,
   },
 });

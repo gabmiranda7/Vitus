@@ -1,11 +1,11 @@
-import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { Box, Typography, Alert, Button } from '@mui/material';
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import Layout from '../../components/layout/Layout';
-import api from '../../services/api';
-import ProntuarioConteudo from '../../components/prontuario/ProntuarioConteudo';
-import { Prontuario, Paciente, Exame } from '../../types';
+import React, { useEffect, useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { Box, Typography, Alert, Button } from "@mui/material";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import Layout from "../../components/layout/Layout";
+import api from "../../services/api";
+import ProntuarioConteudo from "../../components/prontuario/ProntuarioConteudo";
+import { Prontuario, Paciente, Exame } from "../../types";
 
 export default function ProntuarioPacientePage(): React.ReactElement {
   const { pacienteId } = useParams();
@@ -13,7 +13,7 @@ export default function ProntuarioPacientePage(): React.ReactElement {
   const [prontuario, setProntuario] = useState<Prontuario | null>(null);
   const [paciente, setPaciente] = useState<Paciente | null>(null);
   const [exames, setExames] = useState<Exame[]>([]);
-  const [erro, setErro] = useState('');
+  const [erro, setErro] = useState("");
 
   useEffect(() => {
     if (pacienteId) carregar();
@@ -21,16 +21,20 @@ export default function ProntuarioPacientePage(): React.ReactElement {
 
   async function carregar() {
     try {
-      const rProntuario = await api.get(`/api/prontuarios/paciente/${pacienteId}`);
+      const rProntuario = await api.get(
+        `/api/prontuarios/paciente/${pacienteId}`,
+      );
       setProntuario(rProntuario.data);
       const pacienteIdDoProntuario = rProntuario.data.pacienteId;
       if (pacienteIdDoProntuario) {
-        const rPaciente = await api.get(`/api/Paciente/${pacienteIdDoProntuario}`);
+        const rPaciente = await api.get(
+          `/api/Paciente/${pacienteIdDoProntuario}`,
+        );
         setPaciente(rPaciente.data);
       }
       await carregarExames(rProntuario.data.id);
     } catch {
-      setErro('Erro ao carregar prontuário');
+      setErro("Erro ao carregar prontuário");
     }
   }
 
@@ -43,13 +47,28 @@ export default function ProntuarioPacientePage(): React.ReactElement {
     }
   }
 
-  if (erro) return <Layout><Alert severity="error">{erro}</Alert></Layout>;
-  if (!prontuario) return <Layout><Typography color="text.secondary">Carregando...</Typography></Layout>;
+  if (erro)
+    return (
+      <Layout>
+        <Alert severity="error">{erro}</Alert>
+      </Layout>
+    );
+  if (!prontuario)
+    return (
+      <Layout>
+        <Typography color="text.secondary">Carregando...</Typography>
+      </Layout>
+    );
 
   return (
     <Layout>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 3 }}>
-        <Button startIcon={<ArrowBackIcon />} onClick={() => navigate('/prontuarios')} variant="outlined" size="small">
+      <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 3 }}>
+        <Button
+          startIcon={<ArrowBackIcon />}
+          onClick={() => navigate("/prontuarios")}
+          variant="outlined"
+          size="small"
+        >
           Voltar
         </Button>
       </Box>

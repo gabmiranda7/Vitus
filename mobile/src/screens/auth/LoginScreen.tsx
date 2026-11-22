@@ -1,30 +1,33 @@
-import React, { useState } from 'react';
-import { StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
-import { TextInput, Button, Text, Surface, useTheme } from 'react-native-paper';
-import { useNavigation } from '@react-navigation/native';
-import { useAuth } from '../../contexts/AuthContext';
-import { cores } from '../../theme';
+import React, { useState } from "react";
+import { StyleSheet, KeyboardAvoidingView, Platform } from "react-native";
+import { TextInput, Button, Text, Surface, useTheme } from "react-native-paper";
+import { useNavigation } from "@react-navigation/native";
+import { useAuth } from "../../contexts/AuthContext";
+import { cores } from "../../theme";
 
 export default function LoginScreen() {
-  const [email, setEmail] = useState('');
-  const [senha, setSenha] = useState('');
-  const [erro, setErro] = useState('');
+  const [email, setEmail] = useState("");
+  const [senha, setSenha] = useState("");
+  const [erro, setErro] = useState("");
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
   const navigation = useNavigation<any>();
   const theme = useTheme();
 
   async function handleLogin() {
-    setErro('');
+    setErro("");
     if (!email.trim() || !senha.trim()) {
-      setErro('Preencha email e senha');
+      setErro("Preencha email e senha");
       return;
     }
     setLoading(true);
     try {
       await login(email, senha);
     } catch (error: any) {
-      setErro(error.mensagemBack ?? 'Erro ao fazer login. Verifique suas credenciais.');
+      setErro(
+        error.mensagemBack ??
+          "Erro ao fazer login. Verifique suas credenciais.",
+      );
     } finally {
       setLoading(false);
     }
@@ -33,14 +36,20 @@ export default function LoginScreen() {
   return (
     <KeyboardAvoidingView
       style={[styles.container, { backgroundColor: theme.colors.background }]}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
     >
       <Surface style={styles.card} elevation={2}>
-        <Text variant="headlineMedium" style={[styles.titulo, { color: theme.colors.primary }]}>
+        <Text
+          variant="headlineMedium"
+          style={[styles.titulo, { color: theme.colors.primary }]}
+        >
           Vitus
         </Text>
-        <Text variant="bodyMedium" style={[styles.subtitulo, { color: theme.colors.onSurfaceVariant }]}>
+        <Text
+          variant="bodyMedium"
+          style={[styles.subtitulo, { color: theme.colors.onSurfaceVariant }]}
+        >
           Entre com sua conta
         </Text>
 
@@ -74,7 +83,10 @@ export default function LoginScreen() {
           Entrar
         </Button>
 
-        <Button onPress={() => navigation.navigate('Cadastro')} style={styles.linkCadastro}>
+        <Button
+          onPress={() => navigation.navigate("Cadastro")}
+          style={styles.linkCadastro}
+        >
           Não tem conta? Cadastre-se
         </Button>
       </Surface>
@@ -85,7 +97,7 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
+    justifyContent: "center",
     padding: 20,
   },
   card: {
@@ -93,12 +105,12 @@ const styles = StyleSheet.create({
     borderRadius: 16,
   },
   titulo: {
-    textAlign: 'center',
-    fontWeight: 'bold',
+    textAlign: "center",
+    fontWeight: "bold",
     marginBottom: 4,
   },
   subtitulo: {
-    textAlign: 'center',
+    textAlign: "center",
     marginBottom: 24,
   },
   input: {
@@ -113,7 +125,7 @@ const styles = StyleSheet.create({
   },
   erro: {
     color: cores.erro,
-    textAlign: 'center',
+    textAlign: "center",
     marginBottom: 16,
   },
 });

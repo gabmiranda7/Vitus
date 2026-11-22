@@ -1,22 +1,28 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
-import AprovacoesPage from '../pages/aprovacoes/AprovacoesPage';
-import AuditoriaPage from '../pages/auditoria/AuditoriaPage';
-import LoginPage from '../pages/auth/LoginPage';
-import AgendaPage from '../pages/agenda/AgendaPage';
-import CadastroPage from '../pages/auth/CadastroPage';
-import ConsultasPage from '../pages/consultas/ConsultasPage';
-import DashboardPage from '../pages/dashboard/DashboardPage';
-import MedicosPage from '../pages/medicos/MedicosPage';
-import PacientesPage from '../pages/pacientes/PacientesPage';
-import PerfilPage from '../pages/perfil/PerfilPage';
-import ProntuarioPacientePage from '../pages/prontuario/ProntuarioPacientePage';
-import ProntuariosPacientesPage from '../pages/prontuario/ProntuariosPacientesPage';
-import ProntuarioPage from '../pages/prontuario/ProntuarioPage';
-import ReceitasPage from '../pages/receitas/ReceitasPage';
-import TriagemPage from '../pages/triagem/TriagemPage';
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { useAuth } from "../contexts/AuthContext";
+import AprovacoesPage from "../pages/aprovacoes/AprovacoesPage";
+import AuditoriaPage from "../pages/auditoria/AuditoriaPage";
+import LoginPage from "../pages/auth/LoginPage";
+import AgendaPage from "../pages/agenda/AgendaPage";
+import CadastroPage from "../pages/auth/CadastroPage";
+import ConsultasPage from "../pages/consultas/ConsultasPage";
+import DashboardPage from "../pages/dashboard/DashboardPage";
+import MedicosPage from "../pages/medicos/MedicosPage";
+import PacientesPage from "../pages/pacientes/PacientesPage";
+import PerfilPage from "../pages/perfil/PerfilPage";
+import ProntuarioPacientePage from "../pages/prontuario/ProntuarioPacientePage";
+import ProntuariosPacientesPage from "../pages/prontuario/ProntuariosPacientesPage";
+import ProntuarioPage from "../pages/prontuario/ProntuarioPage";
+import ReceitasPage from "../pages/receitas/ReceitasPage";
+import TriagemPage from "../pages/triagem/TriagemPage";
 
-function PrivateRoute({ children, perfis }: { children: React.ReactElement; perfis: string[] }) {
+function PrivateRoute({
+  children,
+  perfis,
+}: {
+  children: React.ReactElement;
+  perfis: string[];
+}) {
   const { isAuthenticated, usuario } = useAuth();
   if (!isAuthenticated) return <Navigate to="/login" />;
   if (!perfis.includes(usuario!.perfil)) return <Navigate to="/login" />;
@@ -30,83 +36,136 @@ export default function AppRoutes() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/cadastro" element={<CadastroPage />} />
 
-        <Route path="/agenda" element={
-          <PrivateRoute perfis={['Medico']}>
-            <AgendaPage />
-          </PrivateRoute>
-        } />
+        <Route
+          path="/agenda"
+          element={
+            <PrivateRoute perfis={["Medico"]}>
+              <AgendaPage />
+            </PrivateRoute>
+          }
+        />
 
-        <Route path="/aprovacoes" element={
-          <PrivateRoute perfis={['Administrador']}>
-            <AprovacoesPage />
-          </PrivateRoute>
-        } />
+        <Route
+          path="/aprovacoes"
+          element={
+            <PrivateRoute perfis={["Administrador"]}>
+              <AprovacoesPage />
+            </PrivateRoute>
+          }
+        />
 
-        <Route path="/auditoria" element={
-          <PrivateRoute perfis={['Administrador']}>
-            <AuditoriaPage />
-          </PrivateRoute>
-        } />
+        <Route
+          path="/auditoria"
+          element={
+            <PrivateRoute perfis={["Administrador"]}>
+              <AuditoriaPage />
+            </PrivateRoute>
+          }
+        />
 
-        <Route path="/consultas" element={
-          <PrivateRoute perfis={['Recepcionista', 'Enfermeiro', 'Medico']}>
-            <ConsultasPage />
-          </PrivateRoute>
-        } />
+        <Route
+          path="/consultas"
+          element={
+            <PrivateRoute perfis={["Recepcionista", "Enfermeiro", "Medico"]}>
+              <ConsultasPage />
+            </PrivateRoute>
+          }
+        />
 
-        <Route path="/dashboard" element={
-          <PrivateRoute perfis={['Recepcionista', 'Enfermeiro', 'Medico', 'Administrador']}>
-            <DashboardPage />
-          </PrivateRoute>
-        } />
+        <Route
+          path="/dashboard"
+          element={
+            <PrivateRoute
+              perfis={[
+                "Recepcionista",
+                "Enfermeiro",
+                "Medico",
+                "Administrador",
+              ]}
+            >
+              <DashboardPage />
+            </PrivateRoute>
+          }
+        />
 
-        <Route path="/medicos" element={
-          <PrivateRoute perfis={['Recepcionista']}>
-            <MedicosPage />
-          </PrivateRoute>
-        } />
+        <Route
+          path="/medicos"
+          element={
+            <PrivateRoute perfis={["Recepcionista"]}>
+              <MedicosPage />
+            </PrivateRoute>
+          }
+        />
 
-        <Route path="/pacientes" element={
-          <PrivateRoute perfis={['Recepcionista']}>
-            <PacientesPage />
-          </PrivateRoute>
-        } />
+        <Route
+          path="/pacientes"
+          element={
+            <PrivateRoute perfis={["Recepcionista"]}>
+              <PacientesPage />
+            </PrivateRoute>
+          }
+        />
 
-        <Route path="/perfil" element={
-          <PrivateRoute perfis={['Recepcionista', 'Enfermeiro', 'Medico', 'Administrador']}>
-            <PerfilPage />
-          </PrivateRoute>
-        } />
+        <Route
+          path="/perfil"
+          element={
+            <PrivateRoute
+              perfis={[
+                "Recepcionista",
+                "Enfermeiro",
+                "Medico",
+                "Administrador",
+              ]}
+            >
+              <PerfilPage />
+            </PrivateRoute>
+          }
+        />
 
-        <Route path="/prontuarios" element={
-          <PrivateRoute perfis={['Medico', 'Enfermeiro']}>
-            <ProntuariosPacientesPage />
-          </PrivateRoute>
-        } />
+        <Route
+          path="/prontuarios"
+          element={
+            <PrivateRoute perfis={["Medico", "Enfermeiro"]}>
+              <ProntuariosPacientesPage />
+            </PrivateRoute>
+          }
+        />
 
-        <Route path="/prontuarios/paciente/:pacienteId" element={
-          <PrivateRoute perfis={['Medico', 'Enfermeiro']}>
-            <ProntuarioPacientePage />
-          </PrivateRoute>
-        } />
+        <Route
+          path="/prontuarios/paciente/:pacienteId"
+          element={
+            <PrivateRoute perfis={["Medico", "Enfermeiro"]}>
+              <ProntuarioPacientePage />
+            </PrivateRoute>
+          }
+        />
 
-        <Route path="/prontuario/:consultaId" element={
-          <PrivateRoute perfis={['Medico', 'Enfermeiro']}>
-            <ProntuarioPage />
-          </PrivateRoute>
-        } />
+        <Route
+          path="/prontuario/:consultaId"
+          element={
+            <PrivateRoute perfis={["Medico", "Enfermeiro"]}>
+              <ProntuarioPage />
+            </PrivateRoute>
+          }
+        />
 
-        <Route path="/receitas" element={
-          <PrivateRoute perfis={['Medico']}>
-            <ReceitasPage />
-          </PrivateRoute>
-        } />
+        <Route
+          path="/receitas"
+          element={
+            <PrivateRoute perfis={["Medico"]}>
+              <ReceitasPage />
+            </PrivateRoute>
+          }
+        />
 
-        <Route path="/triagem" element={
-          <PrivateRoute perfis={['Enfermeiro']}>
-            <TriagemPage />
-          </PrivateRoute>
-        } />
+        <Route
+          path="/triagem"
+          element={
+            <PrivateRoute perfis={["Enfermeiro"]}>
+              <TriagemPage />
+            </PrivateRoute>
+          }
+        />
 
         <Route path="*" element={<Navigate to="/login" />} />
       </Routes>

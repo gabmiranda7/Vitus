@@ -1,54 +1,115 @@
-import { ReactNode } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { ReactNode } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import {
-  AppBar, Box, Drawer, List, ListItemButton,
-  ListItemIcon, ListItemText, Toolbar, Typography, IconButton,
-  Divider, Tooltip, useTheme, Chip
-} from '@mui/material';
-import logo from '../../assets/logo.svg';
-import DashboardIcon from '@mui/icons-material/Dashboard';
-import PeopleIcon from '@mui/icons-material/People';
-import LocalHospitalIcon from '@mui/icons-material/LocalHospital';
-import EventNoteIcon from '@mui/icons-material/EventNote';
-import HistoryIcon from '@mui/icons-material/History';
-import FactCheckIcon from '@mui/icons-material/FactCheck';
-import MedicalServicesIcon from '@mui/icons-material/MedicalServices';
-import MedicationIcon from '@mui/icons-material/Medication';
-import LogoutIcon from '@mui/icons-material/Logout';
-import DarkModeIcon from '@mui/icons-material/DarkMode';
-import LightModeIcon from '@mui/icons-material/LightMode';
-import FolderSharedIcon from '@mui/icons-material/FolderShared';
-import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
-import { useAuth } from '../../contexts/AuthContext';
-import AvatarUsuario from './AvatarUsuario';
+  AppBar,
+  Box,
+  Drawer,
+  List,
+  ListItemButton,
+  ListItemIcon,
+  ListItemText,
+  Toolbar,
+  Typography,
+  IconButton,
+  Divider,
+  Tooltip,
+  useTheme,
+  Chip,
+} from "@mui/material";
+import logo from "../../assets/logo.svg";
+import DashboardIcon from "@mui/icons-material/Dashboard";
+import PeopleIcon from "@mui/icons-material/People";
+import LocalHospitalIcon from "@mui/icons-material/LocalHospital";
+import EventNoteIcon from "@mui/icons-material/EventNote";
+import HistoryIcon from "@mui/icons-material/History";
+import FactCheckIcon from "@mui/icons-material/FactCheck";
+import MedicalServicesIcon from "@mui/icons-material/MedicalServices";
+import MedicationIcon from "@mui/icons-material/Medication";
+import LogoutIcon from "@mui/icons-material/Logout";
+import DarkModeIcon from "@mui/icons-material/DarkMode";
+import LightModeIcon from "@mui/icons-material/LightMode";
+import FolderSharedIcon from "@mui/icons-material/FolderShared";
+import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
+import { useAuth } from "../../contexts/AuthContext";
+import AvatarUsuario from "./AvatarUsuario";
 
 const DRAWER_WIDTH = 210;
 
 const menuItems = [
-  { label: 'Dashboard', path: '/dashboard', icon: <DashboardIcon />, perfis: ['Administrador', 'Recepcionista', 'Enfermeiro', 'Medico'] },
-  { label: 'Auditoria', path: '/auditoria', icon: <HistoryIcon />, perfis: ['Administrador'] },
-  { label: 'Aprovações', path: '/aprovacoes', icon: <FactCheckIcon />, perfis: ['Administrador'] },
-  { label: 'Minha Agenda', path: '/agenda', icon: <CalendarTodayIcon />, perfis: ['Medico'] },
-  { label: 'Consultas', path: '/consultas', icon: <EventNoteIcon />, perfis: ['Recepcionista', 'Enfermeiro', 'Medico'] },
-  { label: 'Triagem', path: '/triagem', icon: <MedicalServicesIcon />, perfis: ['Enfermeiro'] },
-  { label: 'Receitas', path: '/receitas', icon: <MedicationIcon />, perfis: ['Medico'] },
-  { label: 'Prontuários', path: '/prontuarios', icon: <FolderSharedIcon />, perfis: ['Medico', 'Enfermeiro'] },
-  { label: 'Pacientes', path: '/pacientes', icon: <PeopleIcon />, perfis: ['Recepcionista'] },
-  { label: 'Médicos', path: '/medicos', icon: <LocalHospitalIcon />, perfis: ['Recepcionista'] },
+  {
+    label: "Dashboard",
+    path: "/dashboard",
+    icon: <DashboardIcon />,
+    perfis: ["Administrador", "Recepcionista", "Enfermeiro", "Medico"],
+  },
+  {
+    label: "Auditoria",
+    path: "/auditoria",
+    icon: <HistoryIcon />,
+    perfis: ["Administrador"],
+  },
+  {
+    label: "Aprovações",
+    path: "/aprovacoes",
+    icon: <FactCheckIcon />,
+    perfis: ["Administrador"],
+  },
+  {
+    label: "Minha Agenda",
+    path: "/agenda",
+    icon: <CalendarTodayIcon />,
+    perfis: ["Medico"],
+  },
+  {
+    label: "Consultas",
+    path: "/consultas",
+    icon: <EventNoteIcon />,
+    perfis: ["Recepcionista", "Enfermeiro", "Medico"],
+  },
+  {
+    label: "Triagem",
+    path: "/triagem",
+    icon: <MedicalServicesIcon />,
+    perfis: ["Enfermeiro"],
+  },
+  {
+    label: "Receitas",
+    path: "/receitas",
+    icon: <MedicationIcon />,
+    perfis: ["Medico"],
+  },
+  {
+    label: "Prontuários",
+    path: "/prontuarios",
+    icon: <FolderSharedIcon />,
+    perfis: ["Medico", "Enfermeiro"],
+  },
+  {
+    label: "Pacientes",
+    path: "/pacientes",
+    icon: <PeopleIcon />,
+    perfis: ["Recepcionista"],
+  },
+  {
+    label: "Médicos",
+    path: "/medicos",
+    icon: <LocalHospitalIcon />,
+    perfis: ["Recepcionista"],
+  },
 ];
 
 const perfilCores: Record<string, string> = {
-  Medico: '#1565c0',
-  Enfermeiro: '#2e7d32',
-  Recepcionista: '#6a1b9a',
-  Administrador: '#37474f',
+  Medico: "#1565c0",
+  Enfermeiro: "#2e7d32",
+  Recepcionista: "#6a1b9a",
+  Administrador: "#37474f",
 };
 
 const perfilLabels: Record<string, string> = {
-  Medico: 'Médico',
-  Enfermeiro: 'Enfermeiro(a)',
-  Recepcionista: 'Recepcionista',
-  Administrador: 'Administrador',
+  Medico: "Médico",
+  Enfermeiro: "Enfermeiro(a)",
+  Recepcionista: "Recepcionista",
+  Administrador: "Administrador",
 };
 
 export default function Layout({ children }: { children: ReactNode }) {
@@ -56,24 +117,28 @@ export default function Layout({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
   const location = useLocation();
   const theme = useTheme();
-  const isDark = theme.palette.mode === 'dark';
+  const isDark = theme.palette.mode === "dark";
 
-  const itensFiltrados = menuItems.filter(item =>
-    item.perfis.includes(usuario?.perfil ?? '')
+  const itensFiltrados = menuItems.filter((item) =>
+    item.perfis.includes(usuario?.perfil ?? ""),
   );
 
-  const corPerfil = perfilCores[usuario?.perfil ?? ''] ?? '#1976d2';
+  const corPerfil = perfilCores[usuario?.perfil ?? ""] ?? "#1976d2";
 
   return (
-    <Box sx={{ display: 'flex' }}>
+    <Box sx={{ display: "flex" }}>
       {/* AppBar */}
-      <AppBar position="fixed" elevation={0} sx={{
-        zIndex: (t) => t.zIndex.drawer + 1,
-        bgcolor: isDark ? 'grey.900' : 'background.paper',
-        borderBottom: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)'}`,
-      }}>
-        <Toolbar sx={{ justifyContent: 'space-between' }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+      <AppBar
+        position="fixed"
+        elevation={0}
+        sx={{
+          zIndex: (t) => t.zIndex.drawer + 1,
+          bgcolor: isDark ? "grey.900" : "background.paper",
+          borderBottom: `1px solid ${isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)"}`,
+        }}
+      >
+        <Toolbar sx={{ justifyContent: "space-between" }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
             <Box
               component="img"
               src={logo}
@@ -81,40 +146,76 @@ export default function Layout({ children }: { children: ReactNode }) {
               sx={{
                 width: 34,
                 height: 34,
-                borderRadius: '8px',
-                objectFit: 'contain',
+                borderRadius: "8px",
+                objectFit: "contain",
               }}
             />
-            <Typography variant="h6" sx={{ fontWeight: 800, color: 'primary.main', letterSpacing: -0.5 }}>
+            <Typography
+              variant="h6"
+              sx={{
+                fontWeight: 800,
+                color: "primary.main",
+                letterSpacing: -0.5,
+              }}
+            >
               Vitus
             </Typography>
           </Box>
 
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-            <Tooltip title={darkMode ? 'Modo claro' : 'Modo escuro'}>
-              <IconButton onClick={toggleDarkMode} size="small" sx={{ color: 'text.secondary' }}>
-                {darkMode ? <LightModeIcon fontSize="small" /> : <DarkModeIcon fontSize="small" />}
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+            <Tooltip title={darkMode ? "Modo claro" : "Modo escuro"}>
+              <IconButton
+                onClick={toggleDarkMode}
+                size="small"
+                sx={{ color: "text.secondary" }}
+              >
+                {darkMode ? (
+                  <LightModeIcon fontSize="small" />
+                ) : (
+                  <DarkModeIcon fontSize="small" />
+                )}
               </IconButton>
             </Tooltip>
             <Divider orientation="vertical" flexItem sx={{ mx: 0.5 }} />
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
               <Tooltip title="Meu perfil">
-                <Box onClick={() => navigate('/perfil')} sx={{ cursor: 'pointer', display: 'flex' }}>
+                <Box
+                  onClick={() => navigate("/perfil")}
+                  sx={{ cursor: "pointer", display: "flex" }}
+                >
                   <AvatarUsuario size={34} bgcolor={corPerfil} />
                 </Box>
               </Tooltip>
-              <Box sx={{ display: 'none', '@media (min-width: 600px)': { display: 'block' } }}>
-                <Typography variant="body2" sx={{ fontWeight: 600, color: 'text.primary', lineHeight: 1.2 }}>
-                  {usuario?.nome?.split(' ')[0]}
+              <Box
+                sx={{
+                  display: "none",
+                  "@media (min-width: 600px)": { display: "block" },
+                }}
+              >
+                <Typography
+                  variant="body2"
+                  sx={{
+                    fontWeight: 600,
+                    color: "text.primary",
+                    lineHeight: 1.2,
+                  }}
+                >
+                  {usuario?.nome?.split(" ")[0]}
                 </Typography>
-                <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                  {perfilLabels[usuario?.perfil ?? ''] ?? usuario?.perfil}
+                <Typography variant="caption" sx={{ color: "text.secondary" }}>
+                  {perfilLabels[usuario?.perfil ?? ""] ?? usuario?.perfil}
                 </Typography>
               </Box>
             </Box>
             <Tooltip title="Sair">
-              <IconButton size="small" onClick={() => { logout(); navigate('/login'); }}
-                sx={{ color: 'text.secondary' }}>
+              <IconButton
+                size="small"
+                onClick={() => {
+                  logout();
+                  navigate("/login");
+                }}
+                sx={{ color: "text.secondary" }}
+              >
                 <LogoutIcon fontSize="small" />
               </IconButton>
             </Tooltip>
@@ -123,20 +224,32 @@ export default function Layout({ children }: { children: ReactNode }) {
       </AppBar>
 
       {/* Sidebar */}
-      <Drawer variant="permanent" sx={{
-        width: DRAWER_WIDTH, flexShrink: 0,
-        '& .MuiDrawer-paper': {
-          width: DRAWER_WIDTH, boxSizing: 'border-box',
-          bgcolor: isDark ? 'grey.900' : 'background.paper',
-          borderRight: `1px solid ${isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.08)'}`,
-        },
-      }}>
+      <Drawer
+        variant="permanent"
+        sx={{
+          width: DRAWER_WIDTH,
+          flexShrink: 0,
+          "& .MuiDrawer-paper": {
+            width: DRAWER_WIDTH,
+            boxSizing: "border-box",
+            bgcolor: isDark ? "grey.900" : "background.paper",
+            borderRight: `1px solid ${isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.08)"}`,
+          },
+        }}
+      >
         <Toolbar />
         <Box sx={{ p: 2, pt: 2.5 }}>
-          <Typography variant="caption" sx={{
-            color: 'text.disabled', fontWeight: 700,
-            textTransform: 'uppercase', letterSpacing: 1, fontSize: 10, px: 1
-          }}>
+          <Typography
+            variant="caption"
+            sx={{
+              color: "text.disabled",
+              fontWeight: 700,
+              textTransform: "uppercase",
+              letterSpacing: 1,
+              fontSize: 10,
+              px: 1,
+            }}
+          >
             Menu
           </Typography>
         </Box>
@@ -149,22 +262,28 @@ export default function Layout({ children }: { children: ReactNode }) {
                 selected={ativo}
                 onClick={() => navigate(item.path)}
                 sx={{
-                  borderRadius: 2, mb: 0.5, px: 1.5,
-                  '&.Mui-selected': {
-                    bgcolor: 'primary.main',
-                    color: 'white',
-                    '& .MuiListItemIcon-root': { color: 'white' },
-                    '&:hover': { bgcolor: 'primary.dark' },
+                  borderRadius: 2,
+                  mb: 0.5,
+                  px: 1.5,
+                  "&.Mui-selected": {
+                    bgcolor: "primary.main",
+                    color: "white",
+                    "& .MuiListItemIcon-root": { color: "white" },
+                    "&:hover": { bgcolor: "primary.dark" },
                   },
-                  '&:hover': {
-                    bgcolor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(25,118,210,0.06)',
+                  "&:hover": {
+                    bgcolor: isDark
+                      ? "rgba(255,255,255,0.06)"
+                      : "rgba(25,118,210,0.06)",
                   },
                 }}
               >
-                <ListItemIcon sx={{
-                  minWidth: 36,
-                  color: ativo ? 'white' : 'text.secondary',
-                }}>
+                <ListItemIcon
+                  sx={{
+                    minWidth: 36,
+                    color: ativo ? "white" : "text.secondary",
+                  }}
+                >
                   {item.icon}
                 </ListItemIcon>
                 <ListItemText
@@ -173,7 +292,7 @@ export default function Layout({ children }: { children: ReactNode }) {
                     primary: {
                       fontSize: 14,
                       fontWeight: ativo ? 600 : 400,
-                    }
+                    },
                   }}
                 />
               </ListItemButton>
@@ -182,24 +301,41 @@ export default function Layout({ children }: { children: ReactNode }) {
         </List>
 
         {/* Rodapé da sidebar */}
-        <Box sx={{ mt: 'auto', p: 2 }}>
-          <Box sx={{
-            p: 1.5, borderRadius: 2,
-            bgcolor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(25,118,210,0.06)',
-            border: `1px solid ${isDark ? 'rgba(255,255,255,0.06)' : 'rgba(25,118,210,0.12)'}`,
-          }}>
-            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+        <Box sx={{ mt: "auto", p: 2 }}>
+          <Box
+            sx={{
+              p: 1.5,
+              borderRadius: 2,
+              bgcolor: isDark
+                ? "rgba(255,255,255,0.04)"
+                : "rgba(25,118,210,0.06)",
+              border: `1px solid ${isDark ? "rgba(255,255,255,0.06)" : "rgba(25,118,210,0.12)"}`,
+            }}
+          >
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ display: "block", mb: 0.5 }}
+            >
               Logado como
             </Typography>
-            <Typography variant="body2" noWrap sx={{ fontWeight: 600, color: 'text.primary' }}>
-              {usuario?.nome?.split(' ').slice(0, 2).join(' ')}
+            <Typography
+              variant="body2"
+              noWrap
+              sx={{ fontWeight: 600, color: "text.primary" }}
+            >
+              {usuario?.nome?.split(" ").slice(0, 2).join(" ")}
             </Typography>
             <Chip
-              label={perfilLabels[usuario?.perfil ?? ''] ?? usuario?.perfil}
+              label={perfilLabels[usuario?.perfil ?? ""] ?? usuario?.perfil}
               size="small"
               sx={{
-                mt: 0.5, height: 20, fontSize: 10, fontWeight: 600,
-                bgcolor: corPerfil, color: 'white',
+                mt: 0.5,
+                height: 20,
+                fontSize: 10,
+                fontWeight: 600,
+                bgcolor: corPerfil,
+                color: "white",
               }}
             />
           </Box>
@@ -207,11 +343,15 @@ export default function Layout({ children }: { children: ReactNode }) {
       </Drawer>
 
       {/* Conteúdo */}
-      <Box component="main" sx={{
-        flexGrow: 1, p: 3,
-        bgcolor: isDark ? 'grey.950' : 'background.default',
-        minHeight: '100vh',
-      }}>
+      <Box
+        component="main"
+        sx={{
+          flexGrow: 1,
+          p: 3,
+          bgcolor: isDark ? "grey.950" : "background.default",
+          minHeight: "100vh",
+        }}
+      >
         <Toolbar />
         {children}
       </Box>

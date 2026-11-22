@@ -1,13 +1,20 @@
-import axios from 'axios';
+import axios from "axios";
 
-const CHAVES_SESSAO = ['token', 'nome', 'email', 'perfil', 'medicoId', 'temFoto'];
+const CHAVES_SESSAO = [
+  "token",
+  "nome",
+  "email",
+  "perfil",
+  "medicoId",
+  "temFoto",
+];
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || ''
+  baseURL: import.meta.env.VITE_API_URL || "",
 });
 
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
+  const token = localStorage.getItem("token");
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
@@ -20,34 +27,38 @@ api.interceptors.response.use(
     const data = error.response?.data;
     let mensagem: string | undefined;
 
-    if (typeof data === 'string' && data.trim()) mensagem = data;
-    else if (Array.isArray(data?.Messages) && data.Messages.length) mensagem = data.Messages[0];
-    else if (Array.isArray(data?.messages) && data.messages.length) mensagem = data.messages[0];
-    else if (typeof data?.message === 'string') mensagem = data.message;
-    else if (typeof data?.Message === 'string') mensagem = data.Message;
+    if (typeof data === "string" && data.trim()) mensagem = data;
+    else if (Array.isArray(data?.Messages) && data.Messages.length)
+      mensagem = data.Messages[0];
+    else if (Array.isArray(data?.messages) && data.messages.length)
+      mensagem = data.messages[0];
+    else if (typeof data?.message === "string") mensagem = data.message;
+    else if (typeof data?.Message === "string") mensagem = data.Message;
 
     if (!mensagem) {
-      if (!error.response) mensagem = 'Não foi possível conectar ao servidor';
-      else if (error.response.status === 401) mensagem = 'Sessão expirada. Faça login novamente';
-      else if (error.response.status === 403) mensagem = 'Você não tem permissão para realizar esta ação';
-      else mensagem = 'Ocorreu um erro inesperado';
+      if (!error.response) mensagem = "Não foi possível conectar ao servidor";
+      else if (error.response.status === 401)
+        mensagem = "Sessão expirada. Faça login novamente";
+      else if (error.response.status === 403)
+        mensagem = "Você não tem permissão para realizar esta ação";
+      else mensagem = "Ocorreu um erro inesperado";
     }
 
     const sessaoExpirada =
       error.response?.status === 401 &&
-      !!localStorage.getItem('token') &&
-      !error.config?.url?.includes('/api/auth/login');
+      !!localStorage.getItem("token") &&
+      !error.config?.url?.includes("/api/auth/login");
 
     if (sessaoExpirada) {
       CHAVES_SESSAO.forEach((chave) => localStorage.removeItem(chave));
-      if (window.location.pathname !== '/login') {
-        window.location.href = '/login';
+      if (window.location.pathname !== "/login") {
+        window.location.href = "/login";
       }
     }
 
     error.mensagemBack = mensagem;
     return Promise.reject(error);
-  }
+  },
 );
 
 export default api;

@@ -1,11 +1,18 @@
-import { Box, Chip, FormControlLabel, Switch, TextField, Typography } from '@mui/material';
-import { Medicamento } from '../../types';
+import {
+  Box,
+  Chip,
+  FormControlLabel,
+  Switch,
+  TextField,
+  Typography,
+} from "@mui/material";
+import { Medicamento } from "../../types";
 
 const ATALHOS = [
-  { label: '30 dias', dias: 30 },
-  { label: '3 meses', dias: 90 },
-  { label: '6 meses', dias: 180 },
-  { label: '1 ano', dias: 365 },
+  { label: "30 dias", dias: 30 },
+  { label: "3 meses", dias: 90 },
+  { label: "6 meses", dias: 180 },
+  { label: "1 ano", dias: 365 },
 ];
 
 const VALIDADE_MAXIMA = 730;
@@ -18,7 +25,7 @@ interface Props {
 function vencimentoPrevisto(dias: number) {
   const d = new Date();
   d.setDate(d.getDate() + dias);
-  return d.toLocaleDateString('pt-BR');
+  return d.toLocaleDateString("pt-BR");
 }
 
 export default function AcompanhamentoVencimento({ med, onChange }: Props) {
@@ -32,25 +39,39 @@ export default function AcompanhamentoVencimento({ med, onChange }: Props) {
           <Switch
             size="small"
             checked={med.acompanharVencimento}
-            onChange={(e) => onChange({
-              acompanharVencimento: e.target.checked,
-              validadeDias: e.target.checked ? med.validadeDias : null,
-            })}
+            onChange={(e) =>
+              onChange({
+                acompanharVencimento: e.target.checked,
+                validadeDias: e.target.checked ? med.validadeDias : null,
+              })
+            }
           />
         }
-        label={<Typography variant="body2">Acompanhar vencimento no prontuário</Typography>}
+        label={
+          <Typography variant="body2">
+            Acompanhar vencimento no prontuário
+          </Typography>
+        }
       />
 
       {med.acompanharVencimento && (
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap', mt: 0.5 }}>
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            gap: 1,
+            flexWrap: "wrap",
+            mt: 0.5,
+          }}
+        >
           {ATALHOS.map((a) => (
             <Chip
               key={a.dias}
               label={a.label}
               size="small"
               clickable
-              color={dias === a.dias ? 'primary' : 'default'}
-              variant={dias === a.dias ? 'filled' : 'outlined'}
+              color={dias === a.dias ? "primary" : "default"}
+              variant={dias === a.dias ? "filled" : "outlined"}
               onClick={() => onChange({ validadeDias: a.dias })}
             />
           ))}
@@ -58,8 +79,13 @@ export default function AcompanhamentoVencimento({ med, onChange }: Props) {
             label="Validade (dias)"
             type="number"
             size="small"
-            value={dias ?? ''}
-            onChange={(e) => onChange({ validadeDias: e.target.value === '' ? null : Number(e.target.value) })}
+            value={dias ?? ""}
+            onChange={(e) =>
+              onChange({
+                validadeDias:
+                  e.target.value === "" ? null : Number(e.target.value),
+              })
+            }
             error={dias != null && !valido}
             slotProps={{ htmlInput: { min: 1, max: VALIDADE_MAXIMA } }}
             sx={{ width: 140 }}

@@ -1,24 +1,40 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo } from "react";
 import {
-  Box, Card, CardContent, Chip, Typography, Avatar, Button, Alert,
-  Dialog, DialogActions, DialogContent, CircularProgress, LinearProgress,
-  TextField, InputAdornment, Snackbar, Tabs, Tab, alpha,
-} from '@mui/material';
-import HowToRegIcon from '@mui/icons-material/HowToReg';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import CancelIcon from '@mui/icons-material/Cancel';
-import BlockIcon from '@mui/icons-material/Block';
-import LockOpenIcon from '@mui/icons-material/LockOpen';
-import MedicalServicesIcon from '@mui/icons-material/MedicalServices';
-import VaccinesIcon from '@mui/icons-material/Vaccines';
-import SupportAgentIcon from '@mui/icons-material/SupportAgent';
-import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
-import PeopleIcon from '@mui/icons-material/People';
-import SearchIcon from '@mui/icons-material/Search';
-import RefreshIcon from '@mui/icons-material/Refresh';
-import Layout from '../../components/layout/Layout';
-import { iniciais } from '../../utils/pessoas';
-import api from '../../services/api';
+  Box,
+  Card,
+  CardContent,
+  Chip,
+  Typography,
+  Avatar,
+  Button,
+  Alert,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  CircularProgress,
+  LinearProgress,
+  TextField,
+  InputAdornment,
+  Snackbar,
+  Tabs,
+  Tab,
+  alpha,
+} from "@mui/material";
+import HowToRegIcon from "@mui/icons-material/HowToReg";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import CancelIcon from "@mui/icons-material/Cancel";
+import BlockIcon from "@mui/icons-material/Block";
+import LockOpenIcon from "@mui/icons-material/LockOpen";
+import MedicalServicesIcon from "@mui/icons-material/MedicalServices";
+import VaccinesIcon from "@mui/icons-material/Vaccines";
+import SupportAgentIcon from "@mui/icons-material/SupportAgent";
+import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
+import PeopleIcon from "@mui/icons-material/People";
+import SearchIcon from "@mui/icons-material/Search";
+import RefreshIcon from "@mui/icons-material/Refresh";
+import Layout from "../../components/layout/Layout";
+import { iniciais } from "../../utils/pessoas";
+import api from "../../services/api";
 
 interface UsuarioItem {
   id: string;
@@ -29,25 +45,38 @@ interface UsuarioItem {
   criadoEm?: string;
 }
 
-const perfilInfo: Record<string, { label: string; cor: string; Icon: React.ElementType }> = {
-  Administrador: { label: 'Administrador', cor: '#37474f', Icon: AdminPanelSettingsIcon },
-  Medico:        { label: 'Médico',        cor: '#1565c0', Icon: MedicalServicesIcon },
-  Enfermeiro:    { label: 'Enfermeiro(a)', cor: '#2e7d32', Icon: VaccinesIcon },
-  Recepcionista: { label: 'Recepcionista', cor: '#6a1b9a', Icon: SupportAgentIcon },
+const perfilInfo: Record<
+  string,
+  { label: string; cor: string; Icon: React.ElementType }
+> = {
+  Administrador: {
+    label: "Administrador",
+    cor: "#37474f",
+    Icon: AdminPanelSettingsIcon,
+  },
+  Medico: { label: "Médico", cor: "#1565c0", Icon: MedicalServicesIcon },
+  Enfermeiro: { label: "Enfermeiro(a)", cor: "#2e7d32", Icon: VaccinesIcon },
+  Recepcionista: {
+    label: "Recepcionista",
+    cor: "#6a1b9a",
+    Icon: SupportAgentIcon,
+  },
 };
 
-type Acao = 'aprovar' | 'recusar' | 'desativar' | 'reativar';
+type Acao = "aprovar" | "recusar" | "desativar" | "reativar";
 
 export default function AprovacoesPage() {
-  const [aba, setAba] = useState<'pendentes' | 'usuarios'>('pendentes');
+  const [aba, setAba] = useState<"pendentes" | "usuarios">("pendentes");
   const [pendentes, setPendentes] = useState<UsuarioItem[]>([]);
   const [usuarios, setUsuarios] = useState<UsuarioItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [erro, setErro] = useState('');
-  const [feedback, setFeedback] = useState('');
-  const [busca, setBusca] = useState('');
-  const [filtroPerfil, setFiltroPerfil] = useState('');
-  const [filtroStatus, setFiltroStatus] = useState<'todos' | 'Aprovado' | 'Inativo'>('todos');
+  const [erro, setErro] = useState("");
+  const [feedback, setFeedback] = useState("");
+  const [busca, setBusca] = useState("");
+  const [filtroPerfil, setFiltroPerfil] = useState("");
+  const [filtroStatus, setFiltroStatus] = useState<
+    "todos" | "Aprovado" | "Inativo"
+  >("todos");
   const [selecionado, setSelecionado] = useState<UsuarioItem | null>(null);
   const [acao, setAcao] = useState<Acao | null>(null);
   const [processando, setProcessando] = useState(false);
@@ -62,31 +91,36 @@ export default function AprovacoesPage() {
     if (mostrarLoading) setLoading(true);
     try {
       const [resPendentes, resUsuarios] = await Promise.all([
-        api.get('/api/auth/pendentes'),
-        api.get('/api/auth/usuarios'),
+        api.get("/api/auth/pendentes"),
+        api.get("/api/auth/usuarios"),
       ]);
       setPendentes(resPendentes.data);
       setUsuarios(resUsuarios.data);
     } catch (error: any) {
-      setErro(error.mensagemBack ?? 'Erro ao carregar dados de usuários');
+      setErro(error.mensagemBack ?? "Erro ao carregar dados de usuários");
     } finally {
       if (mostrarLoading) setLoading(false);
     }
   }
 
-  const listaAtual = aba === 'pendentes' ? pendentes : usuarios;
+  const listaAtual = aba === "pendentes" ? pendentes : usuarios;
 
   const filtrados = useMemo(() => {
     const q = busca.toLowerCase();
-    return listaAtual.filter(u =>
-      (filtroPerfil === '' || u.perfil === filtroPerfil) &&
-      (aba === 'pendentes' || filtroStatus === 'todos' || u.status === filtroStatus) &&
-      (q === '' || u.nome.toLowerCase().includes(q) || u.email.toLowerCase().includes(q))
+    return listaAtual.filter(
+      (u) =>
+        (filtroPerfil === "" || u.perfil === filtroPerfil) &&
+        (aba === "pendentes" ||
+          filtroStatus === "todos" ||
+          u.status === filtroStatus) &&
+        (q === "" ||
+          u.nome.toLowerCase().includes(q) ||
+          u.email.toLowerCase().includes(q)),
     );
   }, [listaAtual, aba, busca, filtroPerfil, filtroStatus]);
 
   function pedirConfirmacao(usuario: UsuarioItem, tipo: Acao) {
-    setErro('');
+    setErro("");
     setSelecionado(usuario);
     setAcao(tipo);
   }
@@ -115,7 +149,7 @@ export default function AprovacoesPage() {
       setFeedback(mensagens[tipoAcao]);
       await carregar(false);
     } catch (error: any) {
-      setErro(error.mensagemBack ?? 'Erro ao processar a solicitação');
+      setErro(error.mensagemBack ?? "Erro ao processar a solicitação");
       setSelecionado(null);
       setAcao(null);
     } finally {
@@ -123,41 +157,57 @@ export default function AprovacoesPage() {
     }
   }
 
-  const acaoPositiva = acao === 'aprovar' || acao === 'reativar';
+  const acaoPositiva = acao === "aprovar" || acao === "reativar";
 
-  const textosModal: Record<Acao, { titulo: string; desc: string; botao: string }> = {
+  const textosModal: Record<
+    Acao,
+    { titulo: string; desc: string; botao: string }
+  > = {
     aprovar: {
-      titulo: 'Aprovar cadastro',
-      desc: 'Depois de aprovado, o usuário poderá entrar no sistema com o email e a senha que cadastrou.',
-      botao: 'Sim, aprovar',
+      titulo: "Aprovar cadastro",
+      desc: "Depois de aprovado, o usuário poderá entrar no sistema com o email e a senha que cadastrou.",
+      botao: "Sim, aprovar",
     },
     recusar: {
-      titulo: 'Recusar cadastro',
-      desc: 'O usuário não conseguirá entrar no sistema e verá que o cadastro não foi aprovado.',
-      botao: 'Sim, recusar',
+      titulo: "Recusar cadastro",
+      desc: "O usuário não conseguirá entrar no sistema e verá que o cadastro não foi aprovado.",
+      botao: "Sim, recusar",
     },
     desativar: {
-      titulo: 'Desativar acesso',
-      desc: 'O usuário perderá imediatamente o acesso ao sistema até que seja reativado por um administrador.',
-      botao: 'Sim, desativar',
+      titulo: "Desativar acesso",
+      desc: "O usuário perderá imediatamente o acesso ao sistema até que seja reativado por um administrador.",
+      botao: "Sim, desativar",
     },
     reativar: {
-      titulo: 'Reativar acesso',
-      desc: 'O usuário voltará a ter acesso normal ao sistema com suas credenciais.',
-      botao: 'Sim, reativar',
+      titulo: "Reativar acesso",
+      desc: "O usuário voltará a ter acesso normal ao sistema com suas credenciais.",
+      botao: "Sim, reativar",
     },
   };
 
   return (
     <Layout>
       {loading && (
-        <LinearProgress sx={{ position: 'fixed', top: 64, left: 0, right: 0, zIndex: 9999 }} />
+        <LinearProgress
+          sx={{ position: "fixed", top: 64, left: 0, right: 0, zIndex: 9999 }}
+        />
       )}
 
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1, mb: 1.5 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+      <Box
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          flexWrap: "wrap",
+          gap: 1,
+          mb: 1.5,
+        }}
+      >
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
           <HowToRegIcon color="primary" fontSize="small" />
-          <Typography variant="h6" sx={{ fontWeight: 'bold' }}>Gestão de Usuários</Typography>
+          <Typography variant="h6" sx={{ fontWeight: "bold" }}>
+            Gestão de Usuários
+          </Typography>
         </Box>
         <Button
           variant="outlined"
@@ -174,15 +224,15 @@ export default function AprovacoesPage() {
         value={aba}
         onChange={(_, v) => {
           setAba(v);
-          setFiltroPerfil('');
-          setFiltroStatus('todos');
+          setFiltroPerfil("");
+          setFiltroStatus("todos");
         }}
         sx={{
           mb: 2,
           minHeight: 38,
           borderBottom: 1,
-          borderColor: 'divider',
-          '& .MuiTab-root': { minHeight: 38, py: 0.5, fontSize: 13 },
+          borderColor: "divider",
+          "& .MuiTab-root": { minHeight: 38, py: 0.5, fontSize: 13 },
         }}
       >
         <Tab
@@ -190,12 +240,12 @@ export default function AprovacoesPage() {
           icon={<HowToRegIcon sx={{ fontSize: 17 }} />}
           iconPosition="start"
           label={
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
               <span>Pendentes</span>
               <Chip
                 label={pendentes.length}
                 size="small"
-                color={pendentes.length > 0 ? 'warning' : 'default'}
+                color={pendentes.length > 0 ? "warning" : "default"}
                 sx={{ height: 20, fontSize: 11 }}
               />
             </Box>
@@ -206,7 +256,7 @@ export default function AprovacoesPage() {
           icon={<PeopleIcon sx={{ fontSize: 17 }} />}
           iconPosition="start"
           label={
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
               <span>Usuários</span>
               <Chip
                 label={usuarios.length}
@@ -219,59 +269,75 @@ export default function AprovacoesPage() {
         />
       </Tabs>
 
-      {erro && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setErro('')}>{erro}</Alert>}
+      {erro && (
+        <Alert severity="error" sx={{ mb: 2 }} onClose={() => setErro("")}>
+          {erro}
+        </Alert>
+      )}
 
       {listaAtual.length > 0 && (
-        <Box sx={{ display: 'flex', gap: 1.5, mb: 2, flexWrap: 'wrap', alignItems: 'center' }}>
+        <Box
+          sx={{
+            display: "flex",
+            gap: 1.5,
+            mb: 2,
+            flexWrap: "wrap",
+            alignItems: "center",
+          }}
+        >
           <TextField
             size="small"
             placeholder="Buscar por nome ou e-mail..."
             value={busca}
             onChange={(e) => setBusca(e.target.value)}
-            sx={{ flex: '1 1 240px' }}
+            sx={{ flex: "1 1 240px" }}
             slotProps={{
               input: {
                 startAdornment: (
-                  <InputAdornment position="start"><SearchIcon color="action" fontSize="small" /></InputAdornment>
-                )
-              }
+                  <InputAdornment position="start">
+                    <SearchIcon color="action" fontSize="small" />
+                  </InputAdornment>
+                ),
+              },
             }}
           />
-          <Box sx={{ display: 'flex', gap: 0.75, flexWrap: 'wrap' }}>
+          <Box sx={{ display: "flex", gap: 0.75, flexWrap: "wrap" }}>
             <Chip
               label="Todos"
               size="small"
-              color={filtroPerfil === '' ? 'primary' : 'default'}
-              onClick={() => setFiltroPerfil('')}
+              color={filtroPerfil === "" ? "primary" : "default"}
+              onClick={() => setFiltroPerfil("")}
             />
             {Object.entries(perfilInfo)
-              .filter(([key]) => aba === 'usuarios' || key !== 'Administrador')
+              .filter(([key]) => aba === "usuarios" || key !== "Administrador")
               .map(([key, info]) => (
                 <Chip
                   key={key}
                   label={info.label}
                   size="small"
-                  color={filtroPerfil === key ? 'primary' : 'default'}
-                  onClick={() => setFiltroPerfil(filtroPerfil === key ? '' : key)}
+                  color={filtroPerfil === key ? "primary" : "default"}
+                  onClick={() =>
+                    setFiltroPerfil(filtroPerfil === key ? "" : key)
+                  }
                 />
               ))}
           </Box>
 
-          {aba === 'usuarios' && (
-            <Box sx={{ display: 'flex', gap: 0.75, flexWrap: 'wrap' }}>
+          {aba === "usuarios" && (
+            <Box sx={{ display: "flex", gap: 0.75, flexWrap: "wrap" }}>
               {(
                 [
-                  { key: 'todos', label: 'Todos status' },
-                  { key: 'Aprovado', label: 'Ativos' },
-                  { key: 'Inativo', label: 'Inativos' },
+                  { key: "todos", label: "Todos status" },
+                  { key: "Aprovado", label: "Ativos" },
+                  { key: "Inativo", label: "Inativos" },
                 ] as const
               ).map((s) => (
                 <Chip
                   key={s.key}
                   label={s.label}
                   size="small"
-                  variant={filtroStatus === s.key ? 'filled' : 'outlined'}
-                  color={filtroStatus === s.key ? 'primary' : 'default'}
+                  variant={filtroStatus === s.key ? "filled" : "outlined"}
+                  color={filtroStatus === s.key ? "primary" : "default"}
                   onClick={() => setFiltroStatus(s.key)}
                 />
               ))}
@@ -281,89 +347,150 @@ export default function AprovacoesPage() {
       )}
 
       {!loading && listaAtual.length === 0 ? (
-        <Box sx={{ textAlign: 'center', py: 8, color: 'text.secondary' }}>
+        <Box sx={{ textAlign: "center", py: 8, color: "text.secondary" }}>
           <HowToRegIcon sx={{ fontSize: 56, opacity: 0.15, mb: 1.5 }} />
           <Typography variant="subtitle1" sx={{ opacity: 0.5 }}>
-            {aba === 'pendentes' ? 'Nenhum cadastro aguardando aprovação' : 'Nenhum usuário cadastrado'}
+            {aba === "pendentes"
+              ? "Nenhum cadastro aguardando aprovação"
+              : "Nenhum usuário cadastrado"}
           </Typography>
         </Box>
       ) : !loading && filtrados.length === 0 ? (
-        <Box sx={{ textAlign: 'center', py: 5, color: 'text.secondary' }}>
-          <Typography variant="body2">Nenhum usuário corresponde ao filtro aplicado.</Typography>
+        <Box sx={{ textAlign: "center", py: 5, color: "text.secondary" }}>
+          <Typography variant="body2">
+            Nenhum usuário corresponde ao filtro aplicado.
+          </Typography>
         </Box>
       ) : (
-        <Box sx={{
-          display: 'grid',
-          gridTemplateColumns: { xs: '1fr', lg: 'repeat(2, 1fr)' },
-          gap: 1.25,
-        }}>
+        <Box
+          sx={{
+            display: "grid",
+            gridTemplateColumns: { xs: "1fr", lg: "repeat(2, 1fr)" },
+            gap: 1.25,
+          }}
+        >
           {filtrados.map((u) => {
-            const info = perfilInfo[u.perfil] ?? { label: u.perfil, cor: '#546e7a', Icon: HowToRegIcon };
-            const isInativo = u.status === 'Inativo';
-            const isAdmin = u.perfil === 'Administrador';
+            const info = perfilInfo[u.perfil] ?? {
+              label: u.perfil,
+              cor: "#546e7a",
+              Icon: HowToRegIcon,
+            };
+            const isInativo = u.status === "Inativo";
+            const isAdmin = u.perfil === "Administrador";
 
             return (
               <Card
                 key={u.id}
                 sx={{
                   borderRadius: 2.5,
-                  borderLeft: `4px solid ${isInativo ? '#9e9e9e' : info.cor}`,
+                  borderLeft: `4px solid ${isInativo ? "#9e9e9e" : info.cor}`,
                   opacity: isInativo ? 0.78 : 1,
                 }}
               >
-                <CardContent sx={{ p: 1.75, '&:last-child': { pb: 1.75 } }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                    <Avatar sx={{ bgcolor: isInativo ? '#757575' : info.cor, width: 38, height: 38, fontSize: 14, fontWeight: 700 }}>
+                <CardContent sx={{ p: 1.75, "&:last-child": { pb: 1.75 } }}>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                    <Avatar
+                      sx={{
+                        bgcolor: isInativo ? "#757575" : info.cor,
+                        width: 38,
+                        height: 38,
+                        fontSize: 14,
+                        fontWeight: 700,
+                      }}
+                    >
                       {iniciais(u.nome)}
                     </Avatar>
                     <Box sx={{ flex: 1, minWidth: 0 }}>
-                      <Typography variant="body2" noWrap sx={{ fontWeight: 700 }}>{u.nome}</Typography>
-                      <Typography variant="caption" noWrap color="text.secondary" sx={{ display: 'block' }}>{u.email}</Typography>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mt: 0.5, flexWrap: 'wrap' }}>
+                      <Typography
+                        variant="body2"
+                        noWrap
+                        sx={{ fontWeight: 700 }}
+                      >
+                        {u.nome}
+                      </Typography>
+                      <Typography
+                        variant="caption"
+                        noWrap
+                        color="text.secondary"
+                        sx={{ display: "block" }}
+                      >
+                        {u.email}
+                      </Typography>
+                      <Box
+                        sx={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 0.75,
+                          mt: 0.5,
+                          flexWrap: "wrap",
+                        }}
+                      >
                         <Chip
-                          icon={<info.Icon sx={{ fontSize: 13, color: `${info.cor} !important` }} />}
+                          icon={
+                            <info.Icon
+                              sx={{
+                                fontSize: 13,
+                                color: `${info.cor} !important`,
+                              }}
+                            />
+                          }
                           label={info.label}
                           size="small"
-                          sx={{ height: 20, fontSize: 11, bgcolor: alpha(info.cor, 0.12), color: info.cor, fontWeight: 600 }}
+                          sx={{
+                            height: 20,
+                            fontSize: 11,
+                            bgcolor: alpha(info.cor, 0.12),
+                            color: info.cor,
+                            fontWeight: 600,
+                          }}
                         />
-                        {aba === 'usuarios' && (
+                        {aba === "usuarios" && (
                           <Chip
-                            label={isInativo ? 'Inativo' : 'Ativo'}
+                            label={isInativo ? "Inativo" : "Ativo"}
                             size="small"
-                            color={isInativo ? 'default' : 'success'}
-                            variant={isInativo ? 'outlined' : 'filled'}
+                            color={isInativo ? "default" : "success"}
+                            variant={isInativo ? "outlined" : "filled"}
                             sx={{ height: 20, fontSize: 11 }}
                           />
                         )}
                       </Box>
                     </Box>
 
-                    <Box sx={{ display: 'flex', gap: 0.75, flexShrink: 0 }}>
-                      {aba === 'pendentes' ? (
+                    <Box sx={{ display: "flex", gap: 0.75, flexShrink: 0 }}>
+                      {aba === "pendentes" ? (
                         <>
                           <Button
                             size="small"
-                            variant="outlined" color="error" startIcon={<CancelIcon sx={{ fontSize: 16 }} />}
-                            onClick={() => pedirConfirmacao(u, 'recusar')}
+                            variant="outlined"
+                            color="error"
+                            startIcon={<CancelIcon sx={{ fontSize: 16 }} />}
+                            onClick={() => pedirConfirmacao(u, "recusar")}
                             sx={{ borderRadius: 1.5, px: 1.25, fontSize: 12 }}
                           >
                             Recusar
                           </Button>
                           <Button
                             size="small"
-                            variant="contained" color="success" startIcon={<CheckCircleIcon sx={{ fontSize: 16 }} />}
-                            onClick={() => pedirConfirmacao(u, 'aprovar')}
+                            variant="contained"
+                            color="success"
+                            startIcon={
+                              <CheckCircleIcon sx={{ fontSize: 16 }} />
+                            }
+                            onClick={() => pedirConfirmacao(u, "aprovar")}
                             sx={{ borderRadius: 1.5, px: 1.25, fontSize: 12 }}
                           >
                             Aprovar
                           </Button>
                         </>
-                      ) : !isAdmin && (
-                        isInativo ? (
+                      ) : (
+                        !isAdmin &&
+                        (isInativo ? (
                           <Button
                             size="small"
-                            variant="contained" color="success" startIcon={<LockOpenIcon sx={{ fontSize: 15 }} />}
-                            onClick={() => pedirConfirmacao(u, 'reativar')}
+                            variant="contained"
+                            color="success"
+                            startIcon={<LockOpenIcon sx={{ fontSize: 15 }} />}
+                            onClick={() => pedirConfirmacao(u, "reativar")}
                             sx={{ borderRadius: 1.5, px: 1.25, fontSize: 12 }}
                           >
                             Reativar
@@ -371,13 +498,15 @@ export default function AprovacoesPage() {
                         ) : (
                           <Button
                             size="small"
-                            variant="outlined" color="error" startIcon={<BlockIcon sx={{ fontSize: 15 }} />}
-                            onClick={() => pedirConfirmacao(u, 'desativar')}
+                            variant="outlined"
+                            color="error"
+                            startIcon={<BlockIcon sx={{ fontSize: 15 }} />}
+                            onClick={() => pedirConfirmacao(u, "desativar")}
                             sx={{ borderRadius: 1.5, px: 1.25, fontSize: 12 }}
                           >
                             Desativar
                           </Button>
-                        )
+                        ))
                       )}
                     </Box>
                   </Box>
@@ -389,24 +518,46 @@ export default function AprovacoesPage() {
       )}
 
       {acao && (
-        <Dialog open={!!selecionado} onClose={fecharConfirmacao} maxWidth="xs" fullWidth>
-          <Box sx={{
-            background: acaoPositiva
-              ? 'linear-gradient(135deg, #1b5e20 0%, #2e7d32 100%)'
-              : 'linear-gradient(135deg, #b71c1c 0%, #d32f2f 100%)',
-            p: 2.5,
-          }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-              <Avatar sx={{ bgcolor: 'rgba(255,255,255,0.2)', width: 42, height: 42, border: '2px solid rgba(255,255,255,0.4)' }}>
-                {acaoPositiva
-                  ? <CheckCircleIcon sx={{ color: 'white', fontSize: 22 }} />
-                  : <CancelIcon sx={{ color: 'white', fontSize: 22 }} />}
+        <Dialog
+          open={!!selecionado}
+          onClose={fecharConfirmacao}
+          maxWidth="xs"
+          fullWidth
+        >
+          <Box
+            sx={{
+              background: acaoPositiva
+                ? "linear-gradient(135deg, #1b5e20 0%, #2e7d32 100%)"
+                : "linear-gradient(135deg, #b71c1c 0%, #d32f2f 100%)",
+              p: 2.5,
+            }}
+          >
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+              <Avatar
+                sx={{
+                  bgcolor: "rgba(255,255,255,0.2)",
+                  width: 42,
+                  height: 42,
+                  border: "2px solid rgba(255,255,255,0.4)",
+                }}
+              >
+                {acaoPositiva ? (
+                  <CheckCircleIcon sx={{ color: "white", fontSize: 22 }} />
+                ) : (
+                  <CancelIcon sx={{ color: "white", fontSize: 22 }} />
+                )}
               </Avatar>
               <Box>
-                <Typography variant="subtitle1" sx={{ color: 'white', fontWeight: 'bold', lineHeight: 1.2 }}>
+                <Typography
+                  variant="subtitle1"
+                  sx={{ color: "white", fontWeight: "bold", lineHeight: 1.2 }}
+                >
                   {textosModal[acao].titulo}
                 </Typography>
-                <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.85)' }}>
+                <Typography
+                  variant="caption"
+                  sx={{ color: "rgba(255,255,255,0.85)" }}
+                >
                   {selecionado?.nome}
                 </Typography>
               </Box>
@@ -418,14 +569,31 @@ export default function AprovacoesPage() {
             </Typography>
           </DialogContent>
           <DialogActions sx={{ p: 2, gap: 1 }}>
-            <Button size="small" onClick={fecharConfirmacao} variant="outlined" fullWidth disabled={processando}>Voltar</Button>
             <Button
               size="small"
-              onClick={confirmar} variant="contained" fullWidth disabled={processando}
-              color={acaoPositiva ? 'success' : 'error'}
-              startIcon={processando
-                ? <CircularProgress size={14} color="inherit" />
-                : acaoPositiva ? <CheckCircleIcon /> : <CancelIcon />}
+              onClick={fecharConfirmacao}
+              variant="outlined"
+              fullWidth
+              disabled={processando}
+            >
+              Voltar
+            </Button>
+            <Button
+              size="small"
+              onClick={confirmar}
+              variant="contained"
+              fullWidth
+              disabled={processando}
+              color={acaoPositiva ? "success" : "error"}
+              startIcon={
+                processando ? (
+                  <CircularProgress size={14} color="inherit" />
+                ) : acaoPositiva ? (
+                  <CheckCircleIcon />
+                ) : (
+                  <CancelIcon />
+                )
+              }
             >
               {textosModal[acao].botao}
             </Button>
@@ -436,10 +604,14 @@ export default function AprovacoesPage() {
       <Snackbar
         open={!!feedback}
         autoHideDuration={4000}
-        onClose={() => setFeedback('')}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+        onClose={() => setFeedback("")}
+        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
       >
-        <Alert severity="success" variant="filled" onClose={() => setFeedback('')}>
+        <Alert
+          severity="success"
+          variant="filled"
+          onClose={() => setFeedback("")}
+        >
           {feedback}
         </Alert>
       </Snackbar>

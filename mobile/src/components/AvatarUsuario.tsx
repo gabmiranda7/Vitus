@@ -1,7 +1,7 @@
-import React from 'react';
-import { Avatar } from 'react-native-paper';
-import { useAuth } from '../contexts/AuthContext';
-import { iniciais } from '../theme';
+import React from "react";
+import { Avatar } from "react-native-paper";
+import { useAuth } from "../contexts/AuthContext";
+import { iniciais } from "../theme";
 
 interface Props {
   size?: number;
@@ -18,7 +18,7 @@ export default function AvatarUsuario({ size = 40, cor }: Props) {
   return (
     <Avatar.Text
       size={size}
-      label={usuario?.nome ? iniciais(usuario.nome) : '?'}
+      label={usuario?.nome ? iniciais(usuario.nome) : "?"}
       style={cor ? { backgroundColor: cor } : undefined}
     />
   );

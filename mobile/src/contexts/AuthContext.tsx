@@ -1,8 +1,11 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import * as SecureStore from 'expo-secure-store';
-import * as FileSystem from 'expo-file-system/legacy';
-import api, { registrarSessaoExpirada } from '../services/api';
-import { arrayBufferToBase64, limparArquivosTemporarios } from '../utils/arquivo';
+import React, { createContext, useContext, useState, useEffect } from "react";
+import * as SecureStore from "expo-secure-store";
+import * as FileSystem from "expo-file-system/legacy";
+import api, { registrarSessaoExpirada } from "../services/api";
+import {
+  arrayBufferToBase64,
+  limparArquivosTemporarios,
+} from "../utils/arquivo";
 
 interface Usuario {
   nome: string;
@@ -18,7 +21,10 @@ interface AuthContextData {
   login: (email: string, senha: string) => Promise<void>;
   logout: () => Promise<void>;
   fotoUri: string | null;
-  atualizarUsuario: (parcial: Partial<Usuario>, token?: string) => Promise<void>;
+  atualizarUsuario: (
+    parcial: Partial<Usuario>,
+    token?: string,
+  ) => Promise<void>;
   recarregarFoto: () => void;
 }
 
@@ -36,7 +42,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Token rejeitado pela API (expirado ou conta desativada): encerra a sessão local
   useEffect(() => {
-    registrarSessaoExpirada(() => { logout(); });
+    registrarSessaoExpirada(() => {
+      logout();
+    });
     return () => registrarSessaoExpirada(null);
   }, []);
 
@@ -52,31 +60,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     (async () => {
       try {
-        const response = await api.get('/api/auth/me/foto', { responseType: 'arraybuffer' });
-        const caminho = `${FileSystem.cacheDirectory}perfil_${Date.now()}.jpg`;
-        await FileSystem.writeAsStringAsync(caminho, arrayBufferToBase64(response.data), {
-          encoding: FileSystem.EncodingType.Base64,
+        const response = await api.get("/api/auth/me/foto", {
+          responseType: "arraybuffer",
         });
+        const caminho = `${FileSystem.cacheDirectory}perfil_${Date.now()}.jpg`;
+        await FileSystem.writeAsStringAsync(
+          caminho,
+          arrayBufferToBase64(response.data),
+          {
+            encoding: FileSystem.EncodingType.Base64,
+          },
+        );
         if (!cancelado) setFotoUri(caminho);
       } catch {
         if (!cancelado) setFotoUri(null);
       }
     })();
 
-    return () => { cancelado = true; };
+    return () => {
+      cancelado = true;
+    };
   }, [temFoto, versaoFoto, emailLogado]);
 
   async function validarSessao() {
     try {
-      const usuarioSalvo = await SecureStore.getItemAsync('vitus_usuario');
-      const token = await SecureStore.getItemAsync('vitus_token');
+      const usuarioSalvo = await SecureStore.getItemAsync("vitus_usuario");
+      const token = await SecureStore.getItemAsync("vitus_token");
 
       if (!usuarioSalvo || !token) {
         setLoading(false);
         return;
       }
 
-      const response = await api.get('/api/auth/me');
+      const response = await api.get("/api/auth/me");
       const usuarioValidado: Usuario = {
         nome: response.data.nome,
         email: response.data.email,
@@ -85,11 +101,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         temFoto: !!response.data.temFoto,
       };
 
-      await SecureStore.setItemAsync('vitus_usuario', JSON.stringify(usuarioValidado));
+      await SecureStore.setItemAsync(
+        "vitus_usuario",
+        JSON.stringify(usuarioValidado),
+      );
       setUsuario(usuarioValidado);
     } catch {
-      await SecureStore.deleteItemAsync('vitus_token');
-      await SecureStore.deleteItemAsync('vitus_usuario');
+      await SecureStore.deleteItemAsync("vitus_token");
+      await SecureStore.deleteItemAsync("vitus_usuario");
       setUsuario(null);
     } finally {
       setLoading(false);
@@ -97,20 +116,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   async function login(email: string, senha: string) {
-    const response = await api.post('/api/auth/login', { email, senha });
+    const response = await api.post("/api/auth/login", { email, senha });
     const { token, nome, perfil, medicoId, temFoto } = response.data;
 
-    const usuarioLogado: Usuario = { nome, email, perfil, medicoId: medicoId ?? undefined, temFoto: !!temFoto };
+    const usuarioLogado: Usuario = {
+      nome,
+      email,
+      perfil,
+      medicoId: medicoId ?? undefined,
+      temFoto: !!temFoto,
+    };
 
-    await SecureStore.setItemAsync('vitus_token', token);
-    await SecureStore.setItemAsync('vitus_usuario', JSON.stringify(usuarioLogado));
+    await SecureStore.setItemAsync("vitus_token", token);
+    await SecureStore.setItemAsync(
+      "vitus_usuario",
+      JSON.stringify(usuarioLogado),
+    );
 
     setUsuario(usuarioLogado);
   }
 
   async function logout() {
-    await SecureStore.deleteItemAsync('vitus_token');
-    await SecureStore.deleteItemAsync('vitus_usuario');
+    await SecureStore.deleteItemAsync("vitus_token");
+    await SecureStore.deleteItemAsync("vitus_usuario");
     setFotoUri(null);
     setUsuario(null);
     // Dados clínicos temporários não devem sobrar no aparelho depois de sair
@@ -120,21 +148,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   async function atualizarUsuario(parcial: Partial<Usuario>, token?: string) {
     if (!usuario) return;
     const novo = { ...usuario, ...parcial };
-    if (token) await SecureStore.setItemAsync('vitus_token', token);
-    await SecureStore.setItemAsync('vitus_usuario', JSON.stringify(novo));
+    if (token) await SecureStore.setItemAsync("vitus_token", token);
+    await SecureStore.setItemAsync("vitus_usuario", JSON.stringify(novo));
     setUsuario(novo);
   }
 
   function recarregarFoto() {
-    setVersaoFoto(v => v + 1);
+    setVersaoFoto((v) => v + 1);
   }
 
   return (
-    <AuthContext.Provider value={{
-      usuario, loading, login, logout,
-      fotoUri: temFoto ? fotoUri : null,
-      atualizarUsuario, recarregarFoto,
-    }}>
+    <AuthContext.Provider
+      value={{
+        usuario,
+        loading,
+        login,
+        logout,
+        fotoUri: temFoto ? fotoUri : null,
+        atualizarUsuario,
+        recarregarFoto,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

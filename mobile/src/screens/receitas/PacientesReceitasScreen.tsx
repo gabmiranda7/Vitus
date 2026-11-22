@@ -1,34 +1,44 @@
-import React, { useEffect, useState } from 'react';
-import { View, ScrollView, StyleSheet } from 'react-native';
+import React, { useEffect, useState } from "react";
+import { View, ScrollView, StyleSheet } from "react-native";
 import {
-  Text, Card, Avatar, Searchbar, ActivityIndicator, Chip,
-  TextInput, SegmentedButtons, Button, useTheme,
-} from 'react-native-paper';
-import { useNavigation } from '@react-navigation/native';
-import api from '../../services/api';
-import { AcompanhamentoPaciente, Paciente, Tratamento } from '../../types';
-import { cores, corAvatar, iniciais } from '../../theme';
-import { situacaoVencimento } from '../../utils/vencimento';
+  Text,
+  Card,
+  Avatar,
+  Searchbar,
+  ActivityIndicator,
+  Chip,
+  TextInput,
+  SegmentedButtons,
+  Button,
+  useTheme,
+} from "react-native-paper";
+import { useNavigation } from "@react-navigation/native";
+import api from "../../services/api";
+import { AcompanhamentoPaciente, Paciente, Tratamento } from "../../types";
+import { cores, corAvatar, iniciais } from "../../theme";
+import { situacaoVencimento } from "../../utils/vencimento";
 
 const SITUACOES = [
-  { value: 'todos', label: 'Todos os pacientes' },
-  { value: 'acompanhados', label: 'Com receita acompanhada' },
-  { value: 'vencidas', label: 'Receita vencida' },
-  { value: 'a_vencer', label: 'A vencer em até...' },
+  { value: "todos", label: "Todos os pacientes" },
+  { value: "acompanhados", label: "Com receita acompanhada" },
+  { value: "vencidas", label: "Receita vencida" },
+  { value: "a_vencer", label: "A vencer em até..." },
 ];
 
 export default function PacientesReceitasScreen() {
   const navigation = useNavigation<any>();
   const theme = useTheme();
   const [pacientes, setPacientes] = useState<Paciente[]>([]);
-  const [acompanhamentos, setAcompanhamentos] = useState<AcompanhamentoPaciente[]>([]);
-  const [busca, setBusca] = useState('');
+  const [acompanhamentos, setAcompanhamentos] = useState<
+    AcompanhamentoPaciente[]
+  >([]);
+  const [busca, setBusca] = useState("");
   const [loading, setLoading] = useState(true);
   const [filtrosVisiveis, setFiltrosVisiveis] = useState(false);
-  const [situacao, setSituacao] = useState('todos');
-  const [prazo, setPrazo] = useState('30');
-  const [unidade, setUnidade] = useState('dias');
-  const [erroLista, setErroLista] = useState('');
+  const [situacao, setSituacao] = useState("todos");
+  const [prazo, setPrazo] = useState("30");
+  const [unidade, setUnidade] = useState("dias");
+  const [erroLista, setErroLista] = useState("");
 
   useEffect(() => {
     carregar();
@@ -37,47 +47,55 @@ export default function PacientesReceitasScreen() {
   async function carregar() {
     try {
       const [rPacientes, rAcompanhamento] = await Promise.all([
-        api.get('/api/Paciente'),
-        api.get('/api/prontuarios/acompanhamento').catch(() => ({ data: [] })),
+        api.get("/api/Paciente"),
+        api.get("/api/prontuarios/acompanhamento").catch(() => ({ data: [] })),
       ]);
       setPacientes(rPacientes.data);
       setAcompanhamentos(rAcompanhamento.data);
     } catch (e: any) {
-      setErroLista(e.mensagemBack ?? 'Não foi possível carregar os pacientes');
+      setErroLista(e.mensagemBack ?? "Não foi possível carregar os pacientes");
     } finally {
       setLoading(false);
     }
   }
 
   const tratamentosPorPaciente = new Map<string, Tratamento[]>(
-    acompanhamentos.map(a => [a.pacienteId, a.tratamentos])
+    acompanhamentos.map((a) => [a.pacienteId, a.tratamentos]),
   );
 
   function passaSituacao(trats: Tratamento[]): boolean {
-    if (situacao === 'todos') return true;
-    if (situacao === 'acompanhados') return trats.length > 0;
-    if (situacao === 'vencidas') return trats.some(t => t.diasRestantes < 0);
+    if (situacao === "todos") return true;
+    if (situacao === "acompanhados") return trats.length > 0;
+    if (situacao === "vencidas") return trats.some((t) => t.diasRestantes < 0);
 
     const n = Number(prazo);
-    if (!n || n < 1) return trats.some(t => t.diasRestantes >= 0);
-    if (unidade === 'dias') return trats.some(t => t.diasRestantes >= 0 && t.diasRestantes <= n);
+    if (!n || n < 1) return trats.some((t) => t.diasRestantes >= 0);
+    if (unidade === "dias")
+      return trats.some((t) => t.diasRestantes >= 0 && t.diasRestantes <= n);
 
     const limite = new Date();
     limite.setMonth(limite.getMonth() + n);
-    return trats.some(t => t.diasRestantes >= 0 && new Date(t.dataVencimento + 'T00:00:00') <= limite);
+    return trats.some(
+      (t) =>
+        t.diasRestantes >= 0 &&
+        new Date(t.dataVencimento + "T00:00:00") <= limite,
+    );
   }
 
-  const temFiltroAtivo = situacao !== 'todos';
+  const temFiltroAtivo = situacao !== "todos";
 
   const filtrados = pacientes
-    .filter(p =>
-      p.nome.toLowerCase().includes(busca.toLowerCase()) &&
-      passaSituacao(tratamentosPorPaciente.get(p.id) ?? [])
+    .filter(
+      (p) =>
+        p.nome.toLowerCase().includes(busca.toLowerCase()) &&
+        passaSituacao(tratamentosPorPaciente.get(p.id) ?? []),
     )
     .sort((a, b) => {
       if (!temFiltroAtivo) return 0;
-      const da = tratamentosPorPaciente.get(a.id)?.[0]?.diasRestantes ?? Infinity;
-      const db = tratamentosPorPaciente.get(b.id)?.[0]?.diasRestantes ?? Infinity;
+      const da =
+        tratamentosPorPaciente.get(a.id)?.[0]?.diasRestantes ?? Infinity;
+      const db =
+        tratamentosPorPaciente.get(b.id)?.[0]?.diasRestantes ?? Infinity;
       return da - db;
     });
 
@@ -99,18 +117,29 @@ export default function PacientesReceitasScreen() {
           style={styles.buscaInput}
         />
         <Button
-          mode={temFiltroAtivo ? 'contained' : 'outlined'}
-          icon={filtrosVisiveis ? 'filter-variant-remove' : 'filter-variant'}
-          onPress={() => setFiltrosVisiveis(v => !v)}
+          mode={temFiltroAtivo ? "contained" : "outlined"}
+          icon={filtrosVisiveis ? "filter-variant-remove" : "filter-variant"}
+          onPress={() => setFiltrosVisiveis((v) => !v)}
           compact
         >
-          Filtros{temFiltroAtivo ? ' (1)' : ''}
+          Filtros{temFiltroAtivo ? " (1)" : ""}
         </Button>
       </View>
 
       {filtrosVisiveis && (
-        <View style={[styles.painelFiltros, { backgroundColor: theme.colors.surface }]}>
-          <Text variant="labelLarge" style={[styles.painelTitulo, { color: theme.colors.onSurfaceVariant }]}>
+        <View
+          style={[
+            styles.painelFiltros,
+            { backgroundColor: theme.colors.surface },
+          ]}
+        >
+          <Text
+            variant="labelLarge"
+            style={[
+              styles.painelTitulo,
+              { color: theme.colors.onSurfaceVariant },
+            ]}
+          >
             Receita
           </Text>
           <View style={styles.chips}>
@@ -121,7 +150,7 @@ export default function PacientesReceitasScreen() {
                 selected={situacao === s.value}
                 onPress={() => {
                   setSituacao(s.value);
-                  if (s.value !== 'a_vencer') setFiltrosVisiveis(false);
+                  if (s.value !== "a_vencer") setFiltrosVisiveis(false);
                 }}
               >
                 {s.label}
@@ -129,12 +158,12 @@ export default function PacientesReceitasScreen() {
             ))}
           </View>
 
-          {situacao === 'a_vencer' && (
+          {situacao === "a_vencer" && (
             <View style={styles.prazoLinha}>
               <TextInput
                 label="Prazo"
                 value={prazo}
-                onChangeText={(v) => setPrazo(v.replace(/\D/g, ''))}
+                onChangeText={(v) => setPrazo(v.replace(/\D/g, ""))}
                 keyboardType="numeric"
                 mode="outlined"
                 dense
@@ -145,8 +174,8 @@ export default function PacientesReceitasScreen() {
                 value={unidade}
                 onValueChange={setUnidade}
                 buttons={[
-                  { value: 'dias', label: 'dias' },
-                  { value: 'meses', label: 'meses' },
+                  { value: "dias", label: "dias" },
+                  { value: "meses", label: "meses" },
                 ]}
                 style={styles.prazoUnidade}
               />
@@ -154,11 +183,18 @@ export default function PacientesReceitasScreen() {
           )}
 
           <View style={styles.painelRodape}>
-            <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
+            <Text
+              variant="bodySmall"
+              style={{ color: theme.colors.onSurfaceVariant }}
+            >
               {filtrados.length} de {pacientes.length} paciente(s)
             </Text>
             {temFiltroAtivo && (
-              <Button compact textColor={cores.erro} onPress={() => setSituacao('todos')}>
+              <Button
+                compact
+                textColor={cores.erro}
+                onPress={() => setSituacao("todos")}
+              >
                 Limpar
               </Button>
             )}
@@ -168,7 +204,12 @@ export default function PacientesReceitasScreen() {
 
       <ScrollView contentContainerStyle={styles.lista}>
         {filtrados.length === 0 ? (
-          <Text style={[styles.textoVazio, { color: theme.colors.onSurfaceVariant }]}>
+          <Text
+            style={[
+              styles.textoVazio,
+              { color: theme.colors.onSurfaceVariant },
+            ]}
+          >
             Nenhum paciente encontrado
           </Text>
         ) : (
@@ -179,23 +220,43 @@ export default function PacientesReceitasScreen() {
               <Card
                 key={p.id}
                 style={styles.card}
-                onPress={() => navigation.navigate('HistoricoReceitas', { pacienteId: p.id, nomePaciente: p.nome })}
+                onPress={() =>
+                  navigation.navigate("HistoricoReceitas", {
+                    pacienteId: p.id,
+                    nomePaciente: p.nome,
+                  })
+                }
               >
                 <Card.Content style={styles.cardContent}>
-                  <Avatar.Text size={44} label={iniciais(p.nome)} style={{ backgroundColor: corAvatar(p.nome) }} />
+                  <Avatar.Text
+                    size={44}
+                    label={iniciais(p.nome)}
+                    style={{ backgroundColor: corAvatar(p.nome) }}
+                  />
                   <View style={styles.info}>
                     <Text variant="titleMedium">{p.nome}</Text>
                     {t && s && (
                       <Chip
                         compact
-                        style={[styles.chipVencimento, { backgroundColor: s.cor + (theme.dark ? '33' : '20') }]}
-                        textStyle={{ color: theme.dark ? '#ffb74d' : s.cor, fontSize: 11, fontWeight: '700' }}
+                        style={[
+                          styles.chipVencimento,
+                          {
+                            backgroundColor: s.cor + (theme.dark ? "33" : "20"),
+                          },
+                        ]}
+                        textStyle={{
+                          color: theme.dark ? "#ffb74d" : s.cor,
+                          fontSize: 11,
+                          fontWeight: "700",
+                        }}
                       >
                         Receita {s.label} · {t.medicamento}
                       </Chip>
                     )}
                   </View>
-                  <Chip icon="pill" compact>Ver</Chip>
+                  <Chip icon="pill" compact>
+                    Ver
+                  </Chip>
                 </Card.Content>
               </Card>
             );
@@ -207,11 +268,11 @@ export default function PacientesReceitasScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: 'transparent' },
-  centro: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  container: { flex: 1, backgroundColor: "transparent" },
+  centro: { flex: 1, justifyContent: "center", alignItems: "center" },
   buscaLinha: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 8,
     margin: 16,
     marginBottom: 8,
@@ -224,20 +285,25 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   painelTitulo: { marginBottom: 8 },
-  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
-  prazoLinha: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 12 },
+  chips: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
+  prazoLinha: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginTop: 12,
+  },
   prazoInput: { width: 90 },
   prazoUnidade: { flex: 1 },
   painelRodape: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginTop: 12,
   },
   lista: { padding: 16, paddingTop: 8 },
   card: { marginBottom: 10, borderRadius: 12 },
-  cardContent: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  cardContent: { flexDirection: "row", alignItems: "center", gap: 8 },
   info: { marginLeft: 4, flex: 1 },
-  chipVencimento: { alignSelf: 'flex-start', marginTop: 6 },
-  textoVazio: { textAlign: 'center', marginTop: 40 },
+  chipVencimento: { alignSelf: "flex-start", marginTop: 6 },
+  textoVazio: { textAlign: "center", marginTop: 40 },
 });

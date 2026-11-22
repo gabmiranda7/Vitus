@@ -1,17 +1,30 @@
-import React, { useState } from 'react';
-import { View, ScrollView, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
+import React, { useState } from "react";
 import {
-  Text, TextInput, Button, Surface, SegmentedButtons,
-  ProgressBar, Chip, HelperText, useTheme,
-} from 'react-native-paper';
-import { useNavigation } from '@react-navigation/native';
-import api from '../../services/api';
-import { cores } from '../../theme';
+  View,
+  ScrollView,
+  StyleSheet,
+  KeyboardAvoidingView,
+  Platform,
+} from "react-native";
+import {
+  Text,
+  TextInput,
+  Button,
+  Surface,
+  SegmentedButtons,
+  ProgressBar,
+  Chip,
+  HelperText,
+  useTheme,
+} from "react-native-paper";
+import { useNavigation } from "@react-navigation/native";
+import api from "../../services/api";
+import { cores } from "../../theme";
 
 const PERFIS = [
-  { value: 'Medico', label: 'Médico' },
-  { value: 'Enfermeiro', label: 'Enfermeiro(a)' },
-  { value: 'Recepcionista', label: 'Recepcionista' },
+  { value: "Medico", label: "Médico" },
+  { value: "Enfermeiro", label: "Enfermeiro(a)" },
+  { value: "Recepcionista", label: "Recepcionista" },
 ];
 
 export default function CadastroScreen() {
@@ -19,61 +32,67 @@ export default function CadastroScreen() {
   const theme = useTheme();
   const [step, setStep] = useState(0);
 
-  const [nome, setNome] = useState('');
-  const [email, setEmail] = useState('');
-  const [senha, setSenha] = useState('');
-  const [perfil, setPerfil] = useState('');
-  const [crm, setCrm] = useState('');
-  const [especialidade, setEspecialidade] = useState('');
-  const [coren, setCoren] = useState('');
-  const [especializacao, setEspecializacao] = useState('');
+  const [nome, setNome] = useState("");
+  const [email, setEmail] = useState("");
+  const [senha, setSenha] = useState("");
+  const [perfil, setPerfil] = useState("");
+  const [crm, setCrm] = useState("");
+  const [especialidade, setEspecialidade] = useState("");
+  const [coren, setCoren] = useState("");
+  const [especializacao, setEspecializacao] = useState("");
 
-  const [erro, setErro] = useState('');
+  const [erro, setErro] = useState("");
   const [loading, setLoading] = useState(false);
   const [sucesso, setSucesso] = useState(false);
 
   function proximo() {
-    setErro('');
+    setErro("");
     if (step === 0) {
       if (!nome.trim() || !email.trim() || !senha.trim()) {
-        setErro('Preencha todos os campos');
+        setErro("Preencha todos os campos");
         return;
       }
       if (senha.length < 6) {
-        setErro('A senha deve ter no mínimo 6 caracteres');
+        setErro("A senha deve ter no mínimo 6 caracteres");
         return;
       }
     }
     if (step === 1) {
       if (!perfil) {
-        setErro('Selecione um perfil');
+        setErro("Selecione um perfil");
         return;
       }
-      if (perfil === 'Medico' && (!crm.trim() || !especialidade.trim())) {
-        setErro('CRM e especialidade são obrigatórios');
+      if (perfil === "Medico" && (!crm.trim() || !especialidade.trim())) {
+        setErro("CRM e especialidade são obrigatórios");
         return;
       }
-      if (perfil === 'Enfermeiro' && !coren.trim()) {
-        setErro('COREN é obrigatório');
+      if (perfil === "Enfermeiro" && !coren.trim()) {
+        setErro("COREN é obrigatório");
         return;
       }
     }
-    setStep(s => s + 1);
+    setStep((s) => s + 1);
   }
 
   async function finalizar() {
-    setErro('');
+    setErro("");
     setLoading(true);
     try {
-      await api.post('/api/auth/registrar', {
-        nome, email, senha, perfil,
-        ...(perfil === 'Medico' && { crm, especialidade }),
-        ...(perfil === 'Enfermeiro' && { coren, especializacao: especializacao || undefined }),
+      await api.post("/api/auth/registrar", {
+        nome,
+        email,
+        senha,
+        perfil,
+        ...(perfil === "Medico" && { crm, especialidade }),
+        ...(perfil === "Enfermeiro" && {
+          coren,
+          especializacao: especializacao || undefined,
+        }),
       });
       setSucesso(true);
-      setTimeout(() => navigation.navigate('Login'), 4000);
+      setTimeout(() => navigation.navigate("Login"), 4000);
     } catch (e: any) {
-      setErro(e.mensagemBack ?? 'Erro ao realizar cadastro');
+      setErro(e.mensagemBack ?? "Erro ao realizar cadastro");
     } finally {
       setLoading(false);
     }
@@ -82,12 +101,18 @@ export default function CadastroScreen() {
   return (
     <KeyboardAvoidingView
       style={[styles.container, { backgroundColor: theme.colors.background }]}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
     >
-      <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+      <ScrollView
+        contentContainerStyle={styles.scroll}
+        keyboardShouldPersistTaps="handled"
+      >
         <Surface style={styles.card} elevation={2}>
-          <Text variant="headlineSmall" style={[styles.titulo, { color: theme.colors.primary }]}>
+          <Text
+            variant="headlineSmall"
+            style={[styles.titulo, { color: theme.colors.primary }]}
+          >
             Criar conta
           </Text>
           <ProgressBar progress={(step + 1) / 3} style={styles.progresso} />
@@ -95,7 +120,8 @@ export default function CadastroScreen() {
           {erro ? <Text style={styles.erro}>{erro}</Text> : null}
           {sucesso ? (
             <Text style={styles.sucesso}>
-              Cadastro enviado! Aguarde a aprovação de um administrador para acessar o sistema.
+              Cadastro enviado! Aguarde a aprovação de um administrador para
+              acessar o sistema.
             </Text>
           ) : null}
 
@@ -131,15 +157,20 @@ export default function CadastroScreen() {
 
           {step === 1 && (
             <View>
-              <Text variant="labelLarge" style={styles.label}>Perfil</Text>
+              <Text variant="labelLarge" style={styles.label}>
+                Perfil
+              </Text>
               <SegmentedButtons
                 value={perfil}
                 onValueChange={setPerfil}
-                buttons={PERFIS.map(p => ({ value: p.value, label: p.label }))}
+                buttons={PERFIS.map((p) => ({
+                  value: p.value,
+                  label: p.label,
+                }))}
                 style={styles.segmented}
               />
 
-              {perfil === 'Medico' && (
+              {perfil === "Medico" && (
                 <>
                   <TextInput
                     label="CRM"
@@ -160,7 +191,7 @@ export default function CadastroScreen() {
                 </>
               )}
 
-              {perfil === 'Enfermeiro' && (
+              {perfil === "Enfermeiro" && (
                 <>
                   <TextInput
                     label="COREN"
@@ -185,35 +216,61 @@ export default function CadastroScreen() {
 
           {step === 2 && (
             <View>
-              <Text variant="bodyMedium" style={[styles.confirmacaoTexto, { color: theme.colors.onSurfaceVariant }]}>
+              <Text
+                variant="bodyMedium"
+                style={[
+                  styles.confirmacaoTexto,
+                  { color: theme.colors.onSurfaceVariant },
+                ]}
+              >
                 Confirme seus dados:
               </Text>
-              <Chip icon="account" style={styles.chipInfo}>{nome}</Chip>
-              <Chip icon="email" style={styles.chipInfo}>{email}</Chip>
+              <Chip icon="account" style={styles.chipInfo}>
+                {nome}
+              </Chip>
+              <Chip icon="email" style={styles.chipInfo}>
+                {email}
+              </Chip>
               <Chip icon="badge-account" style={styles.chipInfo}>
-                {PERFIS.find(p => p.value === perfil)?.label}
-                {perfil === 'Medico' && ` · ${crm} · ${especialidade}`}
-                {perfil === 'Enfermeiro' && ` · ${coren}${especializacao ? ` · ${especializacao}` : ''}`}
+                {PERFIS.find((p) => p.value === perfil)?.label}
+                {perfil === "Medico" && ` · ${crm} · ${especialidade}`}
+                {perfil === "Enfermeiro" &&
+                  ` · ${coren}${especializacao ? ` · ${especializacao}` : ""}`}
               </Chip>
             </View>
           )}
 
           <View style={styles.botoes}>
             {step > 0 && (
-              <Button onPress={() => setStep(s => s - 1)} disabled={loading}>Voltar</Button>
+              <Button onPress={() => setStep((s) => s - 1)} disabled={loading}>
+                Voltar
+              </Button>
             )}
             {step < 2 ? (
-              <Button mode="contained" onPress={proximo} style={styles.botaoPrincipal}>
+              <Button
+                mode="contained"
+                onPress={proximo}
+                style={styles.botaoPrincipal}
+              >
                 Próximo
               </Button>
             ) : (
-              <Button mode="contained" onPress={finalizar} loading={loading} disabled={loading} style={styles.botaoPrincipal}>
+              <Button
+                mode="contained"
+                onPress={finalizar}
+                loading={loading}
+                disabled={loading}
+                style={styles.botaoPrincipal}
+              >
                 Finalizar Cadastro
               </Button>
             )}
           </View>
 
-          <Button onPress={() => navigation.navigate('Login')} style={styles.linkLogin}>
+          <Button
+            onPress={() => navigation.navigate("Login")}
+            style={styles.linkLogin}
+          >
             Já tenho conta — Entrar
           </Button>
         </Surface>
@@ -224,18 +281,23 @@ export default function CadastroScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  scroll: { flexGrow: 1, justifyContent: 'center', padding: 20 },
+  scroll: { flexGrow: 1, justifyContent: "center", padding: 20 },
   card: { padding: 24, borderRadius: 16 },
-  titulo: { fontWeight: 'bold', marginBottom: 12, textAlign: 'center' },
+  titulo: { fontWeight: "bold", marginBottom: 12, textAlign: "center" },
   progresso: { marginBottom: 20, borderRadius: 4 },
   label: { marginBottom: 8 },
   segmented: { marginBottom: 16 },
   input: { marginBottom: 8 },
   confirmacaoTexto: { marginBottom: 12 },
-  chipInfo: { marginBottom: 8, alignSelf: 'flex-start' },
-  botoes: { flexDirection: 'row', justifyContent: 'flex-end', gap: 8, marginTop: 16 },
+  chipInfo: { marginBottom: 8, alignSelf: "flex-start" },
+  botoes: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    gap: 8,
+    marginTop: 16,
+  },
   botaoPrincipal: { flex: 1 },
   linkLogin: { marginTop: 12 },
-  erro: { color: cores.erro, marginBottom: 12, textAlign: 'center' },
-  sucesso: { color: cores.sucesso, marginBottom: 12, textAlign: 'center' },
+  erro: { color: cores.erro, marginBottom: 12, textAlign: "center" },
+  sucesso: { color: cores.sucesso, marginBottom: 12, textAlign: "center" },
 });

@@ -26,42 +26,46 @@ A aplicação segue os princípios de **Clean Architecture** e **Domain-Driven D
 
 ## 🚀 Stack Tecnológica
 
-| Camada | Tecnologia |
-|---|---|
-| Back-end | ASP.NET Core (.NET 10) + C# |
-| Front-end | React 19 + TypeScript + Vite 8 |
-| UI | Material UI v9 |
-| ORM | Entity Framework Core |
-| Banco de Dados | PostgreSQL |
-| Autenticação | JWT (JSON Web Tokens) |
-| Validação | FluentValidation |
-| Documentos | OpenXML (receitas em Word) |
-| IA | Google Gemini (apoio à leitura de exames) |
-| Testes | xUnit + Moq + FluentAssertions |
-| Containerização | Docker + Docker Compose |
+| Camada          | Tecnologia                                |
+| --------------- | ----------------------------------------- |
+| Back-end        | ASP.NET Core (.NET 10) + C#               |
+| Front-end       | React 19 + TypeScript + Vite 8            |
+| UI              | Material UI v9                            |
+| ORM             | Entity Framework Core                     |
+| Banco de Dados  | PostgreSQL                                |
+| Autenticação    | JWT (JSON Web Tokens)                     |
+| Validação       | FluentValidation                          |
+| Documentos      | OpenXML (receitas em Word)                |
+| IA              | Google Gemini (apoio à leitura de exames) |
+| Testes          | xUnit + Moq + FluentAssertions            |
+| Containerização | Docker + Docker Compose                   |
 
 ---
 
 ## 👥 Perfis de Usuário
 
-Todo cadastro novo (Médico, Enfermeiro ou Recepcionista) nasce **pendente** e só consegue entrar depois de aprovado por um Administrador. O Administrador é criado manualmente (veja *Primeiro administrador*).
+Todo cadastro novo (Médico, Enfermeiro ou Recepcionista) nasce **pendente** e só consegue entrar depois de aprovado por um Administrador. O Administrador é criado manualmente (veja _Primeiro administrador_).
 
 ### 🟫 Administrador
+
 - Aprovar ou recusar cadastros pendentes
 - Desativar e reativar o acesso de usuários
 - Consultar a trilha de auditoria, com filtros e exportação para Excel
 
 ### 🟦 Recepcionista
+
 - Cadastrar, editar e excluir pacientes
 - Agendar e cancelar consultas
 - Consultar a lista de médicos
 
 ### 🟧 Enfermeiro
+
 - Registrar a triagem (pressão arterial, temperatura e observações)
 - Acompanhar a fila de pacientes
 - Visualizar prontuários
 
 ### 🟩 Médico
+
 - Ver apenas as próprias consultas e a agenda do dia
 - Iniciar, anotar, finalizar e cancelar suas consultas
 - Emitir receitas (comum ou especial) em Word, com validade para acompanhar vencimentos
@@ -112,13 +116,13 @@ src/
 └── Vitus.Infrastructure → EF Core, repositórios, arquivos, documentos, IA
 ```
 
-| Camada | Depende de |
-|---|---|
-| API | Application, Communication, Infrastructure |
-| Application | Domain, Communication |
-| Communication | — |
-| Domain | — |
-| Infrastructure | Domain |
+| Camada         | Depende de                                 |
+| -------------- | ------------------------------------------ |
+| API            | Application, Communication, Infrastructure |
+| Application    | Domain, Communication                      |
+| Communication  | —                                          |
+| Domain         | —                                          |
+| Infrastructure | Domain                                     |
 
 ### Front-end
 
@@ -139,14 +143,14 @@ web/src/
 
 Copie `.env.example` para `.env` na raiz do projeto (usado pelo Docker Compose):
 
-| Variável | Obrigatória | Descrição |
-|---|---|---|
-| `DB_USER` / `DB_PASS` | Sim | Credenciais do PostgreSQL |
-| `JWT_KEY` | Sim | Chave de assinatura dos tokens (longa e aleatória) |
-| `ENCRYPTION_KEY` | Sim | Chave da criptografia AES. **Guarde uma cópia: sem ela, os dados criptografados ficam ilegíveis** |
-| `GEMINI_API_KEY` | Não | Habilita a análise de exames por IA |
-| `VITE_API_URL` | Não | Deixe **vazio** no Docker: o nginx encaminha `/api` para a API |
-| `BIND_ADDRESS` | Não | Padrão `127.0.0.1`. Use `0.0.0.0` para acessar de outra máquina |
+| Variável              | Obrigatória | Descrição                                                                                         |
+| --------------------- | ----------- | ------------------------------------------------------------------------------------------------- |
+| `DB_USER` / `DB_PASS` | Sim         | Credenciais do PostgreSQL                                                                         |
+| `JWT_KEY`             | Sim         | Chave de assinatura dos tokens (longa e aleatória)                                                |
+| `ENCRYPTION_KEY`      | Sim         | Chave da criptografia AES. **Guarde uma cópia: sem ela, os dados criptografados ficam ilegíveis** |
+| `GEMINI_API_KEY`      | Não         | Habilita a análise de exames por IA                                                               |
+| `VITE_API_URL`        | Não         | Deixe **vazio** no Docker: o nginx encaminha `/api` para a API                                    |
+| `BIND_ADDRESS`        | Não         | Padrão `127.0.0.1`. Use `0.0.0.0` para acessar de outra máquina                                   |
 
 Para desenvolvimento local do front, crie `web/.env` com `VITE_API_URL=http://localhost:5000`.
 
@@ -185,7 +189,7 @@ npm install
 npm run dev           # http://localhost:5173
 ```
 
-Configure `ConnectionStrings`, `JWT_KEY`, `ENCRYPTION_KEY` e `DB_USER`/`DB_PASS` por variáveis de ambiente ou *user secrets*.
+Configure `ConnectionStrings`, `JWT_KEY`, `ENCRYPTION_KEY` e `DB_USER`/`DB_PASS` por variáveis de ambiente ou _user secrets_.
 
 ### Primeiro administrador
 
@@ -231,16 +235,16 @@ dotnet test
 
 Os testes são unitários (repositórios simulados) e cobrem:
 
-| Módulo | Casos testados |
-|---|---|
-| Auth | Login, cadastro, atualização de perfil e foto, bloqueio de tentativas |
-| Consultas | Criação, fluxo de status, acesso por médico, triagem obrigatória, auditoria, validação de data |
-| Médicos | Listagem (apenas contas aprovadas) e busca por ID |
-| Pacientes | Criação (CPF e consentimento), listagem, busca, edição, exclusão |
-| Prontuários | Acompanhamento de receitas |
-| Receitas | Criação, geração do documento, acompanhamento de vencimento |
-| Triagens | Registro de triagem |
-| Validadores | Tamanho de textos criptografados e data de consulta |
+| Módulo      | Casos testados                                                                                 |
+| ----------- | ---------------------------------------------------------------------------------------------- |
+| Auth        | Login, cadastro, atualização de perfil e foto, bloqueio de tentativas                          |
+| Consultas   | Criação, fluxo de status, acesso por médico, triagem obrigatória, auditoria, validação de data |
+| Médicos     | Listagem (apenas contas aprovadas) e busca por ID                                              |
+| Pacientes   | Criação (CPF e consentimento), listagem, busca, edição, exclusão                               |
+| Prontuários | Acompanhamento de receitas                                                                     |
+| Receitas    | Criação, geração do documento, acompanhamento de vencimento                                    |
+| Triagens    | Registro de triagem                                                                            |
+| Validadores | Tamanho de textos criptografados e data de consulta                                            |
 
 ---
 

@@ -1,32 +1,45 @@
-import React from 'react';
-import { TouchableOpacity, View, Image, Text, useColorScheme } from 'react-native';
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
-import AprovacoesScreen from '../screens/aprovacoes/AprovacoesScreen';
-import DashboardScreen from '../screens/dashboard/DashboardScreen';
-import ConsultasScreen from '../screens/consultas/ConsultasScreen';
-import ProntuarioStack from './ProntuarioStack';
-import PacientesScreen from '../screens/pacientes/PacientesScreen';
-import PerfilScreen from '../screens/perfil/PerfilScreen';
-import { useAuth } from '../contexts/AuthContext';
-import AvatarUsuario from '../components/AvatarUsuario';
-import AgendaScreen from '../screens/agenda/AgendaScreen';
-import MedicosScreen from '../screens/medicos/MedicosScreen';
-import ReceitasStack from './ReceitasStack';
-import AuditoriaScreen from '../screens/auditoria/AuditoriaScreen';
-import TriagemScreen from '../screens/triagem/TriagemScreen';
-import { cores } from '../theme';
+import React from "react";
+import {
+  TouchableOpacity,
+  View,
+  Image,
+  Text,
+  useColorScheme,
+} from "react-native";
+import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
+import AprovacoesScreen from "../screens/aprovacoes/AprovacoesScreen";
+import DashboardScreen from "../screens/dashboard/DashboardScreen";
+import ConsultasScreen from "../screens/consultas/ConsultasScreen";
+import ProntuarioStack from "./ProntuarioStack";
+import PacientesScreen from "../screens/pacientes/PacientesScreen";
+import PerfilScreen from "../screens/perfil/PerfilScreen";
+import { useAuth } from "../contexts/AuthContext";
+import AvatarUsuario from "../components/AvatarUsuario";
+import AgendaScreen from "../screens/agenda/AgendaScreen";
+import MedicosScreen from "../screens/medicos/MedicosScreen";
+import ReceitasStack from "./ReceitasStack";
+import AuditoriaScreen from "../screens/auditoria/AuditoriaScreen";
+import TriagemScreen from "../screens/triagem/TriagemScreen";
+import { cores } from "../theme";
 
 const Tab = createBottomTabNavigator();
 
 function TituloVitus() {
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+    <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
       <Image
-        source={require('../../assets/icon.png')}
+        source={require("../../assets/icon.png")}
         style={{ width: 26, height: 26, borderRadius: 6 }}
       />
-      <Text style={{ color: '#fff', fontSize: 19, fontWeight: '800', letterSpacing: 0.3 }}>
+      <Text
+        style={{
+          color: "#fff",
+          fontSize: 19,
+          fontWeight: "800",
+          letterSpacing: 0.3,
+        }}
+      >
         Vitus
       </Text>
     </View>
@@ -35,21 +48,26 @@ function TituloVitus() {
 
 export default function TabNavigator() {
   const { usuario } = useAuth();
-  const isDark = useColorScheme() === 'dark';
+  const isDark = useColorScheme() === "dark";
 
   return (
     <Tab.Navigator
       screenOptions={({ navigation }) => ({
-        headerStyle: { backgroundColor: isDark ? '#0d47a1' : cores.primaria },
-        headerTintColor: '#fff',
+        headerStyle: { backgroundColor: isDark ? "#0d47a1" : cores.primaria },
+        headerTintColor: "#fff",
         tabBarActiveTintColor: isDark ? cores.primariaClara : cores.primaria,
-        tabBarInactiveTintColor: isDark ? cores.textoSecundarioEscuro : cores.textoSecundario,
+        tabBarInactiveTintColor: isDark
+          ? cores.textoSecundarioEscuro
+          : cores.textoSecundario,
         tabBarStyle: {
           backgroundColor: isDark ? cores.superficieEscura : cores.superficie,
-          borderTopColor: isDark ? '#253140' : '#d3dce6',
+          borderTopColor: isDark ? "#253140" : "#d3dce6",
         },
         headerRight: () => (
-          <TouchableOpacity onPress={() => navigation.navigate('Perfil')} style={{ marginRight: 12 }}>
+          <TouchableOpacity
+            onPress={() => navigation.navigate("Perfil")}
+            style={{ marginRight: 12 }}
+          >
             <AvatarUsuario size={32} cor="rgba(255,255,255,0.25)" />
           </TouchableOpacity>
         ),
@@ -59,82 +77,106 @@ export default function TabNavigator() {
         name="Dashboard"
         component={DashboardScreen}
         options={{
-          title: 'Início',
+          title: "Início",
           headerTitle: () => <TituloVitus />,
           tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons name="view-dashboard" color={color} size={size} />
+            <MaterialCommunityIcons
+              name="view-dashboard"
+              color={color}
+              size={size}
+            />
           ),
         }}
       />
 
-      {usuario?.perfil === 'Medico' && (
+      {usuario?.perfil === "Medico" && (
         <Tab.Screen
           name="Agenda"
           component={AgendaScreen}
           options={{
-            title: 'Minha Agenda',
+            title: "Minha Agenda",
             tabBarIcon: ({ color, size }) => (
-              <MaterialCommunityIcons name="calendar-today" color={color} size={size} />
+              <MaterialCommunityIcons
+                name="calendar-today"
+                color={color}
+                size={size}
+              />
             ),
           }}
         />
       )}
 
-      {usuario?.perfil === 'Administrador' && (
+      {usuario?.perfil === "Administrador" && (
         <Tab.Screen
           name="Auditoria"
           component={AuditoriaScreen}
           options={{
             tabBarIcon: ({ color, size }) => (
-              <MaterialCommunityIcons name="shield-search" color={color} size={size} />
+              <MaterialCommunityIcons
+                name="shield-search"
+                color={color}
+                size={size}
+              />
             ),
           }}
         />
       )}
 
-      {usuario?.perfil === 'Administrador' && (
+      {usuario?.perfil === "Administrador" && (
         <Tab.Screen
           name="Aprovacoes"
           component={AprovacoesScreen}
           options={{
-            title: 'Aprovações',
+            title: "Aprovações",
             tabBarIcon: ({ color, size }) => (
-              <MaterialCommunityIcons name="account-check" color={color} size={size} />
+              <MaterialCommunityIcons
+                name="account-check"
+                color={color}
+                size={size}
+              />
             ),
           }}
         />
       )}
 
-      {usuario?.perfil !== 'Administrador' && (
+      {usuario?.perfil !== "Administrador" && (
         <Tab.Screen
           name="Consultas"
           component={ConsultasScreen}
           options={{
             tabBarIcon: ({ color, size }) => (
-              <MaterialCommunityIcons name="calendar-clock" color={color} size={size} />
+              <MaterialCommunityIcons
+                name="calendar-clock"
+                color={color}
+                size={size}
+              />
             ),
           }}
         />
       )}
 
-      {usuario?.perfil === 'Recepcionista' && (
+      {usuario?.perfil === "Recepcionista" && (
         <Tab.Screen
           name="Pacientes"
           component={PacientesScreen}
           options={{
             tabBarIcon: ({ color, size }) => (
-              <MaterialCommunityIcons name="account-multiple" color={color} size={size} />
+              <MaterialCommunityIcons
+                name="account-multiple"
+                color={color}
+                size={size}
+              />
             ),
           }}
         />
       )}
 
-      {usuario?.perfil === 'Recepcionista' && (
+      {usuario?.perfil === "Recepcionista" && (
         <Tab.Screen
           name="Medicos"
           component={MedicosScreen}
           options={{
-            title: 'Médicos',
+            title: "Médicos",
             tabBarIcon: ({ color, size }) => (
               <MaterialCommunityIcons name="doctor" color={color} size={size} />
             ),
@@ -142,33 +184,41 @@ export default function TabNavigator() {
         />
       )}
 
-      {usuario?.perfil === 'Enfermeiro' && (
+      {usuario?.perfil === "Enfermeiro" && (
         <Tab.Screen
           name="Triagem"
           component={TriagemScreen}
           options={{
             tabBarIcon: ({ color, size }) => (
-              <MaterialCommunityIcons name="stethoscope" color={color} size={size} />
+              <MaterialCommunityIcons
+                name="stethoscope"
+                color={color}
+                size={size}
+              />
             ),
           }}
         />
       )}
 
-      {(usuario?.perfil === 'Medico' || usuario?.perfil === 'Enfermeiro') && (
+      {(usuario?.perfil === "Medico" || usuario?.perfil === "Enfermeiro") && (
         <Tab.Screen
           name="Prontuarios"
           component={ProntuarioStack}
           options={{
             headerShown: false,
-            title: 'Prontuários',
+            title: "Prontuários",
             tabBarIcon: ({ color, size }) => (
-              <MaterialCommunityIcons name="folder-account" color={color} size={size} />
+              <MaterialCommunityIcons
+                name="folder-account"
+                color={color}
+                size={size}
+              />
             ),
           }}
         />
       )}
 
-      {usuario?.perfil === 'Medico' && (
+      {usuario?.perfil === "Medico" && (
         <Tab.Screen
           name="Receitas"
           component={ReceitasStack}
@@ -187,7 +237,7 @@ export default function TabNavigator() {
         component={PerfilScreen}
         options={{
           tabBarButton: () => null,
-          tabBarItemStyle: { display: 'none' },
+          tabBarItemStyle: { display: "none" },
           headerRight: () => null,
         }}
       />
