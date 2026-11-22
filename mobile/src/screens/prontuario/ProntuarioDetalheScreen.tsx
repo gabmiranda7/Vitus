@@ -104,7 +104,9 @@ export default function ProntuarioDetalheScreen() {
         responseType: 'arraybuffer',
       });
 
-      const contentType = response.headers['content-type'] ?? 'application/octet-stream';
+      const contentType = String(
+        response.headers['content-type'] ?? 'application/octet-stream'
+      ).toLowerCase();
       const extensao = contentType.includes('pdf') ? 'pdf'
         : contentType.includes('png') ? 'png'
         : 'jpg';

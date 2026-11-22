@@ -41,7 +41,7 @@ export default function App() {
       <PaperProvider theme={isDark ? darkTheme : lightTheme}>
         <AuthProvider>
           <NavigationContainer theme={isDark ? navigationDarkTheme : navigationLightTheme}>
-            <StatusBar style="light" backgroundColor={isDark ? '#0d47a1' : '#1565c0'} />
+            <StatusBar style="light" />
             <Rotas />
           </NavigationContainer>
         </AuthProvider>
