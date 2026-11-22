@@ -6,6 +6,7 @@ export interface AcompanhamentoPaciente {
 
 export interface AuditoriaLog {
   id: string;
+  usuarioId: string;
   acao: string;
   entidadeAfetada: string;
   entidadeId: string;

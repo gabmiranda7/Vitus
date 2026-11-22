@@ -1,9 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { View, ScrollView, StyleSheet } from 'react-native';
-import {
-  Text, Card, Avatar, Searchbar, ActivityIndicator, FAB, Portal,
-  Modal, TextInput, Button, Chip
-} from 'react-native-paper';
+import { View, ScrollView, StyleSheet, RefreshControl } from 'react-native';
+import { Text, Card, Avatar, Searchbar, ActivityIndicator, Chip, useTheme } from 'react-native-paper';
 import api from '../../services/api';
 import { Medico } from '../../types';
 import { cores } from '../../theme';
@@ -23,16 +20,12 @@ function corEspecialidade(esp: string) {
 }
 
 export default function MedicosScreen() {
+  const theme = useTheme();
   const [medicos, setMedicos] = useState<Medico[]>([]);
   const [busca, setBusca] = useState('');
   const [loading, setLoading] = useState(true);
-
-  const [modalAberto, setModalAberto] = useState(false);
-  const [nome, setNome] = useState('');
-  const [especialidade, setEspecialidade] = useState('');
-  const [crm, setCrm] = useState('');
+  const [refreshing, setRefreshing] = useState(false);
   const [erro, setErro] = useState('');
-  const [salvando, setSalvando] = useState(false);
 
   useEffect(() => {
     carregar();
@@ -42,36 +35,26 @@ export default function MedicosScreen() {
     try {
       const response = await api.get('/api/medicos');
       setMedicos(response.data);
+      setErro('');
+    } catch (e: any) {
+      setErro(e.mensagemBack ?? 'Erro ao carregar médicos');
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   }
 
-  function fechar() {
-    setModalAberto(false);
-    setNome(''); setEspecialidade(''); setCrm(''); setErro('');
+  function onRefresh() {
+    setRefreshing(true);
+    carregar();
   }
 
-  async function salvar() {
-    setErro('');
-    if (!nome.trim() || !especialidade.trim() || !crm.trim()) {
-      setErro('Preencha todos os campos');
-      return;
-    }
-    setSalvando(true);
-    try {
-      await api.post('/api/medicos', { nome, especialidade, crm });
-      fechar();
-      carregar();
-    } catch (e: any) {
-      setErro(e.mensagemBack ?? 'Erro ao cadastrar médico');
-    } finally {
-      setSalvando(false);
-    }
-  }
-
+  const q = busca.trim().toLowerCase();
   const filtrados = medicos.filter(m =>
-    m.nome.toLowerCase().includes(busca.toLowerCase())
+    !q ||
+    m.nome.toLowerCase().includes(q) ||
+    m.especialidade.toLowerCase().includes(q) ||
+    m.crm.toLowerCase().includes(q)
   );
 
   if (loading) {
@@ -85,15 +68,22 @@ export default function MedicosScreen() {
   return (
     <View style={styles.container}>
       <Searchbar
-        placeholder="Buscar médico..."
+        placeholder="Buscar por nome, especialidade ou CRM..."
         value={busca}
         onChangeText={setBusca}
         style={styles.busca}
       />
 
-      <ScrollView contentContainerStyle={styles.lista}>
+      <ScrollView
+        contentContainerStyle={styles.lista}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+      >
+        {erro ? <Text style={styles.erro}>{erro}</Text> : null}
+
         {filtrados.length === 0 ? (
-          <Text style={styles.textoVazio}>Nenhum médico encontrado</Text>
+          <Text style={[styles.textoVazio, { color: theme.colors.onSurfaceVariant }]}>
+            {erro ? '' : 'Nenhum médico encontrado'}
+          </Text>
         ) : (
           filtrados.map((m) => {
             const cor = corEspecialidade(m.especialidade);
@@ -103,37 +93,27 @@ export default function MedicosScreen() {
                   <Avatar.Text size={44} label={iniciais(m.nome)} style={{ backgroundColor: cor }} />
                   <View style={styles.info}>
                     <Text variant="titleMedium">{m.nome}</Text>
-                    <Chip compact style={{ backgroundColor: cor + '20', alignSelf: 'flex-start', marginTop: 4 }} textStyle={{ color: cor, fontSize: 11 }}>
+                    <Chip
+                      compact
+                      style={{ backgroundColor: cor + (theme.dark ? '33' : '20'), alignSelf: 'flex-start', marginTop: 4 }}
+                      textStyle={{ color: theme.dark ? '#e8eef5' : cor, fontSize: 11 }}
+                    >
                       {m.especialidade}
                     </Chip>
-                    <Text variant="bodySmall" style={styles.crm}>CRM: {m.crm}</Text>
+                    <Text variant="bodySmall" style={[styles.crm, { color: theme.colors.onSurfaceVariant }]}>
+                      CRM: {m.crm}
+                    </Text>
                   </View>
                 </Card.Content>
               </Card>
             );
           })
         )}
+
+        <Text variant="bodySmall" style={[styles.rodape, { color: theme.colors.onSurfaceVariant }]}>
+          Novos médicos entram pelo cadastro de conta e aparecem aqui depois de aprovados pelo administrador.
+        </Text>
       </ScrollView>
-
-      <FAB icon="plus" style={styles.fab} onPress={() => setModalAberto(true)} />
-
-      <Portal>
-        <Modal visible={modalAberto} onDismiss={fechar} contentContainerStyle={styles.modal}>
-          <Text variant="titleLarge" style={styles.tituloModal}>Novo Médico</Text>
-          {erro ? <Text style={styles.erro}>{erro}</Text> : null}
-
-          <TextInput label="Nome completo" value={nome} onChangeText={setNome} mode="outlined" style={styles.input} />
-          <TextInput label="Especialidade" value={especialidade} onChangeText={setEspecialidade} mode="outlined" style={styles.input} placeholder="ex: Clínico Geral" />
-          <TextInput label="CRM" value={crm} onChangeText={setCrm} mode="outlined" style={styles.input} placeholder="ex: CRM-MG 12345" />
-
-          <View style={styles.botoes}>
-            <Button onPress={fechar} disabled={salvando}>Cancelar</Button>
-            <Button mode="contained" onPress={salvar} loading={salvando} disabled={salvando}>
-              Cadastrar
-            </Button>
-          </View>
-        </Modal>
-      </Portal>
     </View>
   );
 }
@@ -142,16 +122,12 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: 'transparent' },
   centro: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   busca: { margin: 16, marginBottom: 8 },
-  lista: { padding: 16, paddingTop: 8, paddingBottom: 80 },
+  lista: { padding: 16, paddingTop: 8, paddingBottom: 32 },
   card: { marginBottom: 10, borderRadius: 12 },
   cardContent: { flexDirection: 'row', alignItems: 'center' },
   info: { marginLeft: 12, flex: 1 },
-  crm: { color: cores.textoSecundario, marginTop: 4 },
-  textoVazio: { textAlign: 'center', color: cores.textoDesabilitado, marginTop: 40 },
-  fab: { position: 'absolute', right: 16, bottom: 16, backgroundColor: cores.primaria },
-  modal: { backgroundColor: '#1e2733', margin: 20, padding: 20, borderRadius: 16 },
-  tituloModal: { marginBottom: 16, fontWeight: 'bold' },
-  input: { marginBottom: 12 },
-  botoes: { flexDirection: 'row', justifyContent: 'flex-end', gap: 8, marginTop: 8 },
-  erro: { color: cores.erro, marginBottom: 12 },
+  crm: { marginTop: 4 },
+  textoVazio: { textAlign: 'center', marginTop: 40 },
+  rodape: { textAlign: 'center', marginTop: 16 },
+  erro: { color: cores.erro, textAlign: 'center', marginBottom: 12 },
 });

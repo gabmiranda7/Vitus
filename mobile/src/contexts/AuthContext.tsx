@@ -1,7 +1,8 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import * as SecureStore from 'expo-secure-store';
 import * as FileSystem from 'expo-file-system/legacy';
-import api from '../services/api';
+import api, { registrarSessaoExpirada } from '../services/api';
+import { arrayBufferToBase64, limparArquivosTemporarios } from '../utils/arquivo';
 
 interface Usuario {
   nome: string;
@@ -23,15 +24,6 @@ interface AuthContextData {
 
 const AuthContext = createContext<AuthContextData>({} as AuthContextData);
 
-function arrayBufferToBase64(buffer: ArrayBuffer): string {
-  let binary = '';
-  const bytes = new Uint8Array(buffer);
-  for (let i = 0; i < bytes.byteLength; i++) {
-    binary += String.fromCharCode(bytes[i]);
-  }
-  return btoa(binary);
-}
-
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [usuario, setUsuario] = useState<Usuario | null>(null);
   const [loading, setLoading] = useState(true);
@@ -40,6 +32,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     validarSessao();
+  }, []);
+
+  // Token rejeitado pela API (expirado ou conta desativada): encerra a sessão local
+  useEffect(() => {
+    registrarSessaoExpirada(() => { logout(); });
+    return () => registrarSessaoExpirada(null);
   }, []);
 
   const temFoto = !!usuario?.temFoto;
@@ -115,6 +113,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await SecureStore.deleteItemAsync('vitus_usuario');
     setFotoUri(null);
     setUsuario(null);
+    // Dados clínicos temporários não devem sobrar no aparelho depois de sair
+    void limparArquivosTemporarios();
   }
 
   async function atualizarUsuario(parcial: Partial<Usuario>, token?: string) {
