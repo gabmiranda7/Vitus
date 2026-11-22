@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import { View, ScrollView, StyleSheet, RefreshControl } from 'react-native';
 import { Text, Card, Chip, ActivityIndicator, Avatar, Button, ProgressBar, useTheme } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -31,41 +31,36 @@ export default function TriagemScreen() {
   const [consultas, setConsultas] = useState<Consulta[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [erroLista, setErroLista] = useState('');
   const [modalTriagem, setModalTriagem] = useState(false);
   const [consultaSelecionada, setConsultaSelecionada] = useState<Consulta | null>(null);
 
-  const carregar = useCallback(async (silencioso = false) => {
+  const carregar = useCallback(async () => {
     try {
       const response = await api.get('/api/consultas');
       setConsultas(response.data.filter((c: Consulta) =>
         ['Agendada', 'EmTriagem', 'AguardandoAtendimento'].includes(c.status)
       ));
+      setErroLista('');
+    } catch (e: any) {
+      setErroLista(e.mensagemBack ?? 'Não foi possível carregar a fila de triagem');
     } finally {
-      if (!silencioso) setLoading(false);
+      setLoading(false);
       setRefreshing(false);
     }
   }, []);
 
   useFocusEffect(
     useCallback(() => {
-      carregar(true);
-      const interval = setInterval(() => carregar(true), 15000);
+      carregar();
+      const interval = setInterval(carregar, 15000);
       return () => clearInterval(interval);
     }, [carregar])
   );
 
-  useEffect(() => {
-    carregar(false);
-  }, [carregar]);
-
   function onRefresh() {
     setRefreshing(true);
-    carregar(true);
-  }
-
-  async function aguardarAtendimento(id: string) {
-    await api.patch(`/api/consultas/${id}/aguardar-atendimento`);
-    carregar(true);
+    carregar();
   }
 
   function abrirTriagem(c: Consulta) {
@@ -80,7 +75,7 @@ export default function TriagemScreen() {
 
   function onSucessoTriagem() {
     fecharModal();
-    carregar(true);
+    carregar();
   }
 
   const agendadas = consultas.filter(c => c.status === 'Agendada');
@@ -108,6 +103,8 @@ export default function TriagemScreen() {
         contentContainerStyle={styles.conteudo}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
+        {erroLista ? <Text style={styles.erro}>{erroLista}</Text> : null}
+
         <View style={styles.statsRow}>
           <Chip
             icon="calendar"
@@ -198,10 +195,10 @@ export default function TriagemScreen() {
                       mode="contained"
                       buttonColor={cores.info}
                       icon="heart-pulse"
-                      onPress={() => aguardarAtendimento(c.id)}
+                      onPress={() => abrirTriagem(c)}
                       style={styles.botao}
                     >
-                      Enviar para Atendimento
+                      Registrar Sinais Vitais
                     </Button>
                   )}
                   {c.status === 'AguardandoAtendimento' && (
@@ -222,6 +219,7 @@ export default function TriagemScreen() {
       <TriagemModal
         visible={modalTriagem}
         consultaId={consultaSelecionada?.id ?? null}
+        statusConsulta={consultaSelecionada?.status}
         onClose={fecharModal}
         onSucesso={onSucessoTriagem}
       />
@@ -233,6 +231,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: 'transparent' },
   centro: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   conteudo: { padding: 16 },
+  erro: { color: cores.erro, textAlign: 'center', marginBottom: 12 },
   statsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 },
   statChip: {},
   card: { marginBottom: 12, borderRadius: 12 },

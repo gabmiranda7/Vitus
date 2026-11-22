@@ -1,6 +1,6 @@
-import React, { useEffect, useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { View, ScrollView, StyleSheet, RefreshControl } from 'react-native';
-import { Text, Card, Chip, ActivityIndicator, Avatar, Button, Portal, Modal, SegmentedButtons, Searchbar, FAB, useTheme } from 'react-native-paper';
+import { Text, Card, Chip, ActivityIndicator, Avatar, Button, Portal, Modal, SegmentedButtons, Searchbar, FAB, Snackbar, useTheme } from 'react-native-paper';
 import { useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '../../contexts/AuthContext';
 import api from '../../services/api';
@@ -38,6 +38,9 @@ export default function ConsultasScreen() {
   const [aba, setAba] = useState('ativas');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [erroLista, setErroLista] = useState('');
+  const [feedbackErro, setFeedbackErro] = useState('');
+  const [processando, setProcessando] = useState(false);
 
   const [busca, setBusca] = useState('');
   const [filtrosVisiveis, setFiltrosVisiveis] = useState(false);
@@ -56,31 +59,30 @@ export default function ConsultasScreen() {
 
   const ehMedico = usuario?.perfil === 'Medico';
 
-  const carregar = useCallback(async (silencioso = false) => {
+  const carregar = useCallback(async () => {
     try {
       const response = await api.get('/api/consultas');
       setConsultas(response.data);
+      setErroLista('');
+    } catch (e: any) {
+      setErroLista(e.mensagemBack ?? 'Não foi possível carregar as consultas');
     } finally {
-      if (!silencioso) setLoading(false);
+      setLoading(false);
       setRefreshing(false);
     }
   }, []);
 
   useFocusEffect(
     useCallback(() => {
-      carregar(true);
-      const interval = setInterval(() => carregar(true), 15000);
+      carregar();
+      const interval = setInterval(carregar, 15000);
       return () => clearInterval(interval);
     }, [carregar])
   );
 
-  useEffect(() => {
-    carregar(false);
-  }, [carregar]);
-
   function onRefresh() {
     setRefreshing(true);
-    carregar(true);
+    carregar();
   }
 
   function limparFiltros() {
@@ -101,6 +103,7 @@ export default function ConsultasScreen() {
     return consultas;
   }, [consultas, ehMedico, usuario?.medicoId]);
 
+  // Ativas: por horário crescente (próximas primeiro). Histórico: mais recentes primeiro
   const consultasAtivas = useMemo(() =>
     consultasVisiveis
       .filter(c => statusAtivos.includes(c.status))
@@ -122,20 +125,19 @@ export default function ConsultasScreen() {
 
   const qtdFiltros = [filtroMedico, filtroStatus].filter(Boolean).length;
 
+  // A lista já vem ordenada conforme a aba; o filtro preserva essa ordem
   const consultasFiltradas = useMemo(() => {
     const q = busca.trim().toLowerCase();
-    return listaAba
-      .filter(c => {
-        const buscaOk = !q ||
-          c.nomePaciente.toLowerCase().includes(q) ||
-          c.nomeMedico.toLowerCase().includes(q) ||
-          new Date(c.dataConsulta).toLocaleDateString('pt-BR').includes(q) ||
-          (statusLabels[c.status] ?? '').toLowerCase().includes(q);
-        return buscaOk &&
-          (filtroMedico === '' || c.nomeMedico === filtroMedico) &&
-          (filtroStatus === '' || c.status === filtroStatus);
-      })
-      .sort((a, b) => new Date(b.dataConsulta).getTime() - new Date(a.dataConsulta).getTime());
+    return listaAba.filter(c => {
+      const buscaOk = !q ||
+        c.nomePaciente.toLowerCase().includes(q) ||
+        c.nomeMedico.toLowerCase().includes(q) ||
+        new Date(c.dataConsulta).toLocaleDateString('pt-BR').includes(q) ||
+        (statusLabels[c.status] ?? '').toLowerCase().includes(q);
+      return buscaOk &&
+        (filtroMedico === '' || c.nomeMedico === filtroMedico) &&
+        (filtroStatus === '' || c.status === filtroStatus);
+    });
   }, [listaAba, busca, filtroMedico, filtroStatus]);
 
   const grupos = useMemo(() => {
@@ -185,7 +187,7 @@ export default function ConsultasScreen() {
   function onSucessoAcao() {
     fecharTudo();
     setConsultaSelecionada(null);
-    carregar(true);
+    carregar();
   }
 
   function pedirConfirmacao(acao: string, cor: string, titulo: string) {
@@ -194,21 +196,31 @@ export default function ConsultasScreen() {
     setModalConfirm(true);
   }
 
+  async function chamarAcao(id: string, acao: string) {
+    try {
+      await api.patch(`/api/consultas/${id}/${acao}`);
+    } catch (e: any) {
+      setFeedbackErro(e.mensagemBack ?? 'Erro ao atualizar a consulta');
+    }
+  }
+
   async function confirmarAcao() {
     if (!confirmAcao || !consultaSelecionada) return;
-    await api.patch(`/api/consultas/${consultaSelecionada.id}/${confirmAcao.acao}`);
+    setProcessando(true);
+    await chamarAcao(consultaSelecionada.id, confirmAcao.acao);
+    setProcessando(false);
     setModalConfirm(false);
     setConfirmAcao(null);
     setConsultaSelecionada(null);
-    carregar(true);
+    carregar();
   }
 
   async function acaoRapida(acao: string) {
     if (!consultaSelecionada) return;
-    await api.patch(`/api/consultas/${consultaSelecionada.id}/${acao}`);
+    await chamarAcao(consultaSelecionada.id, acao);
     setModalAcoes(false);
     setConsultaSelecionada(null);
-    carregar(true);
+    carregar();
   }
 
   const ehMinhaConsulta =
@@ -307,6 +319,8 @@ export default function ConsultasScreen() {
         contentContainerStyle={styles.lista}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
+        {erroLista ? <Text style={styles.erroLista}>{erroLista}</Text> : null}
+
         {grupos.length === 0 ? (
           <Text style={[styles.textoVazio, { color: theme.colors.onSurfaceVariant }]}>
             Nenhuma consulta encontrada
@@ -367,16 +381,12 @@ export default function ConsultasScreen() {
           </Text>
 
           <View style={styles.acoesLista}>
-            {usuario?.perfil === 'Enfermeiro' && consultaSelecionada?.status === 'Agendada' && (
-              <Button mode="contained" buttonColor={cores.aviso} icon="stethoscope" onPress={() => { setModalAcoes(false); setModalTriagem(true); }}>
-                Iniciar Triagem
-              </Button>
-            )}
-            {usuario?.perfil === 'Enfermeiro' && consultaSelecionada?.status === 'EmTriagem' && (
-              <Button mode="contained" onPress={() => acaoRapida('aguardar-atendimento')}>
-                Mover para Aguardando
-              </Button>
-            )}
+            {usuario?.perfil === 'Enfermeiro' &&
+              (consultaSelecionada?.status === 'Agendada' || consultaSelecionada?.status === 'EmTriagem') && (
+                <Button mode="contained" buttonColor={cores.aviso} icon="stethoscope" onPress={() => { setModalAcoes(false); setModalTriagem(true); }}>
+                  {consultaSelecionada?.status === 'Agendada' ? 'Iniciar Triagem' : 'Registrar Sinais Vitais'}
+                </Button>
+              )}
             {ehMinhaConsulta && consultaSelecionada?.status === 'AguardandoAtendimento' && (
               <Button mode="contained" icon="account" onPress={() => acaoRapida('iniciar-atendimento')}>
                 Iniciar Atendimento
@@ -411,6 +421,7 @@ export default function ConsultasScreen() {
       <TriagemModal
         visible={modalTriagem}
         consultaId={consultaSelecionada?.id ?? null}
+        statusConsulta={consultaSelecionada?.status}
         onClose={fecharTudo}
         onSucesso={onSucessoAcao}
       />
@@ -440,6 +451,7 @@ export default function ConsultasScreen() {
         corBotao={confirmAcao?.cor ?? cores.primaria}
         onClose={() => setModalConfirm(false)}
         onConfirmar={confirmarAcao}
+        loading={processando}
       />
 
       {usuario?.perfil === 'Recepcionista' && (
@@ -452,9 +464,17 @@ export default function ConsultasScreen() {
         onSucesso={() => {
           setModalNova(false);
           setAba('ativas');
-          carregar(true);
+          carregar();
         }}
       />
+
+      <Snackbar
+        visible={!!feedbackErro}
+        onDismiss={() => setFeedbackErro('')}
+        duration={4000}
+      >
+        {feedbackErro}
+      </Snackbar>
     </View>
   );
 }
@@ -507,6 +527,11 @@ const styles = StyleSheet.create({
     padding: 16,
     paddingTop: 8,
     paddingBottom: 90,
+  },
+  erroLista: {
+    color: cores.erro,
+    textAlign: 'center',
+    marginBottom: 12,
   },
   fab: {
     position: 'absolute',

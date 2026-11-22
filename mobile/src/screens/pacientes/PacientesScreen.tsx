@@ -73,19 +73,22 @@ export default function PacientesScreen() {
   const [form, setForm] = useState(formVazio());
   const [erro, setErro] = useState('');
   const [salvando, setSalvando] = useState(false);
+  const [erroLista, setErroLista] = useState('');
 
   useEffect(() => {
     carregar();
   }, []);
 
-  async function carregar() {
-    try {
-      const response = await api.get('/api/Paciente');
-      setPacientes(response.data);
-    } finally {
-      setLoading(false);
-    }
+async function carregar() {
+  try {
+    const response = await api.get('/api/Paciente');
+    setPacientes(response.data);
+  } catch (e: any) {
+    setErroLista(e.mensagemBack ?? 'Não foi possível carregar os pacientes');
+  } finally {
+    setLoading(false);
   }
+}
 
   function setField(campo: string, valor: string) {
     setForm(f => ({ ...f, [campo]: valor }));

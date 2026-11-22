@@ -1,8 +1,9 @@
-import React, { useEffect, useState, useMemo } from 'react';
+
+import React, { useCallback, useState, useMemo } from 'react';
 import { View, ScrollView, StyleSheet, RefreshControl, TouchableOpacity } from 'react-native';
 import { Text, Card, Chip, ActivityIndicator, Avatar, Button, useTheme } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { useAuth } from '../../contexts/AuthContext';
 import api from '../../services/api';
 import { Consulta, AuditoriaLog, statusCores, statusLabels } from '../../types';
@@ -20,24 +21,32 @@ export default function DashboardScreen() {
   const [pendentesCount, setPendentesCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [erro, setErro] = useState('');
 
-  useEffect(() => {
-    carregar();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      carregar();
+    }, [])
+  );
 
   async function carregar() {
     try {
+      setErro('');
+
       if (isAdmin) {
         const [resLogs, resPendentes] = await Promise.all([
           api.get('/api/auditoria'),
           api.get('/api/auth/pendentes').catch(() => ({ data: [] })),
         ]);
+
         setLogs(resLogs.data);
         setPendentesCount(Array.isArray(resPendentes.data) ? resPendentes.data.length : 0);
       } else {
         const response = await api.get('/api/consultas');
         setConsultas(response.data);
       }
+    } catch (e: any) {
+      setErro(e.mensagemBack ?? 'Não foi possível carregar os dados');
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -54,7 +63,7 @@ export default function DashboardScreen() {
   );
 
   const minhasConsultas = usuario?.perfil === 'Medico'
-    ? ativas.filter(c => c.nomeMedico === usuario.nome)
+    ? ativas.filter(c => c.medicoId === usuario.medicoId)
     : ativas;
 
   const logsRecentes = useMemo(
@@ -103,7 +112,7 @@ export default function DashboardScreen() {
       rota: 'Auditoria',
     },
     {
-      label: 'Usuários Ativos',
+      label: 'Usuários com Atividade',
       valor: usuariosUnicos,
       icon: 'account-group-outline',
       cor: cores.secundaria,
@@ -127,6 +136,7 @@ export default function DashboardScreen() {
       <Text variant="headlineSmall" style={styles.saudacao}>
         Olá, {usuario?.nome?.split(' ')[0]} 👋
       </Text>
+
       <Text variant="bodyMedium" style={[styles.subtitulo, { color: theme.colors.onSurfaceVariant }]}>
         {isAdmin
           ? 'Visão geral e auditoria do sistema'
@@ -134,6 +144,8 @@ export default function DashboardScreen() {
           ? 'Minhas consultas ativas'
           : 'Consultas ativas'}
       </Text>
+
+      {erro ? <Text style={{ color: cores.erro, marginBottom: 12 }}>{erro}</Text> : null}
 
       {isAdmin ? (
         <>
@@ -371,12 +383,8 @@ const styles = StyleSheet.create({
     rowGap: 10,
     marginBottom: 20,
   },
-  kpiWrapper: {
-    width: '48.5%',
-  },
-  kpiCard: {
-    borderRadius: 12,
-  },
+  kpiWrapper: { width: '48.5%' },
+  kpiCard: { borderRadius: 12 },
   kpiContent: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -411,21 +419,36 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 6,
   },
-  acaoNomeBox: { flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1, paddingRight: 8 },
+  acaoNomeBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flex: 1,
+    paddingRight: 8,
+  },
   acaoNome: { fontWeight: '600', flex: 1 },
   acaoContagem: { fontWeight: '700' },
   barraFundo: { height: 6, borderRadius: 3, overflow: 'hidden' },
   barraProgresso: { height: '100%', borderRadius: 3 },
 
   card: { marginBottom: 10, borderRadius: 12 },
-  cardContent: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 8 },
+  cardContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: 8,
+  },
   cardHeader: { flexDirection: 'row', alignItems: 'center', flex: 1 },
   cardInfo: { marginLeft: 12, flex: 1 },
 
   logContent: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10 },
   logIcone: { marginRight: 10 },
   logInfo: { flex: 1 },
-  logHeaderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  logHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
 
   cardVazio: { borderRadius: 12 },
   textoVazio: { textAlign: 'center', paddingVertical: 20 },

@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { View, ScrollView, StyleSheet, RefreshControl } from 'react-native';
 import { Text, Card, Chip, ActivityIndicator, Avatar, Button, useTheme } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '../../contexts/AuthContext';
 import api from '../../services/api';
 import { Consulta, statusCores, statusLabels } from '../../types';
@@ -24,11 +24,13 @@ export default function AgendaScreen() {
   const [finalizando, setFinalizando] = useState<Consulta | null>(null);
   const [processando, setProcessando] = useState(false);
 
-  useEffect(() => {
-    carregar();
-    const interval = setInterval(carregar, 30000);
-    return () => clearInterval(interval);
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      carregar();
+      const interval = setInterval(carregar, 30000);
+      return () => clearInterval(interval);
+    }, [])
+  );
 
   async function carregar() {
     try {

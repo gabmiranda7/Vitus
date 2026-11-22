@@ -25,6 +25,7 @@ export default function PacientesProntuarioScreen() {
   const [prazo, setPrazo] = useState('30');
   const [unidade, setUnidade] = useState('dias');
   const [filtrosVisiveis, setFiltrosVisiveis] = useState(false);
+  const [erroLista, setErroLista] = useState('');
 
   useEffect(() => {
     carregar();
@@ -38,6 +39,8 @@ export default function PacientesProntuarioScreen() {
       ]);
       setPacientes(rPacientes.data);
       setAcompanhamentos(rAcompanhamento.data);
+    } catch (e: any) {
+      setErroLista(e.mensagemBack ?? 'Não foi possível carregar os pacientes');
     } finally {
       setLoading(false);
     }

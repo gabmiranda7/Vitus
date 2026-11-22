@@ -28,6 +28,7 @@ export default function PacientesReceitasScreen() {
   const [situacao, setSituacao] = useState('todos');
   const [prazo, setPrazo] = useState('30');
   const [unidade, setUnidade] = useState('dias');
+  const [erroLista, setErroLista] = useState('');
 
   useEffect(() => {
     carregar();
@@ -41,6 +42,8 @@ export default function PacientesReceitasScreen() {
       ]);
       setPacientes(rPacientes.data);
       setAcompanhamentos(rAcompanhamento.data);
+    } catch (e: any) {
+      setErroLista(e.mensagemBack ?? 'Não foi possível carregar os pacientes');
     } finally {
       setLoading(false);
     }
