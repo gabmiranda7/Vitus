@@ -112,7 +112,7 @@ export default function AnotacaoModal({
           variant="bodySmall"
           style={{ color: theme.colors.onSurfaceVariant }}
         >
-          {texto.trim().length} caracteres
+          {texto.length}/2000
         </Text>
         <View style={styles.botoes}>
           <Button onPress={onClose} disabled={loading}>

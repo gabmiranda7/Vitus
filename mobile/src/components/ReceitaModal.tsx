@@ -15,6 +15,7 @@ import * as FileSystem from "expo-file-system/legacy";
 import * as Sharing from "expo-sharing";
 import api from "../services/api";
 import { Medicamento } from "../types";
+import { arrayBufferToBase64 } from "../utils/arquivo";
 import ModalComTeclado from "./ModalComTeclado";
 
 interface Props {
@@ -60,28 +61,6 @@ function mensagemDoServidor(e: any): string {
     // corpo não era JSON
   }
   return e?.mensagemBack ?? "Erro ao gerar receita";
-}
-
-// Conversão pura de ArrayBuffer para Base64 sem depender de btoa (evita falha no Hermes com bytes binários do .docx)
-const BASE64_CHARS =
-  "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-function arrayBufferToBase64(buffer: ArrayBuffer): string {
-  const bytes = new Uint8Array(buffer);
-  const len = bytes.length;
-  let base64 = "";
-
-  for (let i = 0; i < len; i += 3) {
-    const b1 = bytes[i];
-    const b2 = i + 1 < len ? bytes[i + 1] : 0;
-    const b3 = i + 2 < len ? bytes[i + 2] : 0;
-
-    base64 += BASE64_CHARS[b1 >> 2];
-    base64 += BASE64_CHARS[((b1 & 3) << 4) | (b2 >> 4)];
-    base64 += i + 1 < len ? BASE64_CHARS[((b2 & 15) << 2) | (b3 >> 6)] : "=";
-    base64 += i + 2 < len ? BASE64_CHARS[b3 & 63] : "=";
-  }
-
-  return base64;
 }
 
 export default function ReceitaModal({
@@ -277,6 +256,7 @@ export default function ReceitaModal({
             dense
             autoCorrect={false}
             spellCheck={false}
+            maxLength={200}
           />
           <View style={styles.linha}>
             <TextInput
@@ -289,6 +269,7 @@ export default function ReceitaModal({
               placeholder="ex: 50mg"
               autoCorrect={false}
               spellCheck={false}
+              maxLength={50}
             />
             <TextInput
               label="Quantidade"
@@ -300,6 +281,7 @@ export default function ReceitaModal({
               placeholder="ex: 60 cps."
               autoCorrect={false}
               spellCheck={false}
+              maxLength={50}
             />
           </View>
           <TextInput
@@ -312,6 +294,7 @@ export default function ReceitaModal({
             placeholder="ex: 1 cp. ao dia"
             autoCorrect={false}
             spellCheck={false}
+            maxLength={300}
           />
 
           <View style={styles.vencimentoLinha}>

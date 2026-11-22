@@ -22,6 +22,7 @@ import * as FileSystem from "expo-file-system/legacy";
 import * as Sharing from "expo-sharing";
 import * as IntentLauncher from "expo-intent-launcher";
 import api from "../../services/api";
+import { arrayBufferToBase64 } from "../../utils/arquivo";
 import {
   Prontuario,
   Paciente,
@@ -90,27 +91,6 @@ function agruparPorDia(consultas: Consulta[], triagens: Triagem[]) {
     chave,
     itens,
   }));
-}
-
-const BASE64_CHARS =
-  "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-function arrayBufferToBase64(buffer: ArrayBuffer): string {
-  const bytes = new Uint8Array(buffer);
-  const len = bytes.length;
-  let base64 = "";
-
-  for (let i = 0; i < len; i += 3) {
-    const b1 = bytes[i];
-    const b2 = i + 1 < len ? bytes[i + 1] : 0;
-    const b3 = i + 2 < len ? bytes[i + 2] : 0;
-
-    base64 += BASE64_CHARS[b1 >> 2];
-    base64 += BASE64_CHARS[((b1 & 3) << 4) | (b2 >> 4)];
-    base64 += i + 1 < len ? BASE64_CHARS[((b2 & 15) << 2) | (b3 >> 6)] : "=";
-    base64 += i + 2 < len ? BASE64_CHARS[b3 & 63] : "=";
-  }
-
-  return base64;
 }
 
 export default function ProntuarioDetalheScreen() {
