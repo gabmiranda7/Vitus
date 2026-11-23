@@ -9,11 +9,13 @@
         public string Observacoes { get; private set; }
         public string PressaoArterial { get; private set; }
         public decimal Temperatura { get; private set; }
+        public int? Glicemia { get; private set; }
         public string NomeEnfermeiro { get; private set; }
 
         protected Triagem() { }
 
-        public Triagem(Guid prontuarioId, Guid consultaId, string observacoes, string pressaoArterial, decimal temperatura, string nomeEnfermeiro)
+        public Triagem(Guid prontuarioId, Guid consultaId, string observacoes, string pressaoArterial,
+            decimal temperatura, string nomeEnfermeiro, int? glicemia = null)
         {
             Id = Guid.NewGuid();
             ConsultaId = consultaId;
@@ -21,6 +23,7 @@
             Observacoes = observacoes;
             PressaoArterial = pressaoArterial;
             Temperatura = temperatura;
+            Glicemia = glicemia;
             NomeEnfermeiro = nomeEnfermeiro;
         }
     }

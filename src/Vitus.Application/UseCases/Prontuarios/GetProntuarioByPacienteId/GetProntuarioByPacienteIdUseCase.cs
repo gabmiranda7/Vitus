@@ -67,6 +67,7 @@ namespace Vitus.Application.UseCases.Prontuarios.GetProntuarioByPacienteId
                     Observacoes = t.Observacoes,
                     PressaoArterial = t.PressaoArterial,
                     Temperatura = t.Temperatura,
+                    Glicemia = t.Glicemia,
                     NomeEnfermeiro = t.NomeEnfermeiro
                 }).ToList(),
                 Consultas = prontuario.Consultas.Select(c =>

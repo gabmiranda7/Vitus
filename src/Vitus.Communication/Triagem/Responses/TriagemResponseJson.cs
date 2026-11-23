@@ -8,6 +8,7 @@
         public string Observacoes { get; set; }
         public string PressaoArterial { get; set; }
         public decimal Temperatura { get; set; }
+        public int? Glicemia { get; set; }
         public string NomeEnfermeiro { get; set; }
     }
 }

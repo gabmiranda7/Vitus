@@ -5,13 +5,14 @@ namespace Vitus.Domain.Entities
     public class Enfermeiro
     {
         public Guid Id { get; private set; }
+        public Guid? UsuarioId { get; private set; }
         public string Nome { get; private set; }
         public string COREN { get; private set; }
         public string? Especializacao { get; private set; }
 
         protected Enfermeiro() { }
 
-        public Enfermeiro(string nome, string coren, string? especializacao)
+        public Enfermeiro(string nome, string coren, string? especializacao, Guid? usuarioId = null)
         {
             if (string.IsNullOrWhiteSpace(nome))
                 throw new DomainException("Nome é obrigatório");
@@ -19,6 +20,7 @@ namespace Vitus.Domain.Entities
                 throw new DomainException("COREN é obrigatório");
 
             Id = Guid.NewGuid();
+            UsuarioId = usuarioId;
             Nome = nome;
             COREN = coren;
             Especializacao = especializacao;

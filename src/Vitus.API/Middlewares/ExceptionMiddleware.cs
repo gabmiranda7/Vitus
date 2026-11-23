@@ -33,6 +33,10 @@ namespace Vitus.API.Middlewares
                 context.Response.Headers.RetryAfter = ((int)ex.TempoRestante.TotalSeconds).ToString();
                 await HandleExceptionAsync(context, HttpStatusCode.TooManyRequests, new List<string> { ex.Message });
             }
+            catch (ConflitoException ex)
+            {
+                await HandleExceptionAsync(context, HttpStatusCode.Conflict, new List<string> { ex.Message });
+            }
             catch (AcessoNegadoException ex)
             {
                 await HandleExceptionAsync(context, HttpStatusCode.Forbidden, new List<string> { ex.Message });

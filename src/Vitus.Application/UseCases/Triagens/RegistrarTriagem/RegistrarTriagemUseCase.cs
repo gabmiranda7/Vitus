@@ -36,6 +36,9 @@ namespace Vitus.Application.UseCases.Triagens.RegistrarTriagem
             if (consulta.Status != StatusConsulta.EmTriagem)
                 throw new DomainException("Consulta não está em triagem");
 
+            if (await _triagemRepository.ExistePorConsulta(consulta.Id))
+                throw new ConflitoException("Esta consulta já possui triagem registrada");
+
             var paciente = await _pacienteRepository.GetById(consulta.PacienteId);
 
             if (paciente == null)
@@ -47,7 +50,8 @@ namespace Vitus.Application.UseCases.Triagens.RegistrarTriagem
                 request.Observacoes,
                 request.PressaoArterial,
                 request.Temperatura,
-                nomeEnfermeiro
+                nomeEnfermeiro,
+                request.Glicemia
             );
 
             paciente.Prontuario.AdicionarTriagem(triagem);
@@ -63,6 +67,7 @@ namespace Vitus.Application.UseCases.Triagens.RegistrarTriagem
                 Observacoes = triagem.Observacoes,
                 PressaoArterial = triagem.PressaoArterial,
                 Temperatura = triagem.Temperatura,
+                Glicemia = triagem.Glicemia,
                 NomeEnfermeiro = triagem.NomeEnfermeiro
             };
         }

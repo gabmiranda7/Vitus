@@ -769,6 +769,9 @@ export default function ProntuarioDetalheScreen() {
                         <Text variant="bodySmall">
                           PA: {triagem.pressaoArterial} · Temp:{" "}
                           {triagem.temperatura}°C
+                          {triagem.glicemia != null
+                            ? ` · Glicemia: ${triagem.glicemia} mg/dL`
+                            : ""}
                         </Text>
                         {triagem.observacoes && (
                           <Text

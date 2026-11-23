@@ -27,6 +27,10 @@ namespace Vitus.Application.Validators.Triagens
 
             RuleFor(x => x.Temperatura)
                 .InclusiveBetween(30, 45).WithMessage("Temperatura deve estar entre 30 e 45 graus");
+
+            RuleFor(x => x.Glicemia)
+                .InclusiveBetween(20, 600).WithMessage("Glicemia deve estar entre 20 e 600 mg/dL")
+                .When(x => x.Glicemia.HasValue);
         }
     }
 }

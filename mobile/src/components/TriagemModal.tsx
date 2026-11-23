@@ -26,6 +26,7 @@ export default function TriagemModal({
   const theme = useTheme();
   const [pressao, setPressao] = useState("");
   const [temperatura, setTemperatura] = useState("");
+  const [glicemia, setGlicemia] = useState("");
   const [observacoes, setObservacoes] = useState("");
   const [erro, setErro] = useState("");
   const [loading, setLoading] = useState(false);
@@ -35,6 +36,7 @@ export default function TriagemModal({
   function limpar() {
     setPressao("");
     setTemperatura("");
+    setGlicemia("");
     setObservacoes("");
     setErro("");
     setIniciada(false);
@@ -60,6 +62,14 @@ export default function TriagemModal({
       return setErro("Temperatura deve estar entre 30 e 45 °C");
     }
 
+    let glicemiaNum: number | null = null;
+    if (glicemia.trim()) {
+      glicemiaNum = parseInt(glicemia, 10);
+      if (Number.isNaN(glicemiaNum) || glicemiaNum < 20 || glicemiaNum > 600) {
+        return setErro("Glicemia deve estar entre 20 e 600 mg/dL");
+      }
+    }
+
     setLoading(true);
     try {
       // Cada etapa roda uma única vez, mesmo que o usuário tente de novo depois de uma falha
@@ -68,12 +78,18 @@ export default function TriagemModal({
         setIniciada(true);
       }
       if (!registrada) {
-        await api.post("/api/triagens", {
-          consultaId,
-          pressaoArterial: pressaoLimpa,
-          temperatura: temp,
-          observacoes,
-        });
+        try {
+          await api.post("/api/triagens", {
+            consultaId,
+            pressaoArterial: pressaoLimpa,
+            temperatura: temp,
+            glicemia: glicemiaNum,
+            observacoes,
+          });
+        } catch (e: any) {
+          // 409: a consulta já tem triagem (registro anterior que não chegou a encaminhar)
+          if (e?.response?.status !== 409) throw e;
+        }
         setRegistrada(true);
       }
       await api.patch(`/api/consultas/${consultaId}/aguardar-atendimento`);
@@ -109,6 +125,16 @@ export default function TriagemModal({
         placeholder="ex: 36.5"
         keyboardType="decimal-pad"
         maxLength={5}
+        mode="outlined"
+        style={styles.input}
+      />
+      <TextInput
+        label="Glicemia (mg/dL) — opcional"
+        value={glicemia}
+        onChangeText={(v) => setGlicemia(v.replace(/\D/g, ""))}
+        placeholder="ex: 95"
+        keyboardType="numeric"
+        maxLength={3}
         mode="outlined"
         style={styles.input}
       />

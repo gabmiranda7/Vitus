@@ -13,6 +13,13 @@ namespace Vitus.Infrastructure.Mappings
             builder.Property(e => e.Nome).IsRequired().HasMaxLength(200);
             builder.Property(e => e.COREN).IsRequired().HasMaxLength(50);
             builder.Property(e => e.Especializacao).HasMaxLength(200);
+
+            builder.HasIndex(e => e.UsuarioId).IsUnique();
+
+            builder.HasOne<Usuario>()
+                   .WithMany()
+                   .HasForeignKey(e => e.UsuarioId)
+                   .OnDelete(DeleteBehavior.Restrict);
         }
     }
 }

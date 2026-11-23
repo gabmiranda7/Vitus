@@ -20,11 +20,17 @@ namespace Vitus.Infrastructure.Mappings
             builder.Property(t => t.ConsultaId)
                 .IsRequired();
 
+            builder.HasIndex(t => t.ConsultaId)
+                   .IsUnique()
+                   .HasFilter("consulta_id <> '00000000-0000-0000-0000-000000000000'");
+
             builder.Property(t => t.PressaoArterial)
                    .HasMaxLength(20);
 
             builder.Property(t => t.Temperatura)
                    .IsRequired();
+
+            builder.Property(t => t.Glicemia);
 
             builder.Property(t => t.NomeEnfermeiro)
                     .IsRequired()

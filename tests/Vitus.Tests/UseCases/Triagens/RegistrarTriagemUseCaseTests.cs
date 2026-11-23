@@ -32,11 +32,12 @@ namespace Vitus.Tests.UseCases.Triagens
             );
         }
 
-        private static CreateTriagemRequestJson RequestValido(Guid consultaId) => new()
+        private static CreateTriagemRequestJson RequestValido(Guid consultaId, int? glicemia = null) => new()
         {
             ConsultaId = consultaId,
             PressaoArterial = "120/80",
             Temperatura = 36.5m,
+            Glicemia = glicemia,
             Observacoes = "Paciente relata dor de cabeça"
         };
 
@@ -61,6 +62,36 @@ namespace Vitus.Tests.UseCases.Triagens
             _triagemRepoMock.Verify(r => r.Add(It.IsAny<Triagem>()), Times.Once);
 
             _auditoriaMock.Verify(a => a.Registrar(AcaoAuditoria.RegistroTriagem, "Triagem", It.IsAny<Guid>(), It.IsAny<string?>()), Times.Once);
+        }
+
+        [Fact]
+        public async Task Execute_Success_GuardaGlicemia()
+        {
+            var paciente = EntidadeFactory.CriarPaciente();
+            var consulta = EntidadeFactory.CriarConsultaEmTriagem(paciente.Id);
+
+            _consultaRepoMock.Setup(r => r.GetById(consulta.Id)).ReturnsAsync(consulta);
+            _pacienteRepoMock.Setup(r => r.GetById(paciente.Id)).ReturnsAsync(paciente);
+
+            var resultado = await _useCase.Execute(RequestValido(consulta.Id, glicemia: 95), "Enf. Maria");
+
+            resultado.Glicemia.Should().Be(95);
+        }
+
+        [Fact]
+        public async Task Execute_Fail_ConsultaJaPossuiTriagem()
+        {
+            var paciente = EntidadeFactory.CriarPaciente();
+            var consulta = EntidadeFactory.CriarConsultaEmTriagem(paciente.Id);
+
+            _consultaRepoMock.Setup(r => r.GetById(consulta.Id)).ReturnsAsync(consulta);
+            _triagemRepoMock.Setup(r => r.ExistePorConsulta(consulta.Id)).ReturnsAsync(true);
+
+            var act = async () => await _useCase.Execute(RequestValido(consulta.Id), "Enf. Maria");
+
+            await act.Should().ThrowAsync<ConflitoException>()
+                .WithMessage("Esta consulta já possui triagem registrada");
+            _triagemRepoMock.Verify(r => r.Add(It.IsAny<Triagem>()), Times.Never);
         }
 
         [Fact]

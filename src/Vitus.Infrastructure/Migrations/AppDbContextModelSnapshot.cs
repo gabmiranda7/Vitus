@@ -141,8 +141,16 @@ namespace Vitus.Infrastructure.Migrations
                         .HasColumnType("character varying(200)")
                         .HasColumnName("nome");
 
+                    b.Property<Guid?>("UsuarioId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("usuario_id");
+
                     b.HasKey("Id")
                         .HasName("pk_enfermeiro");
+
+                    b.HasIndex("UsuarioId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_enfermeiro_usuario_id");
 
                     b.ToTable("enfermeiro", (string)null);
                 });
@@ -422,6 +430,10 @@ namespace Vitus.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("consulta_id");
 
+                    b.Property<int?>("Glicemia")
+                        .HasColumnType("integer")
+                        .HasColumnName("glicemia");
+
                     b.Property<string>("NomeEnfermeiro")
                         .IsRequired()
                         .HasMaxLength(200)
@@ -450,6 +462,11 @@ namespace Vitus.Infrastructure.Migrations
 
                     b.HasKey("Id")
                         .HasName("pk_triagens");
+
+                    b.HasIndex("ConsultaId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_triagens_consulta_id")
+                        .HasFilter("consulta_id <> '00000000-0000-0000-0000-000000000000'");
 
                     b.HasIndex("ProntuarioId")
                         .HasDatabaseName("ix_triagens_prontuario_id");
@@ -527,6 +544,15 @@ namespace Vitus.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_consultas_prontuarios_prontuario_id");
+                });
+
+            modelBuilder.Entity("Vitus.Domain.Entities.Enfermeiro", b =>
+                {
+                    b.HasOne("Vitus.Domain.Entities.Usuario", null)
+                        .WithMany()
+                        .HasForeignKey("UsuarioId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_enfermeiro_usuarios_usuario_id");
                 });
 
             modelBuilder.Entity("Vitus.Domain.Entities.Exame", b =>

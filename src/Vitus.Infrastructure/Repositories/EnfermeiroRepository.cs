@@ -30,5 +30,11 @@ namespace Vitus.Infrastructure.Repositories
             return await _context.Enfermeiros.AsNoTracking()
                 .FirstOrDefaultAsync(e => e.Id == id);
         }
+
+        public async Task<Enfermeiro?> GetByUsuarioId(Guid usuarioId)
+        {
+            return await _context.Enfermeiros.AsNoTracking()
+                .FirstOrDefaultAsync(e => e.UsuarioId == usuarioId);
+        }
     }
 }

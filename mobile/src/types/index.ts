@@ -101,6 +101,7 @@ export interface Triagem {
   consultaId: string;
   pressaoArterial: string;
   temperatura: number;
+  glicemia?: number | null;
   observacoes: string;
   nomeEnfermeiro: string;
 }
