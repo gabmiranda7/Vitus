@@ -61,7 +61,7 @@ namespace Vitus.Application.UseCases.Auth.Registrar
                 var especializacao = string.IsNullOrWhiteSpace(request.Especializacao)
                     ? null
                     : request.Especializacao.Trim();
-                enfermeiro = new Enfermeiro(request.Nome, coren, especializacao);
+                enfermeiro = new Enfermeiro(request.Nome, coren, especializacao, usuario.Id);
             }
 
             await _usuarioRepository.Add(usuario);

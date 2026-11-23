@@ -23,6 +23,10 @@ interface UsuarioItem {
   email: string;
   perfil: string;
   status?: string;
+  crm?: string | null;
+  especialidade?: string | null;
+  coren?: string | null;
+  especializacao?: string | null;
 }
 
 const perfilLabel: Record<string, string> = {
@@ -311,6 +315,29 @@ export default function AprovacoesScreen() {
                       >
                         {u.email}
                       </Text>
+                      {aba === "pendentes" && u.perfil === "Medico" && (
+                        <Text
+                          variant="bodySmall"
+                          style={{
+                            color: theme.colors.onSurfaceVariant,
+                            fontSize: 11.5,
+                          }}
+                        >
+                          CRM: {u.crm ?? "—"} · {u.especialidade ?? "—"}
+                        </Text>
+                      )}
+                      {aba === "pendentes" && u.perfil === "Enfermeiro" && (
+                        <Text
+                          variant="bodySmall"
+                          style={{
+                            color: theme.colors.onSurfaceVariant,
+                            fontSize: 11.5,
+                          }}
+                        >
+                          COREN: {u.coren ?? "—"}
+                          {u.especializacao ? ` · ${u.especializacao}` : ""}
+                        </Text>
+                      )}
                       <View style={styles.chipsLinha}>
                         <Chip
                           compact
