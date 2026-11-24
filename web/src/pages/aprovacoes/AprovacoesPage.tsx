@@ -43,6 +43,10 @@ interface UsuarioItem {
   perfil: string;
   status?: string;
   criadoEm?: string;
+  crm?: string | null;
+  especialidade?: string | null;
+  coren?: string | null;
+  especializacao?: string | null;
 }
 
 const perfilInfo: Record<
@@ -416,6 +420,28 @@ export default function AprovacoesPage() {
                       >
                         {u.email}
                       </Typography>
+
+                      {aba === "pendentes" && u.perfil === "Medico" && (
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                          sx={{ display: "block" }}
+                        >
+                          CRM: {u.crm ?? "—"} · {u.especialidade ?? "—"}
+                        </Typography>
+                      )}
+
+                      {aba === "pendentes" && u.perfil === "Enfermeiro" && (
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                          sx={{ display: "block" }}
+                        >
+                          COREN: {u.coren ?? "—"}
+                          {u.especializacao ? ` · ${u.especializacao}` : ""}
+                        </Typography>
+                      )}
+
                       <Box
                         sx={{
                           display: "flex",

@@ -67,6 +67,7 @@ export default function TriagemPage() {
   const [observacoes, setObservacoes] = useState("");
   const [erroModal, setErroModal] = useState("");
   const [salvando, setSalvando] = useState(false);
+  const [glicemia, setGlicemia] = useState("");
 
   useEffect(() => {
     carregar();
@@ -92,6 +93,7 @@ export default function TriagemPage() {
     setConsultaSelecionada(c);
     setPressaoArterial("");
     setTemperatura("");
+    setGlicemia("");
     setObservacoes("");
     setErroModal("");
     setModalTriagem(true);
@@ -106,9 +108,18 @@ export default function TriagemPage() {
   async function handleSalvarTriagem() {
     if (!consultaSelecionada) return;
     setErroModal("");
-    if (!pressaoArterial.trim() || !temperatura.trim()) {
+    const temp = parseFloat(temperatura);
+    if (!pressaoArterial.trim() || Number.isNaN(temp)) {
       setErroModal("Preencha pressão arterial e temperatura");
       return;
+    }
+    let glicemiaNum: number | null = null;
+    if (glicemia.trim()) {
+      glicemiaNum = parseInt(glicemia, 10);
+      if (Number.isNaN(glicemiaNum) || glicemiaNum < 20 || glicemiaNum > 600) {
+        setErroModal("Glicemia deve estar entre 20 e 600 mg/dL");
+        return;
+      }
     }
     setSalvando(true);
     try {
@@ -117,12 +128,18 @@ export default function TriagemPage() {
           `/api/consultas/${consultaSelecionada.id}/iniciar-triagem`,
         );
       }
-      await api.post("/api/triagens", {
-        consultaId: consultaSelecionada.id,
-        pressaoArterial,
-        temperatura: parseFloat(temperatura),
-        observacoes,
-      });
+      try {
+        await api.post("/api/triagens", {
+          consultaId: consultaSelecionada.id,
+          pressaoArterial,
+          temperatura: temp,
+          glicemia: glicemiaNum,
+          observacoes,
+        });
+      } catch (error: any) {
+        // 409: a consulta já tem triagem (registro anterior que não chegou a encaminhar)
+        if (error?.response?.status !== 409) throw error;
+      }
       await api.patch(
         `/api/consultas/${consultaSelecionada.id}/aguardar-atendimento`,
       );
@@ -420,6 +437,16 @@ export default function TriagemPage() {
               }}
             />
           </Box>
+          <TextField
+            label="Glicemia (mg/dL) — opcional"
+            type="number"
+            fullWidth
+            value={glicemia}
+            onChange={(e) => setGlicemia(e.target.value)}
+            placeholder="ex: 95"
+            slotProps={{ htmlInput: { min: 20, max: 600 } }}
+            sx={{ mb: 2 }}
+          />
           <Divider sx={{ mb: 2 }} />
           <TextField
             label="Queixa principal / observações"

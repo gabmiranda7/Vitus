@@ -129,6 +129,7 @@ export interface Triagem {
   observacoes: string;
   pressaoArterial: string;
   temperatura: number;
+  glicemia?: number | null;
   nomeEnfermeiro: string;
 }
 

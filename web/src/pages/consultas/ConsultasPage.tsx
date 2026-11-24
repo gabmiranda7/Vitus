@@ -123,6 +123,7 @@ export default function ConsultasPage() {
   const [busca, setBusca] = useState("");
   const [erroAcao, setErroAcao] = useState("");
   const [confirmando, setConfirmando] = useState(false);
+  const [glicemia, setGlicemia] = useState("");
 
   // Filtros
   const [filtrosVisiveis, setFiltrosVisiveis] = useState(false);
@@ -305,16 +306,29 @@ export default function ConsultasPage() {
     if (!pressaoArterial.trim() || Number.isNaN(temp)) {
       return setErro("Preencha pressão arterial e temperatura");
     }
+    let glicemiaNum: number | null = null;
+    if (glicemia.trim()) {
+      glicemiaNum = parseInt(glicemia, 10);
+      if (Number.isNaN(glicemiaNum) || glicemiaNum < 20 || glicemiaNum > 600) {
+        return setErro("Glicemia deve estar entre 20 e 600 mg/dL");
+      }
+    }
     try {
       if (consultaDrawer.status === "Agendada") {
         await api.patch(`/api/consultas/${consultaDrawer.id}/iniciar-triagem`);
       }
-      await api.post("/api/triagens", {
-        consultaId: consultaDrawer.id,
-        pressaoArterial,
-        temperatura: temp,
-        observacoes,
-      });
+      try {
+        await api.post("/api/triagens", {
+          consultaId: consultaDrawer.id,
+          pressaoArterial,
+          temperatura: temp,
+          glicemia: glicemiaNum,
+          observacoes,
+        });
+      } catch (e: any) {
+        // 409: a consulta já tem triagem (registro anterior que não chegou a encaminhar)
+        if (e?.response?.status !== 409) throw e;
+      }
       await api.patch(
         `/api/consultas/${consultaDrawer.id}/aguardar-atendimento`,
       );
@@ -399,6 +413,7 @@ export default function ConsultasPage() {
     setModalTriagem(false);
     setPressaoArterial("");
     setTemperatura("");
+    setGlicemia("");
     setObservacoes("");
     setErro("");
   }
@@ -1382,6 +1397,16 @@ export default function ConsultasPage() {
               }}
             />
           </Box>
+          <TextField
+            label="Glicemia (mg/dL) — opcional"
+            type="number"
+            fullWidth
+            value={glicemia}
+            onChange={(e) => setGlicemia(e.target.value)}
+            placeholder="ex: 95"
+            slotProps={{ htmlInput: { min: 20, max: 600 } }}
+            sx={{ mb: 2 }}
+          />
           <Divider sx={{ mb: 2 }} />
           <TextField
             label="Queixa principal / observações"

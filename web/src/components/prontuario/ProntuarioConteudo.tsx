@@ -1108,6 +1108,40 @@ export default function ProntuarioConteudo({
                                         </Typography>
                                       </Box>
                                     </Box>
+                                    {t.glicemia != null && (
+                                      <Box
+                                        sx={{
+                                          display: "flex",
+                                          alignItems: "center",
+                                          gap: 0.75,
+                                        }}
+                                      >
+                                        <MonitorHeartIcon
+                                          sx={{
+                                            fontSize: 15,
+                                            color: "info.main",
+                                          }}
+                                        />
+                                        <Box>
+                                          <Typography
+                                            variant="caption"
+                                            color="text.secondary"
+                                            sx={{
+                                              display: "block",
+                                              lineHeight: 1,
+                                            }}
+                                          >
+                                            Glicemia
+                                          </Typography>
+                                          <Typography
+                                            variant="body2"
+                                            sx={{ fontWeight: 600 }}
+                                          >
+                                            {t.glicemia} mg/dL
+                                          </Typography>
+                                        </Box>
+                                      </Box>
+                                    )}
                                   </Box>
                                   {t.observacoes && (
                                     <Box
