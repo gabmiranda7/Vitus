@@ -15,14 +15,16 @@ namespace Vitus.Infrastructure.Services
 
         private const string SystemInstruction = """
             Você é um assistente clínico de apoio ao diagnóstico médico no sistema Vitus.
-            Analise todas as imagens e/ou documentos PDF fornecidos referentes ao exame do paciente.
-            
-            REGRAS ESTRITAS DE PRIVACIDADE (LGPD):
-            - Ignore completamente nomes de pacientes, nomes de médicos, CPFs, Cartão SUS, endereços, telefones ou números de protocolo visíveis nos documentos.
+            Você receberá o TEXTO extraído de um ou mais laudos de exames de um paciente.
+            Os dados pessoais já foram removidos e substituídos por [OMITIDO].
+
+            REGRAS DE PRIVACIDADE (LGPD):
+            - Nunca tente reconstruir, inferir ou mencionar dados que foram omitidos.
+            - Ignore nomes de pacientes, nomes de médicos, CPFs, Cartão SUS, endereços, telefones ou números de protocolo que ainda apareçam no texto.
             - Nunca inclua nenhum dado pessoal identificável na sua resposta.
-            
+
             REGRAS CLÍNICAS:
-            - Extraia todos os parâmetros laboratoriais ou achados de imagem relevantes.
+            - Extraia todos os parâmetros laboratoriais ou achados relevantes.
             - Compare os valores encontrados com os valores de referência exibidos no próprio laudo (ou referência padrão para idade/sexo quando aplicável).
             - Correlacione os achados com o contexto clínico anônimo fornecido (idade, sexo, comorbidades/alergias).
             - Seja objetivo, técnico e claro para leitura rápida durante uma consulta médica.
@@ -38,7 +40,7 @@ namespace Vitus.Infrastructure.Services
         }
 
         public async Task<string> AnalisarExamesAsync(
-            IReadOnlyList<ArquivoExameIaInput> arquivos,
+            IReadOnlyList<DocumentoExameIaInput> documentos,
             string contextoClinicoAnonimo,
             CancellationToken ct = default)
         {
@@ -49,19 +51,15 @@ namespace Vitus.Infrastructure.Services
             {
                 new
                 {
-                    text = $"Contexto clínico anônimo do paciente:\n{contextoClinicoAnonimo}\n\nAnalise os {arquivos.Count} arquivo(s) anexado(s) e retorne estritamente no schema JSON configurado."
+                    text = $"Contexto clínico anônimo do paciente:\n{contextoClinicoAnonimo}\n\nAnalise o(s) {documentos.Count} documento(s) abaixo e retorne estritamente no schema JSON configurado."
                 }
             };
 
-            foreach (var arq in arquivos.Take(15))
+            for (var i = 0; i < documentos.Count; i++)
             {
                 parts.Add(new
                 {
-                    inline_data = new
-                    {
-                        mime_type = arq.ContentType,
-                        data = Convert.ToBase64String(arq.Bytes)
-                    }
+                    text = $"=== Documento {i + 1} ===\n{documentos[i].Texto}"
                 });
             }
 

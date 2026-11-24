@@ -1,5 +1,4 @@
 ﻿using System.Text;
-using System.Text.RegularExpressions;
 using Vitus.Application.UseCases.Exames.RegistrarExame;
 using Vitus.Communication.Exame.Responses;
 using Vitus.Domain.Entities;
@@ -9,12 +8,15 @@ using Vitus.Domain.Interfaces;
 
 namespace Vitus.Application.UseCases.Exames.AnalisarExameIa
 {
-    public partial class AnalisarExameIaUseCase
+    public class AnalisarExameIaUseCase
     {
+        private const int MaximoCaracteresPorDocumento = 50_000;
+
         private readonly IExameRepository _exameRepository;
         private readonly IProntuarioRepository _prontuarioRepository;
         private readonly IPacienteRepository _pacienteRepository;
         private readonly IArquivoService _arquivoService;
+        private readonly IExtratorTextoPdf _extratorTexto;
         private readonly IAnalisadorExameIaService _analisadorIaService;
         private readonly IAuditoriaService _auditoriaService;
         private readonly IConsultaRepository _consultaRepository;
@@ -25,6 +27,7 @@ namespace Vitus.Application.UseCases.Exames.AnalisarExameIa
             IProntuarioRepository prontuarioRepository,
             IPacienteRepository pacienteRepository,
             IArquivoService arquivoService,
+            IExtratorTextoPdf extratorTexto,
             IAnalisadorExameIaService analisadorIaService,
             IAuditoriaService auditoriaService,
             IConsultaRepository consultaRepository,
@@ -36,6 +39,7 @@ namespace Vitus.Application.UseCases.Exames.AnalisarExameIa
             _prontuarioRepository = prontuarioRepository;
             _pacienteRepository = pacienteRepository;
             _arquivoService = arquivoService;
+            _extratorTexto = extratorTexto;
             _analisadorIaService = analisadorIaService;
             _auditoriaService = auditoriaService;
         }
@@ -62,23 +66,54 @@ namespace Vitus.Application.UseCases.Exames.AnalisarExameIa
             if (listaArquivos.Count > Exame.MaximoArquivos)
                 throw new DomainException($"Limite máximo de {Exame.MaximoArquivos} arquivos por análise");
 
-            var inputsIa = new List<ArquivoExameIaInput>();
-            foreach (var (caminho, nomeOriginal) in listaArquivos.Take(Exame.MaximoArquivos))
+            // Os dados do paciente são necessários para saber o que remover do texto
+            var prontuario = await _prontuarioRepository.GetById(exame.ProntuarioId);
+            var paciente = prontuario != null
+                ? await _pacienteRepository.GetById(prontuario.PacienteId)
+                : null;
+
+            if (paciente == null)
+                throw new DomainException("Paciente do exame não encontrado");
+
+            var identificadores = new IdentificadoresPaciente(
+                paciente.Nome, paciente.NomeMae, paciente.NomePai, paciente.Endereco, paciente.DataNascimento);
+
+            var documentos = new List<DocumentoExameIaInput>();
+            var ignorados = 0;
+
+            foreach (var (caminho, nomeOriginal) in listaArquivos)
             {
+                // Só PDFs com texto selecionável: em imagens não há como remover dados pessoais
+                if (!string.Equals(Path.GetExtension(nomeOriginal), ".pdf", StringComparison.OrdinalIgnoreCase))
+                {
+                    ignorados++;
+                    continue;
+                }
+
                 var bytes = await _arquivoService.Ler(caminho);
-                var contentType = ObterContentType(nomeOriginal);
-                inputsIa.Add(new ArquivoExameIaInput(bytes, contentType, nomeOriginal));
+                var texto = _extratorTexto.ExtrairTexto(bytes);
+
+                if (string.IsNullOrWhiteSpace(texto))
+                {
+                    ignorados++;
+                    continue;
+                }
+
+                var limpo = AnonimizadorDeTexto.Anonimizar(texto, identificadores);
+                if (limpo.Length > MaximoCaracteresPorDocumento)
+                    limpo = limpo[..MaximoCaracteresPorDocumento] + "\n[texto truncado]";
+
+                documentos.Add(new DocumentoExameIaInput(limpo));
             }
 
-            // Carrega apenas dados clínicos anônimos do paciente (sem nome, CPF ou Cartão SUS)
-            Paciente? paciente = null;
-            var prontuario = await _prontuarioRepository.GetById(exame.ProntuarioId);
-            if (prontuario != null)
-                paciente = await _pacienteRepository.GetById(prontuario.PacienteId);
+            if (documentos.Count == 0)
+                throw new DomainException(
+                    "A análise por IA só funciona com PDFs que tenham texto selecionável. " +
+                    "Imagens e documentos escaneados não são enviados, porque não há como remover os dados pessoais deles");
 
-            var contextoAnonimo = MontarContextoAnonimo(exame, paciente);
+            var contextoAnonimo = MontarContextoAnonimo(exame, paciente, identificadores, ignorados);
 
-            var analiseJson = await _analisadorIaService.AnalisarExamesAsync(inputsIa, contextoAnonimo, ct);
+            var analiseJson = await _analisadorIaService.AnalisarExamesAsync(documentos, contextoAnonimo, ct);
 
             exame.RegistrarAnaliseIa(analiseJson);
             await _exameRepository.Update(exame);
@@ -87,7 +122,7 @@ namespace Vitus.Application.UseCases.Exames.AnalisarExameIa
                 AcaoAuditoria.AnaliseIaExame,
                 "Exame",
                 exame.Id,
-                $"Prontuário {exame.ProntuarioId} ({inputsIa.Count} arquivo(s))");
+                $"Prontuário {exame.ProntuarioId} ({documentos.Count} documento(s))");
 
             return RegistrarExameUseCase.MapToResponse(exame);
         }
@@ -108,53 +143,33 @@ namespace Vitus.Application.UseCases.Exames.AnalisarExameIa
             return new List<(string, string)>();
         }
 
-        private static string ObterContentType(string nomeArquivo)
-        {
-            return Path.GetExtension(nomeArquivo).ToLowerInvariant() switch
-            {
-                ".pdf" => "application/pdf",
-                ".png" => "image/png",
-                ".jpg" or ".jpeg" => "image/jpeg",
-                _ => "application/octet-stream"
-            };
-        }
-
-        private static string MontarContextoAnonimo(Exame exame, Paciente? paciente)
+        private static string MontarContextoAnonimo(
+            Exame exame, Paciente paciente, IdentificadoresPaciente identificadores, int arquivosIgnorados)
         {
             var sb = new StringBuilder();
-            sb.AppendLine($"Exame: {exame.Nome} (Categoria: {exame.Categoria})");
+            sb.AppendLine($"Exame: {AnonimizadorDeTexto.Anonimizar(exame.Nome, identificadores)} (Categoria: {exame.Categoria})");
 
             if (!string.IsNullOrWhiteSpace(exame.Descricao))
-                sb.AppendLine($"Descrição clínica: {SanitizarTexto(exame.Descricao)}");
+                sb.AppendLine($"Descrição clínica: {AnonimizadorDeTexto.Anonimizar(exame.Descricao, identificadores)}");
 
             if (!string.IsNullOrWhiteSpace(exame.Observacoes))
-                sb.AppendLine($"Observações informadas: {SanitizarTexto(exame.Observacoes)}");
+                sb.AppendLine($"Observações informadas: {AnonimizadorDeTexto.Anonimizar(exame.Observacoes, identificadores)}");
 
-            if (paciente != null)
-            {
-                if (paciente.DataNascimento.HasValue)
-                {
-                    var idade = CalcularIdade(paciente.DataNascimento.Value);
-                    sb.AppendLine($"Idade do paciente: {idade} anos");
-                }
+            if (paciente.DataNascimento.HasValue)
+                sb.AppendLine($"Idade do paciente: {CalcularIdade(paciente.DataNascimento.Value)} anos");
 
-                if (!string.IsNullOrWhiteSpace(paciente.Sexo))
-                    sb.AppendLine($"Sexo biológico: {paciente.Sexo}");
+            if (!string.IsNullOrWhiteSpace(paciente.Sexo))
+                sb.AppendLine($"Sexo biológico: {paciente.Sexo}");
 
-                if (!string.IsNullOrWhiteSpace(paciente.InformacoesAdicionais))
-                    sb.AppendLine($"Comorbidades / Alergias / Histórico relevante: {SanitizarTexto(paciente.InformacoesAdicionais)}");
-            }
+            if (!string.IsNullOrWhiteSpace(paciente.InformacoesAdicionais))
+                sb.AppendLine($"Comorbidades / Alergias / Histórico relevante: {AnonimizadorDeTexto.Anonimizar(paciente.InformacoesAdicionais, identificadores)}");
+
+            if (arquivosIgnorados > 0)
+                sb.AppendLine(
+                    $"Observação: {arquivosIgnorados} arquivo(s) anexado(s) não foram incluídos na análise " +
+                    "por serem imagens ou documentos escaneados. Informe nos pontos de atenção que a análise está incompleta.");
 
             return sb.ToString();
-        }
-
-        private static string SanitizarTexto(string texto)
-        {
-            var limpo = CpfRegex().Replace(texto, "[CPF_OMITIDO]");
-            limpo = SusRegex().Replace(limpo, "[CNS_OMITIDO]");
-            limpo = EmailRegex().Replace(limpo, "[EMAIL_OMITIDO]");
-            limpo = TelefoneRegex().Replace(limpo, "[TELEFONE_OMITIDO]");
-            return limpo.Trim();
         }
 
         private static int CalcularIdade(DateOnly nascimento)
@@ -164,17 +179,5 @@ namespace Vitus.Application.UseCases.Exames.AnalisarExameIa
             if (hoje < nascimento.AddYears(idade)) idade--;
             return Math.Max(0, idade);
         }
-
-        [GeneratedRegex(@"\b\d{3}\.?\d{3}\.?\d{3}-?\d{2}\b")]
-        private static partial Regex CpfRegex();
-
-        [GeneratedRegex(@"\b\d{3}\.?\d{4}\.?\d{4}\.?\d{4}\b")]
-        private static partial Regex SusRegex();
-
-        [GeneratedRegex(@"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}")]
-        private static partial Regex EmailRegex();
-
-        [GeneratedRegex(@"\(?\d{2}\)?\s?9?\d{4}-?\d{4}")]
-        private static partial Regex TelefoneRegex();
     }
 }

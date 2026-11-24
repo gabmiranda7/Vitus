@@ -99,8 +99,7 @@ Agendada → Em Triagem → Aguardando Atendimento → Em Atendimento → Finali
 - **Bloqueio de tentativas de login** (por e-mail) e **rate limiting** por IP.
 - **Cadastro de pacientes:** consentimento explícito exigido pela API, CPF validado e sem duplicidade. CPF, cartão SUS e dados de filiação são opcionais.
 - **Exclusão de paciente** remove também os arquivos de exame do disco.
-- **Análise de exames por IA:** o conteúdo dos arquivos é enviado ao serviço Gemini. As instruções pedem que dados pessoais sejam ignorados e o contexto clínico enviado é anonimizado, mas isso **não garante** que identificadores impressos no próprio documento deixem de ser enviados. Use com essa ciência. O resultado é um apoio e não substitui a avaliação médica.
-
+- **Análise de exames por IA:** o servidor extrai o texto do PDF, remove dados pessoais (nome, filiação, CPF, cartão SUS, endereço, telefone, e-mail, data de nascimento e registros profissionais) e envia ao Gemini **somente o texto**, nunca o arquivo. Imagens e PDFs escaneados, sem texto selecionável, não são analisados. A remoção é automática e **não é infalível**: nomes que não constam do cadastro do paciente (como o de médicos e do laboratório) ou grafados de forma diferente podem permanecer. Use com essa ciência. O resultado é um apoio e não substitui a avaliação médica.
 ---
 
 ## 🧱 Arquitetura
