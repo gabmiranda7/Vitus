@@ -95,6 +95,7 @@ export interface Paciente {
   estadoCivil?: string;
   informacoesAdicionais?: string;
   aceitaTermos: boolean;
+  ativo?: boolean;
 }
 
 export interface Prontuario {

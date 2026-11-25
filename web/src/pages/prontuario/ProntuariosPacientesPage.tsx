@@ -58,7 +58,7 @@ export default function ProntuariosPacientesPage(): React.ReactElement {
   async function carregar() {
     try {
       const [rPacientes, rAcompanhamento] = await Promise.all([
-        api.get("/api/Paciente"),
+        api.get("/api/Paciente", { params: { incluirInativos: true } }),
         api.get("/api/prontuarios/acompanhamento").catch(() => ({ data: [] })),
       ]);
       setPacientes(rPacientes.data);
@@ -331,6 +331,14 @@ export default function ProntuariosPacientesPage(): React.ReactElement {
                         </Tooltip>
                       );
                     })()}
+                    {p.ativo === false && (
+                      <Chip
+                        label="Inativo"
+                        size="small"
+                        variant="outlined"
+                        sx={{ fontSize: 11 }}
+                      />
+                    )}
                     {p.informacoesAdicionais && (
                       <Chip
                         icon={<MedicalInformationIcon />}

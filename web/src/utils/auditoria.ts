@@ -19,6 +19,8 @@ export const acaoLabels: Record<string, string> = {
   AnotacaoClinica: "Anotação Clínica",
   InicioAtendimento: "Início de Atendimento",
   FinalizacaoConsulta: "Finalização de Consulta",
+  InativacaoPaciente: "Inativação de Paciente",
+  ReativacaoPaciente: "Reativação de Paciente",
 };
 
 export const acaoCores: Record<string, string> = {
@@ -42,4 +44,6 @@ export const acaoCores: Record<string, string> = {
   AnotacaoClinica: "#0277bd",
   InicioAtendimento: "#6a1b9a",
   FinalizacaoConsulta: "#2e7d32",
+  InativacaoPaciente: "#b71c1c",
+  ReativacaoPaciente: "#388e3c",
 };

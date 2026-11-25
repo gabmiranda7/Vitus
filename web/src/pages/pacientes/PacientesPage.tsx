@@ -24,7 +24,8 @@ import {
   alpha,
 } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
-import DeleteIcon from "@mui/icons-material/Delete";
+import BlockIcon from "@mui/icons-material/Block";
+import LockOpenIcon from "@mui/icons-material/LockOpen";
 import PeopleIcon from "@mui/icons-material/People";
 import SearchIcon from "@mui/icons-material/Search";
 import PersonIcon from "@mui/icons-material/Person";
@@ -194,15 +195,21 @@ export default function PacientesPage() {
   const [form, setForm] = useState(campoVazio());
   const [erro, setErro] = useState("");
   const [erroLista, setErroLista] = useState("");
-  const [excluir, setExcluir] = useState<Paciente | null>(null);
-  const [excluindo, setExcluindo] = useState(false);
+  const [alterarStatus, setAlterarStatus] = useState<{
+    paciente: Paciente;
+    acao: "inativar" | "reativar";
+  } | null>(null);
+  const [alterandoStatus, setAlterandoStatus] = useState(false);
+  const [mostrarInativos, setMostrarInativos] = useState(false);
 
   useEffect(() => {
     carregar();
   }, []);
 
   async function carregar() {
-    const r = await api.get("/api/Paciente");
+    const r = await api.get("/api/Paciente", {
+      params: { incluirInativos: true },
+    });
     setPacientes(r.data);
   }
 
@@ -240,18 +247,22 @@ export default function PacientesPage() {
     }
   }
 
-  async function confirmarExclusao() {
-    if (!excluir) return;
-    setExcluindo(true);
+  async function confirmarAlteracaoStatus() {
+    if (!alterarStatus) return;
+    setAlterandoStatus(true);
     try {
-      await api.delete(`/api/Paciente/${excluir.id}`);
-      setExcluir(null);
+      await api.patch(
+        `/api/Paciente/${alterarStatus.paciente.id}/${alterarStatus.acao}`,
+      );
+      setAlterarStatus(null);
       carregar();
     } catch (error: any) {
-      setErroLista(error.mensagemBack ?? "Erro ao excluir paciente");
-      setExcluir(null);
+      setErroLista(
+        error.mensagemBack ?? "Erro ao alterar o status do paciente",
+      );
+      setAlterarStatus(null);
     } finally {
-      setExcluindo(false);
+      setAlterandoStatus(false);
     }
   }
 
@@ -292,15 +303,19 @@ export default function PacientesPage() {
     setErro("");
   }
 
-  const temFiltroAtivo = filtroSexo !== "" || filtroFaixa !== "Todas";
+  const temFiltroAtivo =
+    filtroSexo !== "" || filtroFaixa !== "Todas" || mostrarInativos;
   const qtdFiltros = [
     filtroSexo,
     filtroFaixa !== "Todas" ? filtroFaixa : "",
+    mostrarInativos ? "inativos" : "",
   ].filter(Boolean).length;
+  const totalAtivos = pacientes.filter((p) => p.ativo !== false).length;
 
   function limparFiltros() {
     setFiltroSexo("");
     setFiltroFaixa("Todas");
+    setMostrarInativos(false);
   }
 
   const filtrados = useMemo(() => {
@@ -314,13 +329,14 @@ export default function PacientesPage() {
       const faixaOk =
         filtroFaixa === "Todas" ||
         (idade !== null && idade >= faixa.min && idade <= faixa.max);
-      return buscaOk && sexoOk && faixaOk;
+      const statusOk = mostrarInativos || p.ativo !== false;
+      return buscaOk && sexoOk && faixaOk && statusOk;
     });
-  }, [pacientes, busca, filtroSexo, filtroFaixa]);
+  }, [pacientes, busca, filtroSexo, filtroFaixa, mostrarInativos]);
 
   useEffect(() => {
     setPagina(1);
-  }, [busca, filtroSexo, filtroFaixa]);
+  }, [busca, filtroSexo, filtroFaixa, mostrarInativos]);
 
   const totalPaginas = Math.max(1, Math.ceil(filtrados.length / POR_PAGINA));
   const paginaAtual = filtrados.slice(
@@ -337,7 +353,7 @@ export default function PacientesPage() {
         <Typography variant="h5" sx={{ fontWeight: "bold" }}>
           Pacientes
         </Typography>
-        <Chip label={pacientes.length} size="small" color="primary" />
+        <Chip label={totalAtivos} size="small" color="primary" />
       </Box>
 
       {erroLista && (
@@ -418,6 +434,16 @@ export default function PacientesPage() {
                 ))}
               </Select>
             </FormControl>
+            <FormControlLabel
+              control={
+                <Checkbox
+                  size="small"
+                  checked={mostrarInativos}
+                  onChange={(e) => setMostrarInativos(e.target.checked)}
+                />
+              }
+              label="Mostrar inativos"
+            />
             {temFiltroAtivo && (
               <Button
                 size="small"
@@ -433,7 +459,9 @@ export default function PacientesPage() {
               color="text.secondary"
               sx={{ ml: "auto" }}
             >
-              {filtrados.length} de {pacientes.length} paciente(s)
+              {filtrados.length} de{" "}
+              {mostrarInativos ? pacientes.length : totalAtivos}{" "}
+              paciente(s){" "}
             </Typography>
           </Box>
         </Paper>
@@ -472,6 +500,7 @@ export default function PacientesPage() {
                     gap: 2,
                     cursor: "pointer",
                     borderLeft: `4px solid ${cor}`,
+                    opacity: pac.ativo === false ? 0.6 : 1,
                     transition: "0.15s",
                     "&:hover": { bgcolor: "action.hover" },
                   }}
@@ -511,6 +540,14 @@ export default function PacientesPage() {
                         .join(" · ")}
                     </Typography>
                   </Box>
+                  {pac.ativo === false && (
+                    <Chip
+                      label="Inativo"
+                      size="small"
+                      variant="outlined"
+                      sx={{ fontSize: 11 }}
+                    />
+                  )}
                   {pac.informacoesAdicionais && (
                     <Chip
                       icon={<MedicalInformationIcon />}
@@ -528,24 +565,48 @@ export default function PacientesPage() {
                     sx={{ display: "flex", flexShrink: 0 }}
                     onClick={(e) => e.stopPropagation()}
                   >
-                    <Tooltip title="Editar">
-                      <IconButton
-                        size="small"
-                        color="primary"
-                        onClick={() => abrirEdicao(pac)}
-                      >
-                        <EditIcon fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
-                    <Tooltip title="Excluir">
-                      <IconButton
-                        size="small"
-                        color="error"
-                        onClick={() => setExcluir(pac)}
-                      >
-                        <DeleteIcon fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
+                    {pac.ativo !== false && (
+                      <Tooltip title="Editar">
+                        <IconButton
+                          size="small"
+                          color="primary"
+                          onClick={() => abrirEdicao(pac)}
+                        >
+                          <EditIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                    )}
+                    {pac.ativo === false ? (
+                      <Tooltip title="Reativar">
+                        <IconButton
+                          size="small"
+                          color="success"
+                          onClick={() =>
+                            setAlterarStatus({
+                              paciente: pac,
+                              acao: "reativar",
+                            })
+                          }
+                        >
+                          <LockOpenIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                    ) : (
+                      <Tooltip title="Inativar">
+                        <IconButton
+                          size="small"
+                          color="error"
+                          onClick={() =>
+                            setAlterarStatus({
+                              paciente: pac,
+                              acao: "inativar",
+                            })
+                          }
+                        >
+                          <BlockIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                    )}
                   </Box>
                 </Paper>
               );
@@ -988,15 +1049,25 @@ export default function PacientesPage() {
       </Dialog>
 
       <ConfirmDialog
-        open={!!excluir}
-        tipo="excluir"
-        titulo="Excluir paciente"
-        subtitulo={excluir?.nome}
-        mensagem="O paciente e todo o prontuário dele serão removidos. Esta ação não pode ser desfeita."
-        confirmarLabel="Sim, excluir"
-        loading={excluindo}
-        onClose={() => setExcluir(null)}
-        onConfirm={confirmarExclusao}
+        open={!!alterarStatus}
+        tipo={alterarStatus?.acao === "reativar" ? "finalizar" : "cancelar"}
+        titulo={
+          alterarStatus?.acao === "reativar"
+            ? "Reativar paciente"
+            : "Inativar paciente"
+        }
+        subtitulo={alterarStatus?.paciente.nome}
+        mensagem={
+          alterarStatus?.acao === "reativar"
+            ? "O paciente voltará às listas e poderá ter novas consultas agendadas."
+            : "O paciente deixará de aparecer nas listas e não poderá ter novas consultas. O prontuário, as consultas e os exames continuam guardados, e você pode reativá-lo depois."
+        }
+        confirmarLabel={
+          alterarStatus?.acao === "reativar" ? "Sim, reativar" : "Sim, inativar"
+        }
+        loading={alterandoStatus}
+        onClose={() => setAlterarStatus(null)}
+        onConfirm={confirmarAlteracaoStatus}
       />
     </Layout>
   );
