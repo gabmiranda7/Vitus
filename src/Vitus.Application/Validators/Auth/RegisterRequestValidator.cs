@@ -16,8 +16,7 @@ namespace Vitus.Application.Validators.Auth
                 .EmailAddress().WithMessage("Email inválido");
 
             RuleFor(x => x.Senha)
-                .NotEmpty().WithMessage("Senha é obrigatória")
-                .MinimumLength(6).WithMessage("Senha deve ter no mínimo 6 caracteres");
+                .SenhaForte();
 
             RuleFor(x => x.Perfil)
                 .NotEmpty().WithMessage("Perfil é obrigatório")
