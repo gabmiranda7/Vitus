@@ -11,11 +11,15 @@ import {
   Button,
   IconButton,
   SegmentedButtons,
+  Chip,
+  Snackbar,
+  useTheme,
 } from "react-native-paper";
 import api from "../../services/api";
 import { Paciente } from "../../types";
 import { cores, corAvatar, iniciais } from "../../theme";
 import ModalComTeclado from "../../components/ModalComTeclado";
+import ConfirmModal from "../../components/ConfirmModal";
 
 function calcularIdade(dataNascimento?: string): string {
   if (!dataNascimento) return "";
@@ -80,9 +84,11 @@ const formVazio = () => ({
 });
 
 export default function PacientesScreen() {
+  const theme = useTheme();
   const [pacientes, setPacientes] = useState<Paciente[]>([]);
   const [busca, setBusca] = useState("");
   const [loading, setLoading] = useState(true);
+  const [mostrarInativos, setMostrarInativos] = useState(false);
 
   const [modalAberto, setModalAberto] = useState(false);
   const [editando, setEditando] = useState<Paciente | null>(null);
@@ -91,14 +97,24 @@ export default function PacientesScreen() {
   const [salvando, setSalvando] = useState(false);
   const [erroLista, setErroLista] = useState("");
 
+  const [alterarStatus, setAlterarStatus] = useState<{
+    paciente: Paciente;
+    acao: "inativar" | "reativar";
+  } | null>(null);
+  const [alterando, setAlterando] = useState(false);
+  const [feedback, setFeedback] = useState("");
+
   useEffect(() => {
     carregar();
   }, []);
 
   async function carregar() {
     try {
-      const response = await api.get("/api/Paciente");
+      const response = await api.get("/api/Paciente", {
+        params: { incluirInativos: true },
+      });
       setPacientes(response.data);
+      setErroLista("");
     } catch (e: any) {
       setErroLista(e.mensagemBack ?? "Não foi possível carregar os pacientes");
     } finally {
@@ -181,8 +197,33 @@ export default function PacientesScreen() {
     }
   }
 
-  const filtrados = pacientes.filter((p) =>
-    p.nome.toLowerCase().includes(busca.toLowerCase()),
+  async function confirmarAlteracaoStatus() {
+    if (!alterarStatus) return;
+    const { paciente, acao } = alterarStatus;
+    setAlterando(true);
+    try {
+      await api.patch(`/api/Paciente/${paciente.id}/${acao}`);
+      setFeedback(
+        acao === "inativar"
+          ? `${paciente.nome} inativado.`
+          : `${paciente.nome} reativado.`,
+      );
+      setAlterarStatus(null);
+      await carregar();
+    } catch (e: any) {
+      setFeedback(e.mensagemBack ?? "Erro ao alterar o status do paciente");
+      setAlterarStatus(null);
+    } finally {
+      setAlterando(false);
+    }
+  }
+
+  const totalAtivos = pacientes.filter((p) => p.ativo !== false).length;
+
+  const filtrados = pacientes.filter(
+    (p) =>
+      (mostrarInativos || p.ativo !== false) &&
+      p.nome.toLowerCase().includes(busca.toLowerCase()),
   );
 
   if (loading) {
@@ -193,6 +234,8 @@ export default function PacientesScreen() {
     );
   }
 
+  const reativando = alterarStatus?.acao === "reativar";
+
   return (
     <View style={styles.container}>
       <Searchbar
@@ -202,34 +245,92 @@ export default function PacientesScreen() {
         style={styles.busca}
       />
 
+      <View style={styles.filtroLinha}>
+        <Chip
+          compact
+          icon={mostrarInativos ? "eye-off" : "eye"}
+          selected={mostrarInativos}
+          onPress={() => setMostrarInativos((v) => !v)}
+        >
+          Mostrar inativos
+        </Chip>
+        <Text
+          variant="bodySmall"
+          style={{ color: theme.colors.onSurfaceVariant }}
+        >
+          {filtrados.length} de{" "}
+          {mostrarInativos ? pacientes.length : totalAtivos} paciente(s)
+        </Text>
+      </View>
+
       <ScrollView contentContainerStyle={styles.lista}>
+        {erroLista ? <Text style={styles.erroLista}>{erroLista}</Text> : null}
+
         {filtrados.length === 0 ? (
-          <Text style={styles.textoVazio}>Nenhum paciente encontrado</Text>
+          <Text
+            style={[
+              styles.textoVazio,
+              { color: theme.colors.onSurfaceVariant },
+            ]}
+          >
+            {erroLista ? "" : "Nenhum paciente encontrado"}
+          </Text>
         ) : (
-          filtrados.map((p) => (
-            <Card key={p.id} style={styles.card}>
-              <Card.Content style={styles.cardContent}>
-                <Avatar.Text
-                  size={44}
-                  label={iniciais(p.nome)}
-                  style={{ backgroundColor: corAvatar(p.nome) }}
-                />
-                <View style={styles.info}>
-                  <Text variant="titleMedium">{p.nome}</Text>
-                  <Text variant="bodySmall" style={styles.textoSecundario}>
-                    {[calcularIdade(p.dataNascimento), p.sexo]
-                      .filter(Boolean)
-                      .join(" · ") || "Sem dados"}
-                  </Text>
-                </View>
-                <IconButton
-                  icon="pencil"
-                  size={20}
-                  onPress={() => abrirEdicao(p)}
-                />
-              </Card.Content>
-            </Card>
-          ))
+          filtrados.map((p) => {
+            const inativo = p.ativo === false;
+            return (
+              <Card
+                key={p.id}
+                style={[styles.card, inativo && styles.cardInativo]}
+              >
+                <Card.Content style={styles.cardContent}>
+                  <Avatar.Text
+                    size={44}
+                    label={iniciais(p.nome)}
+                    style={{ backgroundColor: corAvatar(p.nome) }}
+                  />
+                  <View style={styles.info}>
+                    <Text variant="titleMedium">{p.nome}</Text>
+                    <Text
+                      variant="bodySmall"
+                      style={{ color: theme.colors.onSurfaceVariant }}
+                    >
+                      {[calcularIdade(p.dataNascimento), p.sexo]
+                        .filter(Boolean)
+                        .join(" · ") || "Sem dados"}
+                    </Text>
+                    {inativo && (
+                      <Chip
+                        compact
+                        style={styles.chipInativo}
+                        textStyle={styles.chipInativoTexto}
+                      >
+                        Inativo
+                      </Chip>
+                    )}
+                  </View>
+                  {!inativo && (
+                    <IconButton
+                      icon="pencil"
+                      size={20}
+                      onPress={() => abrirEdicao(p)}
+                    />
+                  )}
+                  <IconButton
+                    icon={inativo ? "account-check" : "account-cancel"}
+                    iconColor={inativo ? cores.sucesso : cores.erro}
+                    size={20}
+                    onPress={() =>
+                      setAlterarStatus({
+                        paciente: p,
+                        acao: inativo ? "reativar" : "inativar",
+                      })
+                    }
+                  />
+                </Card.Content>
+              </Card>
+            );
+          })
         )}
       </ScrollView>
 
@@ -347,6 +448,30 @@ export default function PacientesScreen() {
           </Button>
         </View>
       </ModalComTeclado>
+
+      <ConfirmModal
+        visible={!!alterarStatus}
+        titulo={reativando ? "Reativar paciente" : "Inativar paciente"}
+        mensagem={
+          reativando
+            ? `${alterarStatus?.paciente.nome} voltará às listas e poderá ter novas consultas agendadas.`
+            : `${alterarStatus?.paciente.nome} deixará de aparecer nas listas e não poderá ter novas consultas. O prontuário, as consultas e os exames continuam guardados, e você pode reativá-lo depois.`
+        }
+        corBotao={reativando ? cores.sucesso : cores.erro}
+        onClose={() => {
+          if (!alterando) setAlterarStatus(null);
+        }}
+        onConfirmar={confirmarAlteracaoStatus}
+        loading={alterando}
+      />
+
+      <Snackbar
+        visible={!!feedback}
+        onDismiss={() => setFeedback("")}
+        duration={4000}
+      >
+        {feedback}
+      </Snackbar>
     </View>
   );
 }
@@ -355,16 +480,22 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "transparent" },
   centro: { flex: 1, justifyContent: "center", alignItems: "center" },
   busca: { margin: 16, marginBottom: 8 },
+  filtroLinha: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    marginBottom: 4,
+  },
   lista: { padding: 16, paddingTop: 8, paddingBottom: 80 },
+  erroLista: { color: cores.erro, textAlign: "center", marginBottom: 12 },
   card: { marginBottom: 10, borderRadius: 12 },
+  cardInativo: { opacity: 0.6 },
   cardContent: { flexDirection: "row", alignItems: "center" },
   info: { marginLeft: 12, flex: 1 },
-  textoSecundario: { color: cores.textoSecundario },
-  textoVazio: {
-    textAlign: "center",
-    color: cores.textoDesabilitado,
-    marginTop: 40,
-  },
+  chipInativo: { alignSelf: "flex-start", marginTop: 4 },
+  chipInativoTexto: { fontSize: 11, lineHeight: 16, marginVertical: 2 },
+  textoVazio: { textAlign: "center", marginTop: 40 },
   fab: {
     position: "absolute",
     right: 16,

@@ -69,6 +69,7 @@ export interface Paciente {
   profissao?: string;
   estadoCivil?: string;
   informacoesAdicionais?: string;
+  ativo?: boolean;
 }
 
 export interface Prontuario {

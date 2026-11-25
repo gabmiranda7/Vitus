@@ -47,7 +47,7 @@ export default function PacientesProntuarioScreen() {
   async function carregar() {
     try {
       const [rPacientes, rAcompanhamento] = await Promise.all([
-        api.get("/api/Paciente"),
+        api.get("/api/Paciente", { params: { incluirInativos: true } }),
         api.get("/api/prontuarios/acompanhamento").catch(() => ({ data: [] })),
       ]);
       setPacientes(rPacientes.data);
@@ -242,6 +242,14 @@ export default function PacientesProntuarioScreen() {
                       >
                         CPF: {p.cpf}
                       </Text>
+                    )}
+                    {p.ativo === false && (
+                      <Chip
+                        compact
+                        style={{ alignSelf: "flex-start", marginTop: 4 }}
+                      >
+                        Inativo
+                      </Chip>
                     )}
                     {t && s && (
                       <Chip
