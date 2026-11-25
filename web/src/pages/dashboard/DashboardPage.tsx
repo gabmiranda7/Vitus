@@ -27,6 +27,7 @@ import { iniciais, corAvatar } from "../../utils/pessoas";
 import { statusCores, statusLabels } from "../../utils/consulta";
 import { acaoLabels, acaoCores } from "../../utils/auditoria";
 import api from "../../services/api";
+import { useAtualizacaoAutomatica } from "../../hooks/useAtualizacaoAutomatica";
 import { useAuth } from "../../contexts/AuthContext";
 import { Consulta, AuditoriaLog } from "../../types";
 
@@ -71,9 +72,8 @@ export default function DashboardPage() {
 
   useEffect(() => {
     carregar();
-    const interval = setInterval(carregar, 60000);
-    return () => clearInterval(interval);
   }, [isAdmin]);
+  useAtualizacaoAutomatica(carregar, 30000);
 
   async function carregar() {
     try {

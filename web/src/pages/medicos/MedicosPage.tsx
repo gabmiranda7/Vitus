@@ -20,6 +20,7 @@ import NavigateBeforeIcon from "@mui/icons-material/NavigateBefore";
 import NavigateNextIcon from "@mui/icons-material/NavigateNext";
 import Layout from "../../components/layout/Layout";
 import api from "../../services/api";
+import { useAtualizacaoAutomatica } from "../../hooks/useAtualizacaoAutomatica";
 import { Medico } from "../../types";
 
 const POR_PAGINA = 10;
@@ -62,6 +63,7 @@ export default function MedicosPage() {
   useEffect(() => {
     carregar();
   }, []);
+  useAtualizacaoAutomatica(carregar, 60000);
 
   async function carregar() {
     const r = await api.get("/api/medicos");

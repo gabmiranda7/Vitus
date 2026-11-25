@@ -50,6 +50,7 @@ import FilterListOffIcon from "@mui/icons-material/FilterListOff";
 import Layout from "../../components/layout/Layout";
 import AcompanhamentoVencimento from "../../components/receitas/AcompanhamentoVencimento";
 import api from "../../services/api";
+import { useAtualizacaoAutomatica } from "../../hooks/useAtualizacaoAutomatica";
 import ConfirmDialog from "../../components/ConfirmDialog";
 import { iniciais, corAvatar } from "../../utils/pessoas";
 import { statusCores, statusLabels } from "../../utils/consulta";
@@ -169,9 +170,8 @@ export default function ConsultasPage() {
       carregarPacientes();
       carregarMedicos();
     }
-    const intervalo = setInterval(carregar, 30000);
-    return () => clearInterval(intervalo);
   }, []);
+  useAtualizacaoAutomatica(carregar, 15000);
 
   async function carregar() {
     try {

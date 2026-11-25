@@ -42,6 +42,7 @@ import { pacienteCombinaComBusca } from "../../utils/busca";
 import AcompanhamentoVencimento from "../../components/receitas/AcompanhamentoVencimento";
 import { situacaoVencimento } from "../../components/receitas/vencimento";
 import api from "../../services/api";
+import { useAtualizacaoAutomatica } from "../../hooks/useAtualizacaoAutomatica";
 import { useAuth } from "../../contexts/AuthContext";
 import {
   AcompanhamentoPaciente,
@@ -141,6 +142,7 @@ export default function ReceitasPage() {
   useEffect(() => {
     carregar();
   }, []);
+  useAtualizacaoAutomatica(carregar, 30000);
 
   useEffect(() => {
     if (consultasAtivas.length > 0) {

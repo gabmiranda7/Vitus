@@ -25,6 +25,7 @@ import Layout from "../../components/layout/Layout";
 import { iniciais, corAvatar } from "../../utils/pessoas";
 import { statusCores, statusLabels } from "../../utils/consulta";
 import api from "../../services/api";
+import { useAtualizacaoAutomatica } from "../../hooks/useAtualizacaoAutomatica";
 import { useAuth } from "../../contexts/AuthContext";
 import { Consulta } from "../../types";
 
@@ -48,9 +49,8 @@ export default function AgendaPage() {
 
   useEffect(() => {
     carregar();
-    const interval = setInterval(carregar, 30000);
-    return () => clearInterval(interval);
   }, []);
+  useAtualizacaoAutomatica(carregar, 15000);
 
   async function carregar() {
     try {

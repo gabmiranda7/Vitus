@@ -35,6 +35,7 @@ import RefreshIcon from "@mui/icons-material/Refresh";
 import Layout from "../../components/layout/Layout";
 import { iniciais } from "../../utils/pessoas";
 import api from "../../services/api";
+import { useAtualizacaoAutomatica } from "../../hooks/useAtualizacaoAutomatica";
 
 interface UsuarioItem {
   id: string;
@@ -87,9 +88,8 @@ export default function AprovacoesPage() {
 
   useEffect(() => {
     carregar(true);
-    const intervalo = setInterval(() => carregar(false), 60000);
-    return () => clearInterval(intervalo);
   }, []);
+  useAtualizacaoAutomatica(() => carregar(false), 30000);
 
   async function carregar(mostrarLoading = true) {
     if (mostrarLoading) setLoading(true);

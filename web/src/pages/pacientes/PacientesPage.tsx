@@ -38,6 +38,7 @@ import FamilyRestroomIcon from "@mui/icons-material/FamilyRestroom";
 import MedicalInformationIcon from "@mui/icons-material/MedicalInformation";
 import FilterListIcon from "@mui/icons-material/FilterList";
 import FilterListOffIcon from "@mui/icons-material/FilterListOff";
+import { useAtualizacaoAutomatica } from "../../hooks/useAtualizacaoAutomatica";
 import Layout from "../../components/layout/Layout";
 import {
   iniciais,
@@ -205,6 +206,7 @@ export default function PacientesPage() {
   useEffect(() => {
     carregar();
   }, []);
+  useAtualizacaoAutomatica(carregar, 15000);
 
   async function carregar() {
     const r = await api.get("/api/Paciente", {

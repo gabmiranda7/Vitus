@@ -207,12 +207,14 @@ export default function CadastroPage() {
                   value={nome}
                   onChange={(e) => setNome(e.target.value)}
                   sx={inputSx}
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <EmailIcon color="action" fontSize="small" />
-                      </InputAdornment>
-                    ),
+                  slotProps={{
+                    input: {
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <PersonIcon color="action" fontSize="small" />
+                        </InputAdornment>
+                      ),
+                    },
                   }}
                 />
                 <TextField

@@ -23,9 +23,10 @@ import AccessTimeIcon from "@mui/icons-material/AccessTime";
 import Layout from "../../components/layout/Layout";
 import { iniciais, corAvatar } from "../../utils/pessoas";
 import api from "../../services/api";
+import { useAtualizacaoAutomatica } from "../../hooks/useAtualizacaoAutomatica";
 import { Consulta } from "../../types";
 
-const ATUALIZACAO_MS = 30000;
+const ATUALIZACAO_MS = 15000;
 
 function minutosEspera(dataConsulta: string): number {
   return Math.max(
@@ -71,13 +72,10 @@ export default function TriagemPage() {
 
   useEffect(() => {
     carregar();
-    const reload = setInterval(carregar, ATUALIZACAO_MS);
     const tick = setInterval(() => setTick((t) => t + 1), 30000);
-    return () => {
-      clearInterval(reload);
-      clearInterval(tick);
-    };
+    return () => clearInterval(tick);
   }, []);
+  useAtualizacaoAutomatica(carregar, ATUALIZACAO_MS);
 
   async function carregar() {
     try {

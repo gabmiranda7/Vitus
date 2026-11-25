@@ -33,6 +33,7 @@ import Layout from "../../components/layout/Layout";
 import { iniciais, corAvatar, idadeLabel } from "../../utils/pessoas";
 import { pacienteCombinaComBusca } from "../../utils/busca";
 import api from "../../services/api";
+import { useAtualizacaoAutomatica } from "../../hooks/useAtualizacaoAutomatica";
 import { situacaoVencimento } from "../../components/receitas/vencimento";
 import { AcompanhamentoPaciente, Paciente, Tratamento } from "../../types";
 
@@ -54,6 +55,7 @@ export default function ProntuariosPacientesPage(): React.ReactElement {
   useEffect(() => {
     carregar();
   }, []);
+  useAtualizacaoAutomatica(carregar, 15000);
 
   async function carregar() {
     try {
