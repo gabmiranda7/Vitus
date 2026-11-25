@@ -54,7 +54,13 @@ export default function TabNavigator() {
           borderTopColor: isDark ? "#253140" : "#d3dce6",
         },
         headerLeft: () => (
-          <LogoInicio onPress={() => navigation.navigate("Dashboard")} />
+          <LogoInicio
+            onPress={() =>
+              navigation.navigate(
+                usuario?.perfil === "Medico" ? "Agenda" : "Dashboard",
+              )
+            }
+          />
         ),
         headerRight: () => (
           <TouchableOpacity
@@ -66,20 +72,23 @@ export default function TabNavigator() {
         ),
       })}
     >
-      <Tab.Screen
-        name="Dashboard"
-        component={DashboardScreen}
-        options={{
-          title: "Início",
-          tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons
-              name="view-dashboard"
-              color={color}
-              size={size}
-            />
-          ),
-        }}
-      />
+      {/* O médico entra direto pela Minha Agenda, sem tela de início */}
+      {usuario?.perfil !== "Medico" && (
+        <Tab.Screen
+          name="Dashboard"
+          component={DashboardScreen}
+          options={{
+            title: "Início",
+            tabBarIcon: ({ color, size }) => (
+              <MaterialCommunityIcons
+                name="view-dashboard"
+                color={color}
+                size={size}
+              />
+            ),
+          }}
+        />
+      )}
 
       {usuario?.perfil === "Medico" && (
         <Tab.Screen
