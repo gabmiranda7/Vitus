@@ -20,6 +20,7 @@ namespace Vitus.Tests.UseCases.Exames
         private readonly Mock<IAuditoriaService> _auditoriaMock = new();
         private readonly Mock<IConsultaRepository> _consultaRepoMock = new();
         private readonly Mock<IConsultaAcessoService> _acessoMock = new();
+        private readonly Mock<IUsuarioContexto> _usuarioContextoMock = new();
         private readonly AnalisarExameIaUseCase _useCase;
         private readonly Paciente _paciente = EntidadeFactory.CriarPaciente();
 
@@ -47,7 +48,8 @@ namespace Vitus.Tests.UseCases.Exames
             _useCase = new AnalisarExameIaUseCase(
                 _exameRepoMock.Object, _prontuarioRepoMock.Object, _pacienteRepoMock.Object,
                 _arquivoMock.Object, _extratorMock.Object, _analisadorMock.Object,
-                _auditoriaMock.Object, _consultaRepoMock.Object, _acessoMock.Object);
+                _auditoriaMock.Object, _consultaRepoMock.Object, _acessoMock.Object,
+                _usuarioContextoMock.Object);
         }
 
         private Exame ExameComArquivos(params string[] nomes)

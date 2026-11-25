@@ -1,4 +1,6 @@
 ﻿using System.Text;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using Vitus.Application.UseCases.Exames.RegistrarExame;
 using Vitus.Communication.Exame.Responses;
 using Vitus.Domain.Entities;
@@ -21,6 +23,7 @@ namespace Vitus.Application.UseCases.Exames.AnalisarExameIa
         private readonly IAuditoriaService _auditoriaService;
         private readonly IConsultaRepository _consultaRepository;
         private readonly IConsultaAcessoService _acessoService;
+        private readonly IUsuarioContexto _usuarioContexto;
 
         public AnalisarExameIaUseCase(
             IExameRepository exameRepository,
@@ -31,8 +34,10 @@ namespace Vitus.Application.UseCases.Exames.AnalisarExameIa
             IAnalisadorExameIaService analisadorIaService,
             IAuditoriaService auditoriaService,
             IConsultaRepository consultaRepository,
-            IConsultaAcessoService acessoService)
+            IConsultaAcessoService acessoService,
+            IUsuarioContexto usuarioContexto)
         {
+            _usuarioContexto = usuarioContexto;
             _consultaRepository = consultaRepository;
             _acessoService = acessoService;
             _exameRepository = exameRepository;
@@ -115,7 +120,9 @@ namespace Vitus.Application.UseCases.Exames.AnalisarExameIa
 
             var analiseJson = await _analisadorIaService.AnalisarExamesAsync(documentos, contextoAnonimo, ct);
 
-            exame.RegistrarAnaliseIa(analiseJson);
+            // Guarda quem gerou a análise dentro do próprio JSON (sem precisar de nova coluna)
+            exame.RegistrarAnaliseIa(
+                AdicionarMedicoGerador(analiseJson, _usuarioContexto.UsuarioNome)); 
             await _exameRepository.Update(exame);
 
             await _auditoriaService.Registrar(
@@ -125,6 +132,27 @@ namespace Vitus.Application.UseCases.Exames.AnalisarExameIa
                 $"Prontuário {exame.ProntuarioId} ({documentos.Count} documento(s))");
 
             return RegistrarExameUseCase.MapToResponse(exame);
+        }
+
+        private static string AdicionarMedicoGerador(string analiseJson, string? nomeMedico)
+        {
+            if (string.IsNullOrWhiteSpace(nomeMedico))
+                return analiseJson;
+
+            try
+            {
+                if (JsonNode.Parse(analiseJson) is JsonObject objeto)
+                {
+                    objeto["geradoPorMedico"] = nomeMedico;
+                    return objeto.ToJsonString();
+                }
+            }
+            catch (JsonException)
+            {
+                // Resposta fora do formato esperado: mantém o JSON original
+            }
+
+            return analiseJson;
         }
 
         private static List<(string Caminho, string NomeOriginal)> ObterListaArquivos(Exame exame)
