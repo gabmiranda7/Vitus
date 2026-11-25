@@ -12,6 +12,7 @@ import {
   Button,
   Collapse,
   Divider,
+  Autocomplete,
   TextField,
   MenuItem,
   Select,
@@ -1732,30 +1733,36 @@ export default function ProntuarioConteudo({
                       sx={{ flex: "2 1 200px" }}
                     />
 
-                    {/* Seletor padronizado idêntico ao de Categoria, sem opção "Outro" */}
-                    <FormControl sx={{ flex: "2 1 220px" }} size="small">
-                      <InputLabel>Médico solicitante *</InputLabel>
-                      <Select
-                        value={form.medicoSolicitante}
-                        label="Médico solicitante *"
-                        onChange={(e) =>
-                          setForm((f) => ({
-                            ...f,
-                            medicoSolicitante: e.target.value,
-                          }))
-                        }
-                      >
-                        <MenuItem value="">
-                          <em>Selecione o médico...</em>
-                        </MenuItem>
-                        {medicos.map((m) => (
-                          <MenuItem key={m.id} value={m.nome}>
-                            {m.nome}{" "}
-                            {m.especialidade ? `(${m.especialidade})` : ""}
-                          </MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
+                    {/* Escolhe um médico cadastrado ou digita o nome (pedidos de fora da cidade) */}
+                    <Autocomplete
+                      freeSolo
+                      size="small"
+                      sx={{ flex: "2 1 220px" }}
+                      options={Array.from(new Set(medicos.map((m) => m.nome)))}
+                      inputValue={form.medicoSolicitante}
+                      onInputChange={(_, valor) =>
+                        setForm((f) => ({ ...f, medicoSolicitante: valor }))
+                      }
+                      renderOption={(props, nome) => {
+                        const { key, ...resto } = props;
+                        const medico = medicos.find((m) => m.nome === nome);
+                        return (
+                          <li key={key} {...resto}>
+                            {nome}
+                            {medico?.especialidade
+                              ? ` (${medico.especialidade})`
+                              : ""}
+                          </li>
+                        );
+                      }}
+                      renderInput={(params) => (
+                        <TextField
+                          {...params}
+                          label="Médico solicitante *"
+                          placeholder="Selecione ou digite o nome"
+                        />
+                      )}
+                    />
 
                     <TextField
                       label="Data do exame"

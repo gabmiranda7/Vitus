@@ -45,6 +45,7 @@ export interface AnaliseExameIa {
   parametrosAlterados: ParametroAlteradoIa[];
   parametrosNormais: string[];
   pontosDeAtencao: string[];
+  geradoPorMedico?: string;
 }
 
 export interface Exame {

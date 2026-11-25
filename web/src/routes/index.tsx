@@ -76,12 +76,7 @@ export default function AppRoutes() {
           path="/dashboard"
           element={
             <PrivateRoute
-              perfis={[
-                "Recepcionista",
-                "Enfermeiro",
-                "Medico",
-                "Administrador",
-              ]}
+              perfis={["Recepcionista", "Enfermeiro", "Administrador"]}
             >
               <DashboardPage />
             </PrivateRoute>

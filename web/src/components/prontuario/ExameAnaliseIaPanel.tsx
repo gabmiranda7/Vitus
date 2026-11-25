@@ -73,6 +73,12 @@ export default function ExameAnaliseIaPanel({
               dateStyle: "short",
               timeStyle: "short",
             })}
+            {analise.geradoPorMedico && (
+              <>
+                {" "}
+                por <strong>{analise.geradoPorMedico}</strong>
+              </>
+            )}
           </Typography>
         )}
       </Box>

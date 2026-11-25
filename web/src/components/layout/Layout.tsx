@@ -41,7 +41,7 @@ const menuItems = [
     label: "Dashboard",
     path: "/dashboard",
     icon: <DashboardIcon />,
-    perfis: ["Administrador", "Recepcionista", "Enfermeiro", "Medico"],
+    perfis: ["Administrador", "Recepcionista", "Enfermeiro"],
   },
   {
     label: "Auditoria",
