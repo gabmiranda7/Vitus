@@ -56,18 +56,6 @@ namespace Vitus.API.Controllers
             return NoContent();
         }
 
-        // Apelido temporário: o app mobile ainda chama DELETE. Pacientes não são mais excluídos, apenas inativados.
-        // Remover quando o mobile passar a usar PATCH {id}/inativar
-        [HttpDelete("{id}")]
-        [Authorize(Roles = "Recepcionista")]
-        public async Task<IActionResult> Delete(
-            [FromServices] InativarPacienteUseCase useCase,
-            Guid id)
-        {
-            await useCase.Execute(id);
-            return NoContent();
-        }
-
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(
             [FromServices] GetPacienteByIdUseCase useCase,
