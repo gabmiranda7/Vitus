@@ -37,6 +37,8 @@ import DownloadIcon from "@mui/icons-material/Download";
 import AddIcon from "@mui/icons-material/Add";
 import AccessAlarmIcon from "@mui/icons-material/AccessAlarm";
 import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import SearchIcon from "@mui/icons-material/Search";
 import api from "../../services/api";
 import { iniciais, idadeLabel } from "../../utils/pessoas";
 import { statusCores, statusLabels } from "../../utils/consulta";
@@ -241,6 +243,12 @@ export default function ProntuarioConteudo({
 
   // Inicia na aba passada por prop (padrão: 1 - Histórico)
   const [abaAtiva, setAbaAtiva] = useState(abaInicial);
+  // Dias do histórico e receitas recolhidos/expandidos (o mais recente abre por padrão)
+  const [diasAbertos, setDiasAbertos] = useState<Record<string, boolean>>({});
+  const [receitasAbertas, setReceitasAbertas] = useState<
+    Record<string, boolean>
+  >({});
+  const [buscaReceita, setBuscaReceita] = useState("");
   const [formularioAberto, setFormularioAberto] = useState(abrirNovoExame);
   const [form, setForm] = useState(exameVazio());
   const [medicos, setMedicos] = useState<Medico[]>([]);
@@ -279,6 +287,16 @@ export default function ProntuarioConteudo({
   );
   const tratamentos = prontuario.tratamentos ?? [];
 
+  const diaAberto = (chave: string, idx: number) =>
+    diasAbertos[chave] ?? idx === 0;
+  const todosDiasAbertos = grupos.every((g, i) => diaAberto(g.chave, i));
+  function alternarDia(chave: string, idx: number) {
+    setDiasAbertos((prev) => ({ ...prev, [chave]: !diaAberto(chave, idx) }));
+  }
+  function definirTodosDias(aberto: boolean) {
+    setDiasAbertos(Object.fromEntries(grupos.map((g) => [g.chave, aberto])));
+  }
+
   // Ponto de alerta na aba Tratamentos: vermelho se vencido (< 0), laranja se vence em até 30 dias
   const temVencido = tratamentos.some((t) => t.diasRestantes < 0);
   const temVencendo = tratamentos.some(
@@ -298,6 +316,16 @@ export default function ProntuarioConteudo({
     (a, b) =>
       new Date(b.dataEmissao).getTime() - new Date(a.dataEmissao).getTime(),
   );
+  const termoReceita = buscaReceita.trim().toLowerCase();
+  const receitasFiltradas = receitasOrdenadas.filter(
+    (r) =>
+      !termoReceita ||
+      r.medicamentos.some((m) =>
+        (m.nome ?? "").toLowerCase().includes(termoReceita),
+      ),
+  );
+  const receitaAberta = (id: string, idx: number) =>
+    receitasAbertas[id] ?? idx === 0;
 
   // Itens da aba Dados
   const dadosPaciente = paciente
@@ -800,6 +828,15 @@ export default function ProntuarioConteudo({
                 size="small"
                 color="primary"
               />
+              {grupos.length > 1 && (
+                <Button
+                  size="small"
+                  sx={{ ml: "auto" }}
+                  onClick={() => definirTodosDias(!todosDiasAbertos)}
+                >
+                  {todosDiasAbertos ? "Recolher todos" : "Expandir todos"}
+                </Button>
+              )}
             </Box>
 
             {grupos.length === 0 ? (
@@ -823,17 +860,25 @@ export default function ProntuarioConteudo({
                   <Box
                     key={grupo.chave}
                     sx={{
-                      mb: grupoIdx < grupos.length - 1 ? 4 : 0,
+                      mb:
+                        grupoIdx < grupos.length - 1
+                          ? diaAberto(grupo.chave, grupoIdx)
+                            ? 4
+                            : 2
+                          : 0,
                       position: "relative",
                       zIndex: 1,
                     }}
                   >
                     <Box
+                      onClick={() => alternarDia(grupo.chave, grupoIdx)}
                       sx={{
                         display: "flex",
                         alignItems: "center",
                         gap: 2,
-                        mb: 2,
+                        mb: diaAberto(grupo.chave, grupoIdx) ? 2 : 0,
+                        cursor: "pointer",
+                        userSelect: "none",
                       }}
                     >
                       <Box
@@ -861,8 +906,25 @@ export default function ProntuarioConteudo({
                           bgcolor: diaBg,
                           borderRadius: 2,
                           border: `1px solid ${timelineBorder}`,
+                          position: "relative",
+                          pr: 6,
+                          transition: "background-color 0.2s ease",
+                          "&:hover": { borderColor: "primary.main" },
                         }}
                       >
+                        <ExpandMoreIcon
+                          sx={{
+                            position: "absolute",
+                            right: 12,
+                            top: "50%",
+                            mt: "-12px",
+                            color: "text.secondary",
+                            transform: diaAberto(grupo.chave, grupoIdx)
+                              ? "rotate(180deg)"
+                              : "none",
+                            transition: "transform 0.25s ease",
+                          }}
+                        />
                         <Typography
                           variant="subtitle2"
                           sx={{ fontWeight: 700, color: "primary.main" }}
@@ -881,234 +943,176 @@ export default function ProntuarioConteudo({
                         </Typography>
                       </Box>
                     </Box>
-                    <Box
-                      sx={{
-                        pl: 7,
-                        display: "flex",
-                        flexDirection: "column",
-                        gap: 2,
-                      }}
+                    <Collapse
+                      in={diaAberto(grupo.chave, grupoIdx)}
+                      timeout={250}
+                      unmountOnExit
                     >
-                      {grupo.consultas.map(
-                        ({ consulta: c, triagem: t, receitas }) => {
-                          const cor = statusCores[c.status] ?? "#1976d2";
-                          return (
-                            <Paper
-                              key={c.id}
-                              variant="outlined"
-                              sx={{
-                                borderRadius: 2,
-                                overflow: "hidden",
-                                borderColor: timelineBorder,
-                                borderLeft: `4px solid ${cor}`,
-                              }}
-                            >
-                              <Box
+                      <Box
+                        sx={{
+                          pl: 7,
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: 2,
+                        }}
+                      >
+                        {grupo.consultas.map(
+                          ({ consulta: c, triagem: t, receitas }) => {
+                            const cor = statusCores[c.status] ?? "#1976d2";
+                            return (
+                              <Paper
+                                key={c.id}
+                                variant="outlined"
                                 sx={{
-                                  p: 2,
-                                  bgcolor: timelineBg,
-                                  display: "flex",
-                                  alignItems: "center",
-                                  justifyContent: "space-between",
-                                  flexWrap: "wrap",
-                                  gap: 1,
+                                  borderRadius: 2,
+                                  overflow: "hidden",
+                                  borderColor: timelineBorder,
+                                  borderLeft: `4px solid ${cor}`,
                                 }}
                               >
                                 <Box
                                   sx={{
-                                    display: "flex",
-                                    alignItems: "center",
-                                    gap: 1.5,
-                                  }}
-                                >
-                                  <Avatar
-                                    sx={{
-                                      width: 32,
-                                      height: 32,
-                                      bgcolor: "#1565c0",
-                                      fontSize: 12,
-                                      fontWeight: 700,
-                                    }}
-                                  >
-                                    {iniciais(c.nomeMedico)}
-                                  </Avatar>
-                                  <Box>
-                                    <Typography
-                                      variant="body2"
-                                      sx={{ fontWeight: 600 }}
-                                    >
-                                      {c.nomeMedico}
-                                    </Typography>
-                                    <Typography
-                                      variant="caption"
-                                      color="text.secondary"
-                                    >
-                                      Consulta às{" "}
-                                      {horaFormatada(c.dataConsulta)}
-                                    </Typography>
-                                  </Box>
-                                </Box>
-                                <Box
-                                  sx={{
-                                    display: "flex",
-                                    gap: 1,
-                                    alignItems: "center",
-                                    flexWrap: "wrap",
-                                  }}
-                                >
-                                  <Chip
-                                    label={statusLabels[c.status] ?? c.status}
-                                    size="small"
-                                    sx={{
-                                      bgcolor: cor,
-                                      color: "white",
-                                      fontWeight: 600,
-                                      fontSize: 11,
-                                    }}
-                                  />
-                                  {t && (
-                                    <Chip
-                                      icon={<MedicalServicesIcon />}
-                                      label="Triagem"
-                                      size="small"
-                                      sx={{
-                                        color: "#e65100",
-                                        borderColor: "#e65100",
-                                      }}
-                                      variant="outlined"
-                                    />
-                                  )}
-                                  {c.anotacoes && (
-                                    <Chip
-                                      icon={<EditNoteIcon />}
-                                      label="Anotações"
-                                      size="small"
-                                      color="info"
-                                      variant="outlined"
-                                    />
-                                  )}
-                                  {receitas.length > 0 && (
-                                    <Chip
-                                      icon={<MedicationIcon />}
-                                      label={`${receitas.length} receita(s)`}
-                                      size="small"
-                                      color="success"
-                                      variant="outlined"
-                                    />
-                                  )}
-                                </Box>
-                              </Box>
-                              {t && (
-                                <Box
-                                  sx={{
                                     p: 2,
-                                    borderTop: `1px solid ${timelineBorder}`,
-                                    bgcolor: isDark ? "#2d1a00" : "#fffaf5",
+                                    bgcolor: timelineBg,
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "space-between",
+                                    flexWrap: "wrap",
+                                    gap: 1,
                                   }}
                                 >
                                   <Box
                                     sx={{
                                       display: "flex",
                                       alignItems: "center",
-                                      gap: 1,
-                                      mb: 1.5,
+                                      gap: 1.5,
                                     }}
                                   >
-                                    <MedicalServicesIcon
-                                      sx={{ fontSize: 15, color: "#e65100" }}
-                                    />
-                                    <Typography
-                                      variant="caption"
+                                    <Avatar
                                       sx={{
+                                        width: 32,
+                                        height: 32,
+                                        bgcolor: "#1565c0",
+                                        fontSize: 12,
                                         fontWeight: 700,
-                                        color: "#e65100",
-                                        textTransform: "uppercase",
-                                        letterSpacing: 0.5,
                                       }}
                                     >
-                                      Triagem
-                                    </Typography>
-                                    <Typography
-                                      variant="caption"
-                                      color="text.secondary"
-                                      sx={{ ml: "auto" }}
-                                    >
-                                      Por:{" "}
-                                      <strong>{t.nomeEnfermeiro || "—"}</strong>
-                                    </Typography>
+                                      {iniciais(c.nomeMedico)}
+                                    </Avatar>
+                                    <Box>
+                                      <Typography
+                                        variant="body2"
+                                        sx={{ fontWeight: 600 }}
+                                      >
+                                        {c.nomeMedico}
+                                      </Typography>
+                                      <Typography
+                                        variant="caption"
+                                        color="text.secondary"
+                                      >
+                                        Consulta às{" "}
+                                        {horaFormatada(c.dataConsulta)}
+                                      </Typography>
+                                    </Box>
                                   </Box>
                                   <Box
                                     sx={{
                                       display: "flex",
-                                      gap: 3,
-                                      mb: t.observacoes ? 1.5 : 0,
+                                      gap: 1,
+                                      alignItems: "center",
+                                      flexWrap: "wrap",
+                                    }}
+                                  >
+                                    <Chip
+                                      label={statusLabels[c.status] ?? c.status}
+                                      size="small"
+                                      sx={{
+                                        bgcolor: cor,
+                                        color: "white",
+                                        fontWeight: 600,
+                                        fontSize: 11,
+                                      }}
+                                    />
+                                    {t && (
+                                      <Chip
+                                        icon={<MedicalServicesIcon />}
+                                        label="Triagem"
+                                        size="small"
+                                        sx={{
+                                          color: "#e65100",
+                                          borderColor: "#e65100",
+                                        }}
+                                        variant="outlined"
+                                      />
+                                    )}
+                                    {c.anotacoes && (
+                                      <Chip
+                                        icon={<EditNoteIcon />}
+                                        label="Anotações"
+                                        size="small"
+                                        color="info"
+                                        variant="outlined"
+                                      />
+                                    )}
+                                    {receitas.length > 0 && (
+                                      <Chip
+                                        icon={<MedicationIcon />}
+                                        label={`${receitas.length} receita(s)`}
+                                        size="small"
+                                        color="success"
+                                        variant="outlined"
+                                      />
+                                    )}
+                                  </Box>
+                                </Box>
+                                {t && (
+                                  <Box
+                                    sx={{
+                                      p: 2,
+                                      borderTop: `1px solid ${timelineBorder}`,
+                                      bgcolor: isDark ? "#2d1a00" : "#fffaf5",
                                     }}
                                   >
                                     <Box
                                       sx={{
                                         display: "flex",
                                         alignItems: "center",
-                                        gap: 0.75,
+                                        gap: 1,
+                                        mb: 1.5,
                                       }}
                                     >
-                                      <FavoriteIcon
-                                        sx={{
-                                          fontSize: 15,
-                                          color: "error.main",
-                                        }}
+                                      <MedicalServicesIcon
+                                        sx={{ fontSize: 15, color: "#e65100" }}
                                       />
-                                      <Box>
-                                        <Typography
-                                          variant="caption"
-                                          color="text.secondary"
-                                          sx={{
-                                            display: "block",
-                                            lineHeight: 1,
-                                          }}
-                                        >
-                                          Pressão
-                                        </Typography>
-                                        <Typography
-                                          variant="body2"
-                                          sx={{ fontWeight: 600 }}
-                                        >
-                                          {t.pressaoArterial}
-                                        </Typography>
-                                      </Box>
+                                      <Typography
+                                        variant="caption"
+                                        sx={{
+                                          fontWeight: 700,
+                                          color: "#e65100",
+                                          textTransform: "uppercase",
+                                          letterSpacing: 0.5,
+                                        }}
+                                      >
+                                        Triagem
+                                      </Typography>
+                                      <Typography
+                                        variant="caption"
+                                        color="text.secondary"
+                                        sx={{ ml: "auto" }}
+                                      >
+                                        Por:{" "}
+                                        <strong>
+                                          {t.nomeEnfermeiro || "—"}
+                                        </strong>
+                                      </Typography>
                                     </Box>
                                     <Box
                                       sx={{
                                         display: "flex",
-                                        alignItems: "center",
-                                        gap: 0.75,
+                                        gap: 3,
+                                        mb: t.observacoes ? 1.5 : 0,
                                       }}
                                     >
-                                      <ThermostatIcon
-                                        sx={{
-                                          fontSize: 15,
-                                          color: "warning.main",
-                                        }}
-                                      />
-                                      <Box>
-                                        <Typography
-                                          variant="caption"
-                                          color="text.secondary"
-                                          sx={{
-                                            display: "block",
-                                            lineHeight: 1,
-                                          }}
-                                        >
-                                          Temperatura
-                                        </Typography>
-                                        <Typography
-                                          variant="body2"
-                                          sx={{ fontWeight: 600 }}
-                                        >
-                                          {t.temperatura}°C
-                                        </Typography>
-                                      </Box>
-                                    </Box>
-                                    {t.glicemia != null && (
                                       <Box
                                         sx={{
                                           display: "flex",
@@ -1116,10 +1120,10 @@ export default function ProntuarioConteudo({
                                           gap: 0.75,
                                         }}
                                       >
-                                        <MonitorHeartIcon
+                                        <FavoriteIcon
                                           sx={{
                                             fontSize: 15,
-                                            color: "info.main",
+                                            color: "error.main",
                                           }}
                                         />
                                         <Box>
@@ -1131,220 +1135,288 @@ export default function ProntuarioConteudo({
                                               lineHeight: 1,
                                             }}
                                           >
-                                            Glicemia
+                                            Pressão
                                           </Typography>
                                           <Typography
                                             variant="body2"
                                             sx={{ fontWeight: 600 }}
                                           >
-                                            {t.glicemia} mg/dL
+                                            {t.pressaoArterial}
                                           </Typography>
                                         </Box>
                                       </Box>
+                                      <Box
+                                        sx={{
+                                          display: "flex",
+                                          alignItems: "center",
+                                          gap: 0.75,
+                                        }}
+                                      >
+                                        <ThermostatIcon
+                                          sx={{
+                                            fontSize: 15,
+                                            color: "warning.main",
+                                          }}
+                                        />
+                                        <Box>
+                                          <Typography
+                                            variant="caption"
+                                            color="text.secondary"
+                                            sx={{
+                                              display: "block",
+                                              lineHeight: 1,
+                                            }}
+                                          >
+                                            Temperatura
+                                          </Typography>
+                                          <Typography
+                                            variant="body2"
+                                            sx={{ fontWeight: 600 }}
+                                          >
+                                            {t.temperatura}°C
+                                          </Typography>
+                                        </Box>
+                                      </Box>
+                                      {t.glicemia != null && (
+                                        <Box
+                                          sx={{
+                                            display: "flex",
+                                            alignItems: "center",
+                                            gap: 0.75,
+                                          }}
+                                        >
+                                          <MonitorHeartIcon
+                                            sx={{
+                                              fontSize: 15,
+                                              color: "info.main",
+                                            }}
+                                          />
+                                          <Box>
+                                            <Typography
+                                              variant="caption"
+                                              color="text.secondary"
+                                              sx={{
+                                                display: "block",
+                                                lineHeight: 1,
+                                              }}
+                                            >
+                                              Glicemia
+                                            </Typography>
+                                            <Typography
+                                              variant="body2"
+                                              sx={{ fontWeight: 600 }}
+                                            >
+                                              {t.glicemia} mg/dL
+                                            </Typography>
+                                          </Box>
+                                        </Box>
+                                      )}
+                                    </Box>
+                                    {t.observacoes && (
+                                      <Box
+                                        sx={{
+                                          mt: 1.5,
+                                          p: 1.5,
+                                          bgcolor: paperBg,
+                                          borderRadius: 1,
+                                          borderLeft: "3px solid #e65100",
+                                        }}
+                                      >
+                                        <Typography
+                                          variant="caption"
+                                          color="text.secondary"
+                                          sx={{ fontStyle: "italic" }}
+                                        >
+                                          "{t.observacoes}"
+                                        </Typography>
+                                      </Box>
                                     )}
                                   </Box>
-                                  {t.observacoes && (
+                                )}
+                                {c.anotacoes && (
+                                  <Box
+                                    sx={{
+                                      p: 2,
+                                      borderTop: `1px solid ${timelineBorder}`,
+                                    }}
+                                  >
                                     <Box
                                       sx={{
-                                        mt: 1.5,
+                                        display: "flex",
+                                        alignItems: "center",
+                                        gap: 0.5,
+                                        mb: 1,
+                                      }}
+                                    >
+                                      <EditNoteIcon
+                                        fontSize="small"
+                                        color="info"
+                                      />
+                                      <Typography
+                                        variant="caption"
+                                        sx={{
+                                          fontWeight: 600,
+                                          color: "info.main",
+                                          textTransform: "uppercase",
+                                          letterSpacing: 0.5,
+                                        }}
+                                      >
+                                        Anotações Clínicas
+                                      </Typography>
+                                    </Box>
+                                    <Paper
+                                      variant="outlined"
+                                      sx={{
                                         p: 1.5,
                                         bgcolor: paperBg,
                                         borderRadius: 1,
-                                        borderLeft: "3px solid #e65100",
                                       }}
                                     >
                                       <Typography
+                                        variant="body2"
+                                        sx={{
+                                          whiteSpace: "pre-wrap",
+                                          lineHeight: 1.6,
+                                        }}
+                                      >
+                                        {c.anotacoes}
+                                      </Typography>
+                                    </Paper>
+                                  </Box>
+                                )}
+                                {receitas.length > 0 && (
+                                  <Box
+                                    sx={{
+                                      p: 2,
+                                      borderTop: `1px solid ${timelineBorder}`,
+                                    }}
+                                  >
+                                    <Box
+                                      sx={{
+                                        display: "flex",
+                                        alignItems: "center",
+                                        gap: 0.5,
+                                        mb: 1.5,
+                                      }}
+                                    >
+                                      <MedicationIcon
+                                        fontSize="small"
+                                        color="success"
+                                      />
+                                      <Typography
                                         variant="caption"
+                                        sx={{
+                                          fontWeight: 600,
+                                          color: "success.main",
+                                          textTransform: "uppercase",
+                                          letterSpacing: 0.5,
+                                        }}
+                                      >
+                                        Receitas Prescritas
+                                      </Typography>
+                                    </Box>
+                                    {receitas.map((receita) => {
+                                      const medsAgrupados = agruparMedicamentos(
+                                        receita.medicamentos,
+                                      );
+                                      return (
+                                        <Box
+                                          key={receita.id}
+                                          sx={{
+                                            display: "flex",
+                                            flexWrap: "wrap",
+                                            gap: 1,
+                                            mb: 1,
+                                          }}
+                                        >
+                                          {medsAgrupados.map((m, i) => (
+                                            <Box
+                                              key={i}
+                                              sx={{
+                                                flex: "1 1 180px",
+                                                maxWidth: {
+                                                  xs: "100%",
+                                                  sm: "calc(50% - 4px)",
+                                                  md: "calc(33.33% - 5px)",
+                                                },
+                                              }}
+                                            >
+                                              <Paper
+                                                variant="outlined"
+                                                sx={{
+                                                  p: 1.5,
+                                                  borderRadius: 1,
+                                                  bgcolor: paperBg,
+                                                }}
+                                              >
+                                                <Box
+                                                  sx={{
+                                                    display: "flex",
+                                                    alignItems: "center",
+                                                    justifyContent:
+                                                      "space-between",
+                                                    gap: 1,
+                                                  }}
+                                                >
+                                                  <Typography
+                                                    variant="body2"
+                                                    sx={{ fontWeight: 600 }}
+                                                  >
+                                                    {m.nome}
+                                                  </Typography>
+                                                  {m.ocorrencias > 1 && (
+                                                    <Chip
+                                                      label={`${m.ocorrencias}x`}
+                                                      size="small"
+                                                      color="success"
+                                                      sx={{
+                                                        height: 18,
+                                                        fontSize: 10,
+                                                        fontWeight: 700,
+                                                      }}
+                                                    />
+                                                  )}
+                                                </Box>
+                                                <Typography
+                                                  variant="caption"
+                                                  color="text.secondary"
+                                                >
+                                                  {[m.dosagem, m.posologia]
+                                                    .filter(Boolean)
+                                                    .join(" · ")}
+                                                </Typography>
+                                              </Paper>
+                                            </Box>
+                                          ))}
+                                        </Box>
+                                      );
+                                    })}
+                                  </Box>
+                                )}
+                                {!t &&
+                                  !c.anotacoes &&
+                                  receitas.length === 0 && (
+                                    <Box
+                                      sx={{
+                                        p: 2,
+                                        borderTop: `1px solid ${timelineBorder}`,
+                                      }}
+                                    >
+                                      <Typography
+                                        variant="body2"
                                         color="text.secondary"
                                         sx={{ fontStyle: "italic" }}
                                       >
-                                        "{t.observacoes}"
+                                        Nenhuma anotação ou receita registrada.
                                       </Typography>
                                     </Box>
                                   )}
-                                </Box>
-                              )}
-                              {c.anotacoes && (
-                                <Box
-                                  sx={{
-                                    p: 2,
-                                    borderTop: `1px solid ${timelineBorder}`,
-                                  }}
-                                >
-                                  <Box
-                                    sx={{
-                                      display: "flex",
-                                      alignItems: "center",
-                                      gap: 0.5,
-                                      mb: 1,
-                                    }}
-                                  >
-                                    <EditNoteIcon
-                                      fontSize="small"
-                                      color="info"
-                                    />
-                                    <Typography
-                                      variant="caption"
-                                      sx={{
-                                        fontWeight: 600,
-                                        color: "info.main",
-                                        textTransform: "uppercase",
-                                        letterSpacing: 0.5,
-                                      }}
-                                    >
-                                      Anotações Clínicas
-                                    </Typography>
-                                  </Box>
-                                  <Paper
-                                    variant="outlined"
-                                    sx={{
-                                      p: 1.5,
-                                      bgcolor: paperBg,
-                                      borderRadius: 1,
-                                    }}
-                                  >
-                                    <Typography
-                                      variant="body2"
-                                      sx={{
-                                        whiteSpace: "pre-wrap",
-                                        lineHeight: 1.6,
-                                      }}
-                                    >
-                                      {c.anotacoes}
-                                    </Typography>
-                                  </Paper>
-                                </Box>
-                              )}
-                              {receitas.length > 0 && (
-                                <Box
-                                  sx={{
-                                    p: 2,
-                                    borderTop: `1px solid ${timelineBorder}`,
-                                  }}
-                                >
-                                  <Box
-                                    sx={{
-                                      display: "flex",
-                                      alignItems: "center",
-                                      gap: 0.5,
-                                      mb: 1.5,
-                                    }}
-                                  >
-                                    <MedicationIcon
-                                      fontSize="small"
-                                      color="success"
-                                    />
-                                    <Typography
-                                      variant="caption"
-                                      sx={{
-                                        fontWeight: 600,
-                                        color: "success.main",
-                                        textTransform: "uppercase",
-                                        letterSpacing: 0.5,
-                                      }}
-                                    >
-                                      Receitas Prescritas
-                                    </Typography>
-                                  </Box>
-                                  {receitas.map((receita) => {
-                                    const medsAgrupados = agruparMedicamentos(
-                                      receita.medicamentos,
-                                    );
-                                    return (
-                                      <Box
-                                        key={receita.id}
-                                        sx={{
-                                          display: "flex",
-                                          flexWrap: "wrap",
-                                          gap: 1,
-                                          mb: 1,
-                                        }}
-                                      >
-                                        {medsAgrupados.map((m, i) => (
-                                          <Box
-                                            key={i}
-                                            sx={{
-                                              flex: "1 1 180px",
-                                              maxWidth: {
-                                                xs: "100%",
-                                                sm: "calc(50% - 4px)",
-                                                md: "calc(33.33% - 5px)",
-                                              },
-                                            }}
-                                          >
-                                            <Paper
-                                              variant="outlined"
-                                              sx={{
-                                                p: 1.5,
-                                                borderRadius: 1,
-                                                bgcolor: paperBg,
-                                              }}
-                                            >
-                                              <Box
-                                                sx={{
-                                                  display: "flex",
-                                                  alignItems: "center",
-                                                  justifyContent:
-                                                    "space-between",
-                                                  gap: 1,
-                                                }}
-                                              >
-                                                <Typography
-                                                  variant="body2"
-                                                  sx={{ fontWeight: 600 }}
-                                                >
-                                                  {m.nome}
-                                                </Typography>
-                                                {m.ocorrencias > 1 && (
-                                                  <Chip
-                                                    label={`${m.ocorrencias}x`}
-                                                    size="small"
-                                                    color="success"
-                                                    sx={{
-                                                      height: 18,
-                                                      fontSize: 10,
-                                                      fontWeight: 700,
-                                                    }}
-                                                  />
-                                                )}
-                                              </Box>
-                                              <Typography
-                                                variant="caption"
-                                                color="text.secondary"
-                                              >
-                                                {[m.dosagem, m.posologia]
-                                                  .filter(Boolean)
-                                                  .join(" · ")}
-                                              </Typography>
-                                            </Paper>
-                                          </Box>
-                                        ))}
-                                      </Box>
-                                    );
-                                  })}
-                                </Box>
-                              )}
-                              {!t && !c.anotacoes && receitas.length === 0 && (
-                                <Box
-                                  sx={{
-                                    p: 2,
-                                    borderTop: `1px solid ${timelineBorder}`,
-                                  }}
-                                >
-                                  <Typography
-                                    variant="body2"
-                                    color="text.secondary"
-                                    sx={{ fontStyle: "italic" }}
-                                  >
-                                    Nenhuma anotação ou receita registrada.
-                                  </Typography>
-                                </Box>
-                              )}
-                            </Paper>
-                          );
-                        },
-                      )}
-                    </Box>
+                              </Paper>
+                            );
+                          },
+                        )}
+                      </Box>
+                    </Collapse>
                   </Box>
                 ))}
               </Box>
@@ -1374,6 +1446,28 @@ export default function ProntuarioConteudo({
               />
             </Box>
 
+            {receitasOrdenadas.length > 0 && (
+              <TextField
+                size="small"
+                fullWidth
+                placeholder="Buscar por medicamento..."
+                value={buscaReceita}
+                onChange={(e) => setBuscaReceita(e.target.value)}
+                sx={{ mb: 2.5 }}
+                slotProps={{
+                  input: {
+                    startAdornment: (
+                      <SearchIcon
+                        color="action"
+                        fontSize="small"
+                        sx={{ mr: 1 }}
+                      />
+                    ),
+                  },
+                }}
+              />
+            )}
+
             {receitasOrdenadas.length === 0 ? (
               <Box sx={{ textAlign: "center", py: 4, color: "text.secondary" }}>
                 <MedicationIcon sx={{ fontSize: 40, opacity: 0.15, mb: 1 }} />
@@ -1383,7 +1477,13 @@ export default function ProntuarioConteudo({
               </Box>
             ) : (
               <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                {receitasOrdenadas.map((receita) => {
+                {receitasFiltradas.length === 0 && (
+                  <Typography variant="body2" color="text.secondary">
+                    Nenhuma receita com esse medicamento.
+                  </Typography>
+                )}
+                {receitasFiltradas.map((receita, idxReceita) => {
+                  const aberta = receitaAberta(receita.id, idxReceita);
                   const consulta = consultaPorId.get(receita.consultaId);
                   const medsAgrupados = agruparMedicamentos(
                     receita.medicamentos,
@@ -1399,13 +1499,21 @@ export default function ProntuarioConteudo({
                       }}
                     >
                       <Box
+                        onClick={() =>
+                          setReceitasAbertas((prev) => ({
+                            ...prev,
+                            [receita.id]: !aberta,
+                          }))
+                        }
                         sx={{
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "space-between",
                           flexWrap: "wrap",
                           gap: 1,
-                          mb: 1.5,
+                          mb: aberta ? 1.5 : 0,
+                          cursor: "pointer",
+                          userSelect: "none",
                         }}
                       >
                         <Box>
@@ -1425,94 +1533,109 @@ export default function ProntuarioConteudo({
                             </Typography>
                           )}
                         </Box>
-                        <Chip
-                          label={`${medsAgrupados.length} medicamento(s)`}
-                          size="small"
-                          color="success"
-                          variant="outlined"
-                        />
+                        <Box
+                          sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                        >
+                          <Chip
+                            label={`${medsAgrupados.length} medicamento(s)`}
+                            size="small"
+                            color="success"
+                            variant="outlined"
+                          />
+                          <ExpandMoreIcon
+                            sx={{
+                              color: "text.secondary",
+                              transform: aberta ? "rotate(180deg)" : "none",
+                              transition: "transform 0.25s ease",
+                            }}
+                          />
+                        </Box>
                       </Box>
 
-                      <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1.5 }}>
-                        {medsAgrupados.map((m, idx) => (
-                          <Box
-                            key={idx}
-                            sx={{
-                              flex: "1 1 220px",
-                              maxWidth: {
-                                xs: "100%",
-                                sm: "calc(50% - 6px)",
-                                md: "calc(33.33% - 8px)",
-                              },
-                            }}
-                          >
-                            <Paper
-                              variant="outlined"
+                      <Collapse in={aberta} timeout={250} unmountOnExit>
+                        <Box
+                          sx={{ display: "flex", flexWrap: "wrap", gap: 1.5 }}
+                        >
+                          {medsAgrupados.map((m, idx) => (
+                            <Box
+                              key={idx}
                               sx={{
-                                p: 1.5,
-                                borderRadius: 1.5,
-                                bgcolor: timelineBg,
-                                height: "100%",
+                                flex: "1 1 220px",
+                                maxWidth: {
+                                  xs: "100%",
+                                  sm: "calc(50% - 6px)",
+                                  md: "calc(33.33% - 8px)",
+                                },
                               }}
                             >
-                              <Box
+                              <Paper
+                                variant="outlined"
                                 sx={{
-                                  display: "flex",
-                                  alignItems: "center",
-                                  justifyContent: "space-between",
-                                  gap: 1,
+                                  p: 1.5,
+                                  borderRadius: 1.5,
+                                  bgcolor: timelineBg,
+                                  height: "100%",
                                 }}
                               >
-                                <Typography
-                                  variant="body2"
-                                  sx={{ fontWeight: 700 }}
+                                <Box
+                                  sx={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "space-between",
+                                    gap: 1,
+                                  }}
                                 >
-                                  {m.nome}
-                                </Typography>
-                                {m.ocorrencias > 1 && (
-                                  <Chip
-                                    label={`${m.ocorrencias}x`}
-                                    size="small"
-                                    color="success"
-                                    sx={{
-                                      height: 20,
-                                      fontSize: 11,
-                                      fontWeight: 700,
-                                    }}
-                                  />
-                                )}
-                              </Box>
-                              <Typography
-                                variant="caption"
-                                color="text.secondary"
-                                sx={{ display: "block", mt: 0.25 }}
-                              >
-                                {[m.dosagem, m.posologia]
-                                  .filter(Boolean)
-                                  .join(" · ")}
-                              </Typography>
-                              {m.quantidade && (
+                                  <Typography
+                                    variant="body2"
+                                    sx={{ fontWeight: 700 }}
+                                  >
+                                    {m.nome}
+                                  </Typography>
+                                  {m.ocorrencias > 1 && (
+                                    <Chip
+                                      label={`${m.ocorrencias}x`}
+                                      size="small"
+                                      color="success"
+                                      sx={{
+                                        height: 20,
+                                        fontSize: 11,
+                                        fontWeight: 700,
+                                      }}
+                                    />
+                                  )}
+                                </Box>
                                 <Typography
                                   variant="caption"
                                   color="text.secondary"
-                                  sx={{ display: "block" }}
+                                  sx={{ display: "block", mt: 0.25 }}
                                 >
-                                  Qtd: {m.quantidade}
+                                  {[m.dosagem, m.posologia]
+                                    .filter(Boolean)
+                                    .join(" · ")}
                                 </Typography>
-                              )}
-                              {m.acompanharVencimento && m.validadeDias && (
-                                <Chip
-                                  label={`Validade: ${m.validadeDias} dias`}
-                                  size="small"
-                                  color="info"
-                                  variant="outlined"
-                                  sx={{ mt: 1, fontSize: 10, height: 20 }}
-                                />
-                              )}
-                            </Paper>
-                          </Box>
-                        ))}
-                      </Box>
+                                {m.quantidade && (
+                                  <Typography
+                                    variant="caption"
+                                    color="text.secondary"
+                                    sx={{ display: "block" }}
+                                  >
+                                    Qtd: {m.quantidade}
+                                  </Typography>
+                                )}
+                                {m.acompanharVencimento && m.validadeDias && (
+                                  <Chip
+                                    label={`Validade: ${m.validadeDias} dias`}
+                                    size="small"
+                                    color="info"
+                                    variant="outlined"
+                                    sx={{ mt: 1, fontSize: 10, height: 20 }}
+                                  />
+                                )}
+                              </Paper>
+                            </Box>
+                          ))}
+                        </Box>
+                      </Collapse>
                     </Paper>
                   );
                 })}
