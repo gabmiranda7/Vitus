@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { View, ScrollView, StyleSheet } from "react-native";
 import {
   Text,
@@ -16,6 +16,7 @@ import {
   useTheme,
 } from "react-native-paper";
 import api from "../../services/api";
+import { useAtualizacaoAutomatica } from "../../hooks/useAtualizacaoAutomatica";
 import { Paciente } from "../../types";
 import { cores, corAvatar, iniciais } from "../../theme";
 import ModalComTeclado from "../../components/ModalComTeclado";
@@ -104,9 +105,7 @@ export default function PacientesScreen() {
   const [alterando, setAlterando] = useState(false);
   const [feedback, setFeedback] = useState("");
 
-  useEffect(() => {
-    carregar();
-  }, []);
+  useAtualizacaoAutomatica(carregar, 15000);
 
   async function carregar() {
     try {

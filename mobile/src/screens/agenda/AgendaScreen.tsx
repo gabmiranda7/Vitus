@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from "react";
+import React, { useState } from "react";
 import { View, ScrollView, StyleSheet, RefreshControl } from "react-native";
 import {
   Text,
@@ -10,9 +10,10 @@ import {
   useTheme,
 } from "react-native-paper";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { useNavigation, useFocusEffect } from "@react-navigation/native";
+import { useNavigation } from "@react-navigation/native";
 import { useAuth } from "../../contexts/AuthContext";
 import api from "../../services/api";
+import { useAtualizacaoAutomatica } from "../../hooks/useAtualizacaoAutomatica";
 import { Consulta, statusCores, statusLabels } from "../../types";
 import { cores, corAvatar, iniciais } from "../../theme";
 import ConfirmModal from "../../components/ConfirmModal";
@@ -35,13 +36,7 @@ export default function AgendaScreen() {
   const [finalizando, setFinalizando] = useState<Consulta | null>(null);
   const [processando, setProcessando] = useState(false);
 
-  useFocusEffect(
-    useCallback(() => {
-      carregar();
-      const interval = setInterval(carregar, 30000);
-      return () => clearInterval(interval);
-    }, []),
-  );
+  useAtualizacaoAutomatica(carregar, 15000);
 
   async function carregar() {
     try {

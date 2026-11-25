@@ -1,4 +1,4 @@
-import React, { useCallback, useState, useMemo } from "react";
+import React, { useState, useMemo } from "react";
 import {
   View,
   ScrollView,
@@ -16,9 +16,10 @@ import {
   useTheme,
 } from "react-native-paper";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { useFocusEffect, useNavigation } from "@react-navigation/native";
+import { useNavigation } from "@react-navigation/native";
 import { useAuth } from "../../contexts/AuthContext";
 import api from "../../services/api";
+import { useAtualizacaoAutomatica } from "../../hooks/useAtualizacaoAutomatica";
 import { Consulta, AuditoriaLog, statusCores, statusLabels } from "../../types";
 import { cores, iniciais } from "../../theme";
 import { acaoIcones, acaoCores, acaoLabel } from "../../utils/auditoria";
@@ -36,11 +37,7 @@ export default function DashboardScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [erro, setErro] = useState("");
 
-  useFocusEffect(
-    useCallback(() => {
-      carregar();
-    }, []),
-  );
+  useAtualizacaoAutomatica(carregar, 30000);
 
   async function carregar() {
     try {

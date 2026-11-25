@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useState, useMemo } from "react";
 import { View, ScrollView, StyleSheet, RefreshControl } from "react-native";
 import {
   Text,
@@ -14,6 +14,7 @@ import {
 } from "react-native-paper";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import api from "../../services/api";
+import { useAtualizacaoAutomatica } from "../../hooks/useAtualizacaoAutomatica";
 import { cores, corAvatar, iniciais } from "../../theme";
 import ConfirmModal from "../../components/ConfirmModal";
 
@@ -62,9 +63,7 @@ export default function AprovacoesScreen() {
   const [acao, setAcao] = useState<Acao | null>(null);
   const [processando, setProcessando] = useState(false);
 
-  useEffect(() => {
-    carregar();
-  }, []);
+  useAtualizacaoAutomatica(carregar, 30000);
 
   async function carregar() {
     try {

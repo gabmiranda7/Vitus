@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { View, ScrollView, StyleSheet, RefreshControl } from "react-native";
 import {
   Text,
@@ -10,6 +10,7 @@ import {
   useTheme,
 } from "react-native-paper";
 import api from "../../services/api";
+import { useAtualizacaoAutomatica } from "../../hooks/useAtualizacaoAutomatica";
 import { Medico } from "../../types";
 import { cores } from "../../theme";
 
@@ -47,9 +48,7 @@ export default function MedicosScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [erro, setErro] = useState("");
 
-  useEffect(() => {
-    carregar();
-  }, []);
+  useAtualizacaoAutomatica(carregar, 60000);
 
   async function carregar() {
     try {

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { View, ScrollView, StyleSheet } from "react-native";
 import {
   Text,
@@ -14,6 +14,7 @@ import {
 } from "react-native-paper";
 import { useNavigation } from "@react-navigation/native";
 import api from "../../services/api";
+import { useAtualizacaoAutomatica } from "../../hooks/useAtualizacaoAutomatica";
 import { AcompanhamentoPaciente, Paciente, Tratamento } from "../../types";
 import { cores, corAvatar, iniciais } from "../../theme";
 import { situacaoVencimento } from "../../utils/vencimento";
@@ -40,9 +41,7 @@ export default function PacientesProntuarioScreen() {
   const [filtrosVisiveis, setFiltrosVisiveis] = useState(false);
   const [erroLista, setErroLista] = useState("");
 
-  useEffect(() => {
-    carregar();
-  }, []);
+  useAtualizacaoAutomatica(carregar, 15000);
 
   async function carregar() {
     try {
