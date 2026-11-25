@@ -23,7 +23,6 @@ import {
   useTheme,
   alpha,
 } from "@mui/material";
-import LocalHospitalIcon from "@mui/icons-material/LocalHospital";
 import PersonIcon from "@mui/icons-material/Person";
 import EmailIcon from "@mui/icons-material/Email";
 import LockIcon from "@mui/icons-material/Lock";
@@ -34,6 +33,9 @@ import MedicalServicesIcon from "@mui/icons-material/MedicalServices";
 import VaccinesIcon from "@mui/icons-material/Vaccines";
 import SupportAgentIcon from "@mui/icons-material/SupportAgent";
 import api from "../../services/api";
+import LogoVitus from "../../components/LogoVitus";
+import SenhaForteIndicador from "../../components/SenhaForteIndicador";
+import { senhaEhForte } from "../../utils/senha";
 
 const perfis = [
   { value: "Medico", label: "Médico" },
@@ -80,6 +82,8 @@ export default function CadastroPage() {
       if (!nome.trim()) return setErro("Nome é obrigatório");
       if (!email.trim()) return setErro("Email é obrigatório");
       if (!senha.trim()) return setErro("Senha é obrigatória");
+      if (!senhaEhForte(senha))
+        return setErro("A senha não atende a todos os requisitos de segurança");
     }
     if (step === 1) {
       if (!perfil) return setErro("Selecione um perfil");
@@ -159,20 +163,7 @@ export default function CadastroPage() {
               gap: 1,
             }}
           >
-            <Box
-              sx={{
-                bgcolor: "primary.main",
-                borderRadius: "50%",
-                width: 64,
-                height: 64,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                boxShadow: `0 4px 20px ${alpha(theme.palette.primary.main, 0.4)}`,
-              }}
-            >
-              <LocalHospitalIcon sx={{ color: "white", fontSize: 34 }} />
-            </Box>
+            <LogoVitus size={72} />
             <Typography
               variant="h4"
               sx={{
@@ -219,7 +210,7 @@ export default function CadastroPage() {
                   InputProps={{
                     startAdornment: (
                       <InputAdornment position="start">
-                        <PersonIcon color="action" fontSize="small" />
+                        <EmailIcon color="action" fontSize="small" />
                       </InputAdornment>
                     ),
                   }}
@@ -231,12 +222,14 @@ export default function CadastroPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   sx={inputSx}
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <EmailIcon color="action" fontSize="small" />
-                      </InputAdornment>
-                    ),
+                  slotProps={{
+                    input: {
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <EmailIcon color="action" fontSize="small" />
+                        </InputAdornment>
+                      ),
+                    },
                   }}
                 />
                 <TextField
@@ -246,28 +239,31 @@ export default function CadastroPage() {
                   value={senha}
                   onChange={(e) => setSenha(e.target.value)}
                   sx={inputSx}
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <LockIcon color="action" fontSize="small" />
-                      </InputAdornment>
-                    ),
-                    endAdornment: (
-                      <InputAdornment position="end">
-                        <IconButton
-                          size="small"
-                          onClick={() => setMostrarSenha(!mostrarSenha)}
-                        >
-                          {mostrarSenha ? (
-                            <VisibilityOffIcon fontSize="small" />
-                          ) : (
-                            <VisibilityIcon fontSize="small" />
-                          )}
-                        </IconButton>
-                      </InputAdornment>
-                    ),
+                  slotProps={{
+                    input: {
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <LockIcon color="action" fontSize="small" />
+                        </InputAdornment>
+                      ),
+                      endAdornment: (
+                        <InputAdornment position="end">
+                          <IconButton
+                            size="small"
+                            onClick={() => setMostrarSenha(!mostrarSenha)}
+                          >
+                            {mostrarSenha ? (
+                              <VisibilityOffIcon fontSize="small" />
+                            ) : (
+                              <VisibilityIcon fontSize="small" />
+                            )}
+                          </IconButton>
+                        </InputAdornment>
+                      ),
+                    },
                   }}
                 />
+                <SenhaForteIndicador senha={senha} />
               </Box>
             )}
 
@@ -296,12 +292,14 @@ export default function CadastroPage() {
                       onChange={(e) => setCrm(e.target.value)}
                       placeholder="Ex: CRM-MG 12345"
                       sx={inputSx}
-                      InputProps={{
-                        startAdornment: (
-                          <InputAdornment position="start">
-                            <BadgeIcon color="action" fontSize="small" />
-                          </InputAdornment>
-                        ),
+                      slotProps={{
+                        input: {
+                          startAdornment: (
+                            <InputAdornment position="start">
+                              <BadgeIcon color="action" fontSize="small" />
+                            </InputAdornment>
+                          ),
+                        },
                       }}
                     />
                     <TextField
@@ -323,12 +321,14 @@ export default function CadastroPage() {
                       onChange={(e) => setCoren(e.target.value)}
                       placeholder="Ex: COREN-MG 123456"
                       sx={inputSx}
-                      InputProps={{
-                        startAdornment: (
-                          <InputAdornment position="start">
-                            <BadgeIcon color="action" fontSize="small" />
-                          </InputAdornment>
-                        ),
+                      slotProps={{
+                        input: {
+                          startAdornment: (
+                            <InputAdornment position="start">
+                              <BadgeIcon color="action" fontSize="small" />
+                            </InputAdornment>
+                          ),
+                        },
                       }}
                     />
                     <TextField

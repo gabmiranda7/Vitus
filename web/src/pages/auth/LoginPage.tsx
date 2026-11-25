@@ -15,13 +15,14 @@ import {
   useTheme,
   alpha,
 } from "@mui/material";
-import LocalHospitalIcon from "@mui/icons-material/LocalHospital";
 import EmailIcon from "@mui/icons-material/Email";
 import LockIcon from "@mui/icons-material/Lock";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
 import { useAuth } from "../../contexts/AuthContext";
 import api from "../../services/api";
+import LogoVitus from "../../components/LogoVitus";
+import { rotaInicial } from "../../utils/rotaInicial";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -40,12 +41,7 @@ export default function LoginPage() {
     try {
       const response = await api.post("/api/auth/login", { email, senha });
       login(response.data);
-      const perfil = response.data.perfil;
-      if (perfil === "Recepcionista") navigate("/dashboard");
-      else if (perfil === "Enfermeiro") navigate("/dashboard");
-      else if (perfil === "Medico") navigate("/dashboard");
-      else if (perfil === "Administrador") navigate("/dashboard");
-      else navigate("/login");
+      navigate(rotaInicial(response.data.perfil));
     } catch (err: unknown) {
       const e = err as {
         mensagemBack?: string;
@@ -96,20 +92,7 @@ export default function LoginPage() {
               gap: 1,
             }}
           >
-            <Box
-              sx={{
-                bgcolor: "primary.main",
-                borderRadius: "50%",
-                width: 64,
-                height: 64,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                boxShadow: `0 4px 20px ${alpha(theme.palette.primary.main, 0.4)}`,
-              }}
-            >
-              <LocalHospitalIcon sx={{ color: "white", fontSize: 34 }} />
-            </Box>
+            <LogoVitus size={72} />
             <Typography
               variant="h4"
               sx={{
@@ -139,12 +122,14 @@ export default function LoginPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               sx={{ mb: 2, ...inputSx }}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <EmailIcon color="action" fontSize="small" />
-                  </InputAdornment>
-                ),
+              slotProps={{
+                input: {
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <EmailIcon color="action" fontSize="small" />
+                    </InputAdornment>
+                  ),
+                },
               }}
             />
 
@@ -156,26 +141,28 @@ export default function LoginPage() {
               onChange={(e) => setSenha(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleLogin()}
               sx={{ mb: 3, ...inputSx }}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <LockIcon color="action" fontSize="small" />
-                  </InputAdornment>
-                ),
-                endAdornment: (
-                  <InputAdornment position="end">
-                    <IconButton
-                      size="small"
-                      onClick={() => setMostrarSenha(!mostrarSenha)}
-                    >
-                      {mostrarSenha ? (
-                        <VisibilityOffIcon fontSize="small" />
-                      ) : (
-                        <VisibilityIcon fontSize="small" />
-                      )}
-                    </IconButton>
-                  </InputAdornment>
-                ),
+              slotProps={{
+                input: {
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <LockIcon color="action" fontSize="small" />
+                    </InputAdornment>
+                  ),
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton
+                        size="small"
+                        onClick={() => setMostrarSenha(!mostrarSenha)}
+                      >
+                        {mostrarSenha ? (
+                          <VisibilityOffIcon fontSize="small" />
+                        ) : (
+                          <VisibilityIcon fontSize="small" />
+                        )}
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                },
               }}
             />
 

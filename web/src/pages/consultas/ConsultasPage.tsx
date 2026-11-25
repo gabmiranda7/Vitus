@@ -805,8 +805,13 @@ export default function ConsultasPage() {
         anchor="right"
         open={drawerAberto}
         onClose={fecharDrawer}
-        PaperProps={{
-          sx: { width: { xs: "100%", sm: 400 }, borderRadius: "16px 0 0 16px" },
+        slotProps={{
+          paper: {
+            sx: {
+              width: { xs: "100%", sm: 400 },
+              borderRadius: "16px 0 0 16px",
+            },
+          },
         }}
       >
         {consultaDrawer &&

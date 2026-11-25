@@ -32,6 +32,7 @@ import FolderSharedIcon from "@mui/icons-material/FolderShared";
 import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
 import { useAuth } from "../../contexts/AuthContext";
 import AvatarUsuario from "./AvatarUsuario";
+import { rotaInicial } from "../../utils/rotaInicial";
 
 const DRAWER_WIDTH = 210;
 
@@ -138,7 +139,21 @@ export default function Layout({ children }: { children: ReactNode }) {
         }}
       >
         <Toolbar sx={{ justifyContent: "space-between" }}>
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+          <Box
+            onClick={() => navigate(rotaInicial(usuario?.perfil))}
+            role="link"
+            aria-label="Ir para a página inicial"
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              gap: 1.5,
+              cursor: "pointer",
+              userSelect: "none",
+              transition: "opacity 0.2s ease, transform 0.2s ease",
+              "&:hover": { opacity: 0.85 },
+              "&:active": { transform: "scale(0.97)" },
+            }}
+          >
             <Box
               component="img"
               src={logo}
@@ -271,10 +286,13 @@ export default function Layout({ children }: { children: ReactNode }) {
                     "& .MuiListItemIcon-root": { color: "white" },
                     "&:hover": { bgcolor: "primary.dark" },
                   },
+                  transition:
+                    "background-color 0.2s ease, transform 0.15s ease",
                   "&:hover": {
                     bgcolor: isDark
                       ? "rgba(255,255,255,0.06)"
-                      : "rgba(25,118,210,0.06)",
+                      : "rgba(25,118,210,0.08)",
+                    transform: "translateX(2px)",
                   },
                 }}
               >
@@ -290,8 +308,7 @@ export default function Layout({ children }: { children: ReactNode }) {
                   primary={item.label}
                   slotProps={{
                     primary: {
-                      fontSize: 14,
-                      fontWeight: ativo ? 600 : 400,
+                      sx: { fontSize: 14, fontWeight: ativo ? 600 : 400 },
                     },
                   }}
                 />
@@ -353,7 +370,19 @@ export default function Layout({ children }: { children: ReactNode }) {
         }}
       >
         <Toolbar />
-        {children}
+        <Box
+          key={location.pathname}
+          sx={{
+            animation: "paginaEntra 0.35s cubic-bezier(0.2, 0.7, 0.2, 1)",
+            "@keyframes paginaEntra": {
+              from: { opacity: 0, transform: "translateY(8px)" },
+              to: { opacity: 1, transform: "none" },
+            },
+            "@media (prefers-reduced-motion: reduce)": { animation: "none" },
+          }}
+        >
+          {children}
+        </Box>
       </Box>
     </Box>
   );

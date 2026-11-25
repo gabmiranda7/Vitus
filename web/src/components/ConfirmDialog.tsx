@@ -1,5 +1,4 @@
 import {
-  Avatar,
   Box,
   Button,
   CircularProgress,
@@ -7,39 +6,33 @@ import {
   DialogActions,
   DialogContent,
   Typography,
+  alpha,
+  useTheme,
 } from "@mui/material";
-import DeleteIcon from "@mui/icons-material/Delete";
-import CancelIcon from "@mui/icons-material/Cancel";
-import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import DeleteOutlinedIcon from "@mui/icons-material/DeleteOutlined";
+import WarningAmberRoundedIcon from "@mui/icons-material/WarningAmberRounded";
+import CheckCircleOutlinedIcon from "@mui/icons-material/CheckCircleOutlined";
 
 type Tipo = "excluir" | "cancelar" | "finalizar";
 
 const config: Record<
   Tipo,
-  {
-    cor: "error" | "success";
-    gradiente: string;
-    Icon: React.ElementType;
-    descricao: string;
-  }
+  { cor: "error" | "success"; Icon: React.ElementType; descricao: string }
 > = {
   excluir: {
     cor: "error",
-    gradiente: "linear-gradient(135deg, #991b1b 0%, #dc2626 100%)",
-    Icon: DeleteIcon,
-    descricao: "Ação permanente",
+    Icon: DeleteOutlinedIcon,
+    descricao: "Esta ação é permanente",
   },
   cancelar: {
     cor: "error",
-    gradiente: "linear-gradient(135deg, #991b1b 0%, #dc2626 100%)",
-    Icon: CancelIcon,
-    descricao: "Confirmação necessária",
+    Icon: WarningAmberRoundedIcon,
+    descricao: "Confirme para continuar",
   },
   finalizar: {
     cor: "success",
-    gradiente: "linear-gradient(135deg, #166534 0%, #16a34a 100%)",
-    Icon: CheckCircleIcon,
-    descricao: "Concluir operação",
+    Icon: CheckCircleOutlinedIcon,
+    descricao: "Confirme para concluir",
   },
 };
 
@@ -66,7 +59,9 @@ export default function ConfirmDialog({
   onClose,
   onConfirm,
 }: Props) {
-  const { cor, gradiente, Icon, descricao } = config[tipo];
+  const theme = useTheme();
+  const { cor, Icon, descricao } = config[tipo];
+  const principal = theme.palette[cor].main;
 
   return (
     <Dialog
@@ -74,156 +69,99 @@ export default function ConfirmDialog({
       onClose={loading ? undefined : onClose}
       maxWidth="xs"
       fullWidth
-      PaperProps={{
-        sx: {
-          borderRadius: 3,
-          overflow: "hidden",
-          boxShadow: "0 20px 60px rgba(0,0,0,0.18)",
+      slotProps={{
+        paper: {
+          sx: {
+            borderRadius: 4,
+            boxShadow: "0 24px 64px rgba(0,0,0,0.22)",
+            backgroundImage: "none",
+          },
         },
       }}
     >
-      {/* Cabeçalho */}
-      <Box
-        sx={{
-          background: gradiente,
-          px: 3,
-          py: 3.5,
-          position: "relative",
-          overflow: "hidden",
-          "&::after": {
-            content: '""',
-            position: "absolute",
-            width: 150,
-            height: 150,
-            borderRadius: "50%",
-            background: "rgba(255,255,255,0.07)",
-            right: -45,
-            top: -65,
-          },
-        }}
-      >
+      <DialogContent sx={{ px: 3.5, pt: 4, pb: 1, textAlign: "center" }}>
         <Box
           sx={{
+            width: 60,
+            height: 60,
+            mx: "auto",
+            mb: 2.5,
+            borderRadius: "50%",
             display: "flex",
             alignItems: "center",
-            gap: 2,
-            position: "relative",
-            zIndex: 1,
+            justifyContent: "center",
+            color: principal,
+            bgcolor: alpha(principal, 0.12),
+            animation: "iconePop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1)",
+            "@keyframes iconePop": {
+              from: { transform: "scale(0.5)", opacity: 0 },
+              to: { transform: "scale(1)", opacity: 1 },
+            },
+            "@media (prefers-reduced-motion: reduce)": { animation: "none" },
           }}
         >
-          <Avatar
-            sx={{
-              bgcolor: "rgba(255,255,255,0.18)",
-              width: 54,
-              height: 54,
-              border: "1px solid rgba(255,255,255,0.35)",
-              boxShadow: "0 4px 12px rgba(0,0,0,0.12)",
-            }}
-          >
-            <Icon sx={{ color: "white", fontSize: 28 }} />
-          </Avatar>
-
-          <Box sx={{ minWidth: 0 }}>
-            <Typography
-              variant="h6"
-              sx={{
-                color: "white",
-                fontWeight: 700,
-                lineHeight: 1.3,
-                letterSpacing: "-0.3px",
-              }}
-            >
-              {titulo}
-            </Typography>
-
-            <Typography
-              variant="caption"
-              sx={{
-                color: "rgba(255,255,255,0.8)",
-                fontWeight: 500,
-                letterSpacing: 0.3,
-              }}
-            >
-              {subtitulo || descricao}
-            </Typography>
-          </Box>
+          <Icon sx={{ fontSize: 30 }} />
         </Box>
-      </Box>
 
-      {/* Mensagem */}
-      <DialogContent
-        sx={{
-          px: 3,
-          pt: 3,
-          pb: 2,
-        }}
-      >
+        <Typography variant="h6" sx={{ fontWeight: 700, lineHeight: 1.3 }}>
+          {titulo}
+        </Typography>
+        <Typography
+          variant="caption"
+          sx={{
+            display: "block",
+            mt: 0.5,
+            mb: 1.5,
+            color: "text.disabled",
+            fontWeight: 500,
+          }}
+        >
+          {subtitulo || descricao}
+        </Typography>
         <Typography
           variant="body2"
-          sx={{
-            color: "text.secondary",
-            lineHeight: 1.8,
-            fontSize: "0.9rem",
-          }}
+          sx={{ color: "text.secondary", lineHeight: 1.7 }}
         >
           {mensagem}
         </Typography>
       </DialogContent>
 
-      {/* Ações */}
       <DialogActions
         sx={{
-          px: 3,
-          pb: 3,
-          pt: 1,
+          px: 3.5,
+          pt: 2.5,
+          pb: 3.5,
           gap: 1.5,
-          "& > :not(style) ~ :not(style)": {
-            ml: 0,
-          },
+          "& > :not(style) ~ :not(style)": { ml: 0 },
         }}
       >
         <Button
           onClick={onClose}
           variant="outlined"
+          color="inherit"
           fullWidth
           disabled={loading}
           sx={{
             minHeight: 44,
-            borderRadius: 2,
-            textTransform: "none",
-            fontWeight: 600,
             borderColor: "divider",
             color: "text.secondary",
-            "&:hover": {
-              borderColor: "text.secondary",
-              bgcolor: "action.hover",
-            },
           }}
         >
           Voltar
         </Button>
-
         <Button
           onClick={onConfirm}
           variant="contained"
           color={cor}
           fullWidth
           disabled={loading}
-          startIcon={
-            loading ? <CircularProgress size={17} color="inherit" /> : <Icon />
-          }
-          sx={{
-            minHeight: 44,
-            borderRadius: 2,
-            textTransform: "none",
-            fontWeight: 700,
-            boxShadow: "none",
-            "&:hover": {
-              boxShadow: "0 4px 12px rgba(0,0,0,0.16)",
-            },
-          }}
+          sx={{ minHeight: 44 }}
         >
-          {confirmarLabel}
+          {loading ? (
+            <CircularProgress size={20} color="inherit" />
+          ) : (
+            confirmarLabel
+          )}
         </Button>
       </DialogActions>
     </Dialog>

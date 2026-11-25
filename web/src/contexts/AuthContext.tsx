@@ -60,7 +60,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           primary: { main: "#1976d2" },
           ...(darkMode
             ? {}
-            : { background: { default: "#e9edf3", paper: "#f7f9fc" } }),
+            : { background: { default: "#dce3ed", paper: "#eef2f7" } }),
+        },
+        typography: {
+          button: { textTransform: "none", fontWeight: 600 },
+        },
+        components: {
+          MuiButton: {
+            defaultProps: { disableElevation: true },
+            styleOverrides: {
+              root: {
+                transition:
+                  "background-color 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease",
+                "&:active": { transform: "scale(0.97)" },
+              },
+            },
+          },
+          MuiCard: {
+            styleOverrides: {
+              root: {
+                transition: "box-shadow 0.25s ease, transform 0.25s ease",
+              },
+            },
+          },
+          MuiDialog: {
+            defaultProps: { transitionDuration: { enter: 220, exit: 150 } },
+          },
         },
       }),
     [darkMode],
