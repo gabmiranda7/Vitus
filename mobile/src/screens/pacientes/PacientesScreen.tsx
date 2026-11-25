@@ -89,7 +89,7 @@ export default function PacientesScreen() {
   const [pacientes, setPacientes] = useState<Paciente[]>([]);
   const [busca, setBusca] = useState("");
   const [loading, setLoading] = useState(true);
-  const [mostrarInativos, setMostrarInativos] = useState(false);
+  const [situacaoStatus, setSituacaoStatus] = useState("ativos");
 
   const [modalAberto, setModalAberto] = useState(false);
   const [editando, setEditando] = useState<Paciente | null>(null);
@@ -218,10 +218,14 @@ export default function PacientesScreen() {
   }
 
   const totalAtivos = pacientes.filter((p) => p.ativo !== false).length;
+  const totalInativos = pacientes.length - totalAtivos;
 
   const filtrados = pacientes.filter(
     (p) =>
-      (mostrarInativos || p.ativo !== false) &&
+      (situacaoStatus === "todos" ||
+        (situacaoStatus === "ativos"
+          ? p.ativo !== false
+          : p.ativo === false)) &&
       p.nome.toLowerCase().includes(busca.toLowerCase()),
   );
 
@@ -244,23 +248,17 @@ export default function PacientesScreen() {
         style={styles.busca}
       />
 
-      <View style={styles.filtroLinha}>
-        <Chip
-          compact
-          icon={mostrarInativos ? "eye-off" : "eye"}
-          selected={mostrarInativos}
-          onPress={() => setMostrarInativos((v) => !v)}
-        >
-          Mostrar inativos
-        </Chip>
-        <Text
-          variant="bodySmall"
-          style={{ color: theme.colors.onSurfaceVariant }}
-        >
-          {filtrados.length} de{" "}
-          {mostrarInativos ? pacientes.length : totalAtivos} paciente(s)
-        </Text>
-      </View>
+      <SegmentedButtons
+        value={situacaoStatus}
+        onValueChange={setSituacaoStatus}
+        density="small"
+        style={styles.situacao}
+        buttons={[
+          { value: "ativos", label: `Ativos (${totalAtivos})` },
+          { value: "inativos", label: `Inativos (${totalInativos})` },
+          { value: "todos", label: `Todos (${pacientes.length})` },
+        ]}
+      />
 
       <ScrollView contentContainerStyle={styles.lista}>
         {erroLista ? <Text style={styles.erroLista}>{erroLista}</Text> : null}
@@ -479,13 +477,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "transparent" },
   centro: { flex: 1, justifyContent: "center", alignItems: "center" },
   busca: { margin: 16, marginBottom: 8 },
-  filtroLinha: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 16,
-    marginBottom: 4,
-  },
+  situacao: { marginHorizontal: 16, marginBottom: 8 },
   lista: { padding: 16, paddingTop: 8, paddingBottom: 80 },
   erroLista: { color: cores.erro, textAlign: "center", marginBottom: 12 },
   card: { marginBottom: 10, borderRadius: 12 },
