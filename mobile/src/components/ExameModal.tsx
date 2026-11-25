@@ -1,9 +1,9 @@
-import React, { useEffect, useState } from 'react';
-import { View, StyleSheet } from 'react-native';
-import { Text, TextInput, Button, Menu } from 'react-native-paper';
-import * as DocumentPicker from 'expo-document-picker';
-import api from '../services/api';
-import ModalComTeclado from './ModalComTeclado';
+import React, { useEffect, useState } from "react";
+import { View, StyleSheet } from "react-native";
+import { Text, TextInput, Button, Menu } from "react-native-paper";
+import * as DocumentPicker from "expo-document-picker";
+import api from "../services/api";
+import ModalComTeclado from "./ModalComTeclado";
 
 interface Props {
   visible: boolean;
@@ -12,40 +12,57 @@ interface Props {
   onSucesso: () => void;
 }
 
-const CATEGORIAS = ['Sangue', 'Imagem', 'Urina', 'Cardiologico', 'Fisico', 'Outro'];
+const CATEGORIAS = [
+  "Sangue",
+  "Imagem",
+  "Urina",
+  "Cardiologico",
+  "Fisico",
+  "Outro",
+];
 const categoriaLabel: Record<string, string> = {
-  Sangue: 'Sangue', Imagem: 'Imagem', Urina: 'Urina',
-  Cardiologico: 'Cardiológico', Fisico: 'Físico', Outro: 'Outro',
+  Sangue: "Sangue",
+  Imagem: "Imagem",
+  Urina: "Urina",
+  Cardiologico: "Cardiológico",
+  Fisico: "Físico",
+  Outro: "Outro",
 };
 
 // Data local (yyyy-MM-dd): toISOString() usa UTC e muda de dia depois das 21h em Brasília
 function hojeLocal() {
   const d = new Date();
-  const pad = (n: number) => String(n).padStart(2, '0');
+  const pad = (n: number) => String(n).padStart(2, "0");
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
 
-export default function ExameModal({ visible, consultaId, onClose, onSucesso }: Props) {
-  const [categoria, setCategoria] = useState('Sangue');
+export default function ExameModal({
+  visible,
+  consultaId,
+  onClose,
+  onSucesso,
+}: Props) {
+  const [categoria, setCategoria] = useState("Sangue");
   const [menuAberto, setMenuAberto] = useState(false);
-  const [nome, setNome] = useState('');
-  const [descricao, setDescricao] = useState('');
-  const [medicoSolicitante, setMedicoSolicitante] = useState('');
-  const [observacoes, setObservacoes] = useState('');
-  const [arquivo, setArquivo] = useState<DocumentPicker.DocumentPickerAsset | null>(null);
+  const [nome, setNome] = useState("");
+  const [descricao, setDescricao] = useState("");
+  const [medicoSolicitante, setMedicoSolicitante] = useState("");
+  const [observacoes, setObservacoes] = useState("");
+  const [arquivo, setArquivo] =
+    useState<DocumentPicker.DocumentPickerAsset | null>(null);
   const [exameCriadoId, setExameCriadoId] = useState<string | null>(null);
-  const [erro, setErro] = useState('');
+  const [erro, setErro] = useState("");
   const [loading, setLoading] = useState(false);
 
   function limpar() {
-    setCategoria('Sangue');
-    setNome('');
-    setDescricao('');
-    setMedicoSolicitante('');
-    setObservacoes('');
+    setCategoria("Sangue");
+    setNome("");
+    setDescricao("");
+    setMedicoSolicitante("");
+    setObservacoes("");
     setArquivo(null);
     setExameCriadoId(null);
-    setErro('');
+    setErro("");
   }
 
   // Sempre começa limpo, para os dados de um paciente não aparecerem no seguinte
@@ -55,26 +72,27 @@ export default function ExameModal({ visible, consultaId, onClose, onSucesso }: 
 
   async function escolherArquivo() {
     const resultado = await DocumentPicker.getDocumentAsync({
-      type: ['application/pdf', 'image/jpeg', 'image/png'],
+      type: ["application/pdf", "image/jpeg", "image/png"],
     });
     if (!resultado.canceled && resultado.assets?.[0]) {
       const asset = resultado.assets[0];
       if (asset.size && asset.size > 10 * 1024 * 1024) {
-        setErro('Arquivo muito grande. Tamanho máximo: 10MB.');
+        setErro("Arquivo muito grande. Tamanho máximo: 10MB.");
         return;
       }
-      setErro('');
+      setErro("");
       setArquivo(asset);
     }
   }
 
   async function salvar() {
     if (!consultaId) return;
-    setErro('');
+    setErro("");
 
     if (!exameCriadoId) {
-      if (!nome.trim()) return setErro('Nome do exame é obrigatório');
-      if (!medicoSolicitante.trim()) return setErro('Médico solicitante é obrigatório');
+      if (!nome.trim()) return setErro("Nome do exame é obrigatório");
+      if (!medicoSolicitante.trim())
+        return setErro("Médico solicitante é obrigatório");
     }
 
     setLoading(true);
@@ -83,8 +101,10 @@ export default function ExameModal({ visible, consultaId, onClose, onSucesso }: 
 
       // O exame é criado uma única vez, mesmo que o envio do arquivo precise ser repetido
       if (!exameId) {
-        const rProntuario = await api.get(`/api/prontuarios/consulta/${consultaId}`);
-        const rExame = await api.post('/api/exames', {
+        const rProntuario = await api.get(
+          `/api/prontuarios/consulta/${consultaId}`,
+        );
+        const rExame = await api.post("/api/exames", {
           prontuarioId: rProntuario.data.id,
           consultaId,
           categoria,
@@ -100,20 +120,20 @@ export default function ExameModal({ visible, consultaId, onClose, onSucesso }: 
 
       if (arquivo && exameId) {
         const formData = new FormData();
-        formData.append('arquivo', {
+        formData.append("arquivo", {
           uri: arquivo.uri,
           name: arquivo.name,
-          type: arquivo.mimeType ?? 'application/octet-stream',
+          type: arquivo.mimeType ?? "application/octet-stream",
         } as any);
 
         try {
           await api.post(`/api/exames/${exameId}/arquivo`, formData, {
-            headers: { 'Content-Type': 'multipart/form-data' },
+            headers: { "Content-Type": "multipart/form-data" },
           });
         } catch (e: any) {
           setErro(
-            `O exame foi registrado, mas o arquivo não foi enviado. ${e.mensagemBack ?? ''} ` +
-            'Toque em Registrar para tentar enviar o arquivo de novo.'
+            `O exame foi registrado, mas o arquivo não foi enviado. ${e.mensagemBack ?? ""} ` +
+              "Toque em Registrar para tentar enviar o arquivo de novo.",
           );
           return;
         }
@@ -122,7 +142,7 @@ export default function ExameModal({ visible, consultaId, onClose, onSucesso }: 
       limpar();
       onSucesso();
     } catch (e: any) {
-      setErro(e.mensagemBack ?? 'Erro ao registrar exame');
+      setErro(e.mensagemBack ?? "Erro ao registrar exame");
     } finally {
       setLoading(false);
     }
@@ -130,26 +150,60 @@ export default function ExameModal({ visible, consultaId, onClose, onSucesso }: 
 
   return (
     <ModalComTeclado visible={visible} onDismiss={onClose}>
-      <Text variant="titleLarge" style={styles.titulo}>Registrar Exame</Text>
+      <Text variant="titleLarge" style={styles.titulo}>
+        Registrar Exame
+      </Text>
       {erro ? <Text style={styles.erro}>{erro}</Text> : null}
 
       <Menu
         visible={menuAberto}
         onDismiss={() => setMenuAberto(false)}
         anchor={
-          <Button mode="outlined" onPress={() => setMenuAberto(true)} style={styles.input}>
+          <Button
+            mode="outlined"
+            onPress={() => setMenuAberto(true)}
+            style={styles.input}
+          >
             Categoria: {categoriaLabel[categoria]}
           </Button>
         }
       >
-        {CATEGORIAS.map(c => (
-          <Menu.Item key={c} title={categoriaLabel[c]} onPress={() => { setCategoria(c); setMenuAberto(false); }} />
+        {CATEGORIAS.map((c) => (
+          <Menu.Item
+            key={c}
+            title={categoriaLabel[c]}
+            onPress={() => {
+              setCategoria(c);
+              setMenuAberto(false);
+            }}
+          />
         ))}
       </Menu>
 
-      <TextInput label="Nome do exame *" value={nome} onChangeText={setNome} mode="outlined" maxLength={200} style={styles.input} />
-      <TextInput label="Médico solicitante *" value={medicoSolicitante} onChangeText={setMedicoSolicitante} mode="outlined" maxLength={200} style={styles.input} />
-      <TextInput label="Descrição" value={descricao} onChangeText={setDescricao} mode="outlined" maxLength={500} style={styles.input} />
+      <TextInput
+        label="Nome do exame *"
+        value={nome}
+        onChangeText={setNome}
+        mode="outlined"
+        maxLength={200}
+        style={styles.input}
+      />
+      <TextInput
+        label="Médico solicitante *"
+        value={medicoSolicitante}
+        onChangeText={setMedicoSolicitante}
+        mode="outlined"
+        maxLength={200}
+        style={styles.input}
+      />
+      <TextInput
+        label="Descrição"
+        value={descricao}
+        onChangeText={setDescricao}
+        mode="outlined"
+        maxLength={500}
+        style={styles.input}
+      />
       <TextInput
         label="Observações / valores relevantes"
         value={observacoes}
@@ -161,13 +215,25 @@ export default function ExameModal({ visible, consultaId, onClose, onSucesso }: 
         style={styles.input}
       />
 
-      <Button mode="outlined" icon="paperclip" onPress={escolherArquivo} style={styles.input}>
-        {arquivo ? arquivo.name : 'Anexar arquivo (opcional)'}
+      <Button
+        mode="outlined"
+        icon="paperclip"
+        onPress={escolherArquivo}
+        style={styles.input}
+      >
+        {arquivo ? arquivo.name : "Anexar arquivo (opcional)"}
       </Button>
 
       <View style={styles.botoes}>
-        <Button onPress={onClose} disabled={loading}>Cancelar</Button>
-        <Button mode="contained" onPress={salvar} loading={loading} disabled={loading}>
+        <Button onPress={onClose} disabled={loading}>
+          Cancelar
+        </Button>
+        <Button
+          mode="contained"
+          onPress={salvar}
+          loading={loading}
+          disabled={loading}
+        >
           Registrar
         </Button>
       </View>
@@ -178,19 +244,19 @@ export default function ExameModal({ visible, consultaId, onClose, onSucesso }: 
 const styles = StyleSheet.create({
   titulo: {
     marginBottom: 16,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   input: {
     marginBottom: 12,
   },
   botoes: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
+    flexDirection: "row",
+    justifyContent: "flex-end",
     gap: 8,
     marginTop: 8,
   },
   erro: {
-    color: '#d32f2f',
+    color: "#d32f2f",
     marginBottom: 12,
   },
 });
