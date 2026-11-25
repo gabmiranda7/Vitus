@@ -370,6 +370,10 @@ namespace Vitus.Infrastructure.Migrations
                     b.HasKey("Id")
                         .HasName("pk_pacientes");
 
+                    b.HasIndex("Cpf")
+                        .IsUnique()
+                        .HasDatabaseName("ix_pacientes_cpf");
+
                     b.ToTable("pacientes", (string)null);
                 });
 

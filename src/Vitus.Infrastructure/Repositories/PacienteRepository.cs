@@ -1,5 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Npgsql;
 using Vitus.Domain.Entities;
+using Vitus.Domain.Exceptions;
 using Vitus.Domain.Interfaces;
 using Vitus.Infrastructure.Data;
 
@@ -7,6 +9,8 @@ namespace Vitus.Infrastructure.Repositories
 {
     public class PacienteRepository : IPacienteRepository
     {
+        private const string ViolacaoDeUnicidade = "23505";
+
         private readonly AppDbContext _context;
 
         public PacienteRepository(AppDbContext context)
@@ -17,13 +21,13 @@ namespace Vitus.Infrastructure.Repositories
         public async Task Add(Paciente paciente)
         {
             await _context.Pacientes.AddAsync(paciente);
-            await _context.SaveChangesAsync();
+            await Salvar();
         }
 
         public async Task Update(Paciente paciente)
         {
             _context.Pacientes.Update(paciente);
-            await _context.SaveChangesAsync();
+            await Salvar();
         }
 
         public async Task<Paciente?> GetById(Guid id)
@@ -53,6 +57,18 @@ namespace Vitus.Infrastructure.Repositories
             return await _context.Pacientes
                 .AsNoTracking()
                 .AnyAsync(p => p.Cpf == cpf && (ignorarId == null || p.Id != ignorarId));
+        }
+
+        private async Task Salvar()
+        {
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateException ex) when (ex.InnerException is PostgresException { SqlState: ViolacaoDeUnicidade })
+            {
+                throw new DomainException("Já existe um paciente cadastrado com este CPF");
+            }
         }
     }
 }

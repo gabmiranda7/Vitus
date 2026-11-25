@@ -18,6 +18,9 @@ namespace Vitus.Infrastructure.Mappings
 
             builder.Property(p => p.Ativo)
                    .HasDefaultValue(true);
+            
+            builder.HasIndex(p => p.Cpf)
+                .IsUnique();
 
             builder.HasOne(p => p.Prontuario)
                    .WithOne()
