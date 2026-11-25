@@ -161,23 +161,6 @@ export default function DashboardPage() {
   ];
 
   const atalhos = [
-    ...(isAdmin
-      ? [
-          {
-            label: "Auditoria",
-            cor: "#1976d2",
-            icon: <HistoryIcon />,
-            rota: "/auditoria",
-          },
-          {
-            label: "Aprovações",
-            cor: "#ed6c02",
-            icon: <HowToRegIcon />,
-            rota: "/aprovacoes",
-          },
-        ]
-      : []),
-
     ...(isRecepcionista
       ? [
           {
@@ -279,15 +262,15 @@ export default function DashboardPage() {
       {isAdmin ? (
         <>
           {/* Grid de KPIs clicáveis */}
-          <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2, mb: 3 }}>
+          <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1.5, mb: 3 }}>
             {kpisAdmin.map((kpi) => (
               <Card
                 key={kpi.label}
                 onClick={() => navigate(kpi.rota)}
                 sx={{
-                  flex: "1 1 200px",
+                  flex: "1 1 170px",
                   borderRadius: 3,
-                  borderLeft: `4px solid ${kpi.cor}`,
+                  borderLeft: `3px solid ${kpi.cor}`,
                   cursor: "pointer",
                   transition: "0.15s",
                   "&:hover": {
@@ -296,15 +279,18 @@ export default function DashboardPage() {
                   },
                 }}
               >
-                <CardContent sx={{ p: 2.25, "&:last-child": { pb: 2.25 } }}>
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                <CardContent sx={{ p: 1.5, "&:last-child": { pb: 1.5 } }}>
+                  <Box
+                    sx={{ display: "flex", alignItems: "center", gap: 1.25 }}
+                  >
                     <Box
                       sx={{
-                        p: 1,
-                        borderRadius: 2,
+                        p: 0.75,
+                        borderRadius: 1.5,
                         bgcolor: alpha(kpi.cor, 0.12),
                         color: kpi.cor,
                         display: "flex",
+                        "& svg": { fontSize: 20 },
                       }}
                     >
                       {kpi.icon}
@@ -319,7 +305,7 @@ export default function DashboardPage() {
                         {kpi.label}
                       </Typography>
                       <Typography
-                        variant="h5"
+                        variant="h6"
                         sx={{
                           fontWeight: 800,
                           color: kpi.cor,
@@ -330,8 +316,7 @@ export default function DashboardPage() {
                       </Typography>
                     </Box>
                     <ArrowForwardIcon
-                      fontSize="small"
-                      sx={{ color: "text.disabled" }}
+                      sx={{ color: "text.disabled", fontSize: 16 }}
                     />
                   </Box>
                 </CardContent>

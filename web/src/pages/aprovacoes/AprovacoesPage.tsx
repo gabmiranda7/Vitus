@@ -369,7 +369,7 @@ export default function AprovacoesPage() {
         <Box
           sx={{
             display: "grid",
-            gridTemplateColumns: { xs: "1fr", lg: "repeat(2, 1fr)" },
+            gridTemplateColumns: "1fr",
             gap: 1.25,
           }}
         >
