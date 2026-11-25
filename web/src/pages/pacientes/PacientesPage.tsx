@@ -19,6 +19,8 @@ import {
   InputLabel,
   FormControlLabel,
   Checkbox,
+  ToggleButton,
+  ToggleButtonGroup,
   Divider,
   Paper,
   alpha,
@@ -201,7 +203,9 @@ export default function PacientesPage() {
     acao: "inativar" | "reativar";
   } | null>(null);
   const [alterandoStatus, setAlterandoStatus] = useState(false);
-  const [mostrarInativos, setMostrarInativos] = useState(false);
+  const [situacaoStatus, setSituacaoStatus] = useState<
+    "ativos" | "inativos" | "todos"
+  >("ativos");
 
   useEffect(() => {
     carregar();
@@ -305,19 +309,23 @@ export default function PacientesPage() {
     setErro("");
   }
 
-  const temFiltroAtivo =
-    filtroSexo !== "" || filtroFaixa !== "Todas" || mostrarInativos;
+  const temFiltroAtivo = filtroSexo !== "" || filtroFaixa !== "Todas";
   const qtdFiltros = [
     filtroSexo,
     filtroFaixa !== "Todas" ? filtroFaixa : "",
-    mostrarInativos ? "inativos" : "",
   ].filter(Boolean).length;
   const totalAtivos = pacientes.filter((p) => p.ativo !== false).length;
+  const totalInativos = pacientes.length - totalAtivos;
+  const totalNaSituacao =
+    situacaoStatus === "ativos"
+      ? totalAtivos
+      : situacaoStatus === "inativos"
+        ? totalInativos
+        : pacientes.length;
 
   function limparFiltros() {
     setFiltroSexo("");
     setFiltroFaixa("Todas");
-    setMostrarInativos(false);
   }
 
   const filtrados = useMemo(() => {
@@ -331,14 +339,16 @@ export default function PacientesPage() {
       const faixaOk =
         filtroFaixa === "Todas" ||
         (idade !== null && idade >= faixa.min && idade <= faixa.max);
-      const statusOk = mostrarInativos || p.ativo !== false;
+      const statusOk =
+        situacaoStatus === "todos" ||
+        (situacaoStatus === "ativos" ? p.ativo !== false : p.ativo === false);
       return buscaOk && sexoOk && faixaOk && statusOk;
     });
-  }, [pacientes, busca, filtroSexo, filtroFaixa, mostrarInativos]);
+  }, [pacientes, busca, filtroSexo, filtroFaixa, situacaoStatus]);
 
   useEffect(() => {
     setPagina(1);
-  }, [busca, filtroSexo, filtroFaixa, mostrarInativos]);
+  }, [busca, filtroSexo, filtroFaixa, situacaoStatus]);
 
   const totalPaginas = Math.max(1, Math.ceil(filtrados.length / POR_PAGINA));
   const paginaAtual = filtrados.slice(
@@ -356,6 +366,23 @@ export default function PacientesPage() {
           Pacientes
         </Typography>
         <Chip label={totalAtivos} size="small" color="primary" />
+        <ToggleButtonGroup
+          exclusive
+          size="small"
+          value={situacaoStatus}
+          onChange={(_, v) => v && setSituacaoStatus(v)}
+          sx={{ ml: "auto" }}
+        >
+          <ToggleButton value="ativos" sx={{ px: 2 }}>
+            Ativos ({totalAtivos})
+          </ToggleButton>
+          <ToggleButton value="inativos" sx={{ px: 2 }}>
+            Inativos ({totalInativos})
+          </ToggleButton>
+          <ToggleButton value="todos" sx={{ px: 2 }}>
+            Todos ({pacientes.length})
+          </ToggleButton>
+        </ToggleButtonGroup>
       </Box>
 
       {erroLista && (
@@ -436,16 +463,6 @@ export default function PacientesPage() {
                 ))}
               </Select>
             </FormControl>
-            <FormControlLabel
-              control={
-                <Checkbox
-                  size="small"
-                  checked={mostrarInativos}
-                  onChange={(e) => setMostrarInativos(e.target.checked)}
-                />
-              }
-              label="Mostrar inativos"
-            />
             {temFiltroAtivo && (
               <Button
                 size="small"
@@ -461,9 +478,7 @@ export default function PacientesPage() {
               color="text.secondary"
               sx={{ ml: "auto" }}
             >
-              {filtrados.length} de{" "}
-              {mostrarInativos ? pacientes.length : totalAtivos}{" "}
-              paciente(s){" "}
+              {filtrados.length} de {totalNaSituacao} paciente(s){" "}
             </Typography>
           </Box>
         </Paper>
@@ -475,7 +490,9 @@ export default function PacientesPage() {
           <Typography variant="h6" sx={{ opacity: 0.5 }}>
             {busca || temFiltroAtivo
               ? "Nenhum paciente encontrado"
-              : "Nenhum paciente cadastrado"}
+              : situacaoStatus === "inativos"
+                ? "Nenhum paciente inativo"
+                : "Nenhum paciente cadastrado"}
           </Typography>
           {temFiltroAtivo && (
             <Button size="small" onClick={limparFiltros} sx={{ mt: 1 }}>

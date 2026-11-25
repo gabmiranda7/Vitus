@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
   Box,
   Button,
@@ -116,6 +116,7 @@ function rotuloDia(data: string) {
 export default function ConsultasPage() {
   const { usuario } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [consultas, setConsultas] = useState<Consulta[]>([]);
   const [pacientes, setPacientes] = useState<Paciente[]>([]);
@@ -163,6 +164,17 @@ export default function ConsultasPage() {
   const [medicamentos, setMedicamentos] = useState<Medicamento[]>([medVazio()]);
   const [gerando, setGerando] = useState(false);
   const [erro, setErro] = useState("");
+
+  // Vindo da tela de Médicos ("Agendar consulta"): abre o modal já com o médico
+  useEffect(() => {
+    const id = (location.state as { novoMedicoId?: string } | null)
+      ?.novoMedicoId;
+    if (id) {
+      setMedicoId(id);
+      setModalNova(true);
+      navigate(location.pathname, { replace: true, state: null });
+    }
+  }, []);
 
   useEffect(() => {
     carregar();
