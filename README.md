@@ -17,28 +17,29 @@ O objetivo é centralizar o histórico clínico de pacientes em uma única plata
 
 A aplicação segue os princípios de **Clean Architecture** e **Domain-Driven Design (DDD)**.
 
-> **Autor:** Carlos Gabriel Miranda da Silva e Gustavo Pimentel de Andrade  
-> **Curso:** Engenharia de Software — 8º Período  
-> **Instituição:** Associação Educacional Dom Bosco (AEDB) — Resende, RJ  
+> **Autor:** Carlos Gabriel Miranda da Silva e Gustavo Pimentel de Andrade
+> **Curso:** Engenharia de Software — 8º Período
+> **Instituição:** Associação Educacional Dom Bosco (AEDB) — Resende, RJ
 > **Repositório:** [github.com/gabmiranda7/Vitus](https://github.com/gabmiranda7/Vitus)
 
 ---
 
 ## 🚀 Stack Tecnológica
 
-| Camada          | Tecnologia                                |
-| --------------- | ----------------------------------------- |
-| Back-end        | ASP.NET Core (.NET 10) + C#               |
-| Front-end       | React 19 + TypeScript + Vite 8            |
-| UI              | Material UI v9                            |
-| ORM             | Entity Framework Core                     |
-| Banco de Dados  | PostgreSQL                                |
-| Autenticação    | JWT (JSON Web Tokens)                     |
-| Validação       | FluentValidation                          |
-| Documentos      | OpenXML (receitas em Word)                |
-| IA              | Google Gemini (apoio à leitura de exames) |
-| Testes          | xUnit + Moq + FluentAssertions            |
-| Containerização | Docker + Docker Compose                   |
+| Camada          | Tecnologia                                      |
+| --------------- | ----------------------------------------------- |
+| Back-end        | ASP.NET Core (.NET 10) + C#                     |
+| Front-end       | React 19 + TypeScript + Vite 8                  |
+| Mobile          | React Native 0.88 + Expo SDK 58                 |
+| UI              | Material UI v9 (web) e React Native Paper (app) |
+| ORM             | Entity Framework Core                           |
+| Banco de Dados  | PostgreSQL                                      |
+| Autenticação    | JWT (JSON Web Tokens)                           |
+| Validação       | FluentValidation                                |
+| Documentos      | OpenXML (receitas em Word)                      |
+| IA              | Google Gemini (apoio à leitura de exames)       |
+| Testes          | xUnit + Moq + FluentAssertions                  |
+| Containerização | Docker + Docker Compose                         |
 
 ---
 
@@ -100,6 +101,7 @@ Agendada → Em Triagem → Aguardando Atendimento → Em Atendimento → Finali
 - **Cadastro de pacientes:** consentimento explícito exigido pela API, CPF validado e sem duplicidade. CPF, cartão SUS e dados de filiação são opcionais.
 - **Pacientes não são excluídos:** são inativados. O prontuário, as consultas e os exames ficam guardados (o paciente inativo some das listas de uso diário, não recebe novas consultas e pode ser reativado pela recepção).
 - **Análise de exames por IA:** o servidor extrai o texto do PDF, remove dados pessoais (nome, filiação, CPF, cartão SUS, endereço, telefone, e-mail, data de nascimento e registros profissionais) e envia ao Gemini **somente o texto**, nunca o arquivo. Imagens e PDFs escaneados, sem texto selecionável, não são analisados. A remoção é automática e **não é infalível**: nomes que não constam do cadastro do paciente (como o de médicos e do laboratório) ou grafados de forma diferente podem permanecer. Use com essa ciência. O resultado é um apoio e não substitui a avaliação médica.
+
 ---
 
 ## 🧱 Arquitetura
@@ -136,6 +138,20 @@ web/src/
 └── utils/        → Funções auxiliares
 ```
 
+### Mobile
+
+```
+mobile/src/
+├── components/   → Modais e componentes reutilizáveis
+├── contexts/     → AuthContext (sessão validada na abertura, foto de perfil)
+├── navigation/   → Abas por perfil e pilhas de navegação
+├── screens/      → Telas por funcionalidade (agenda, consultas, triagem, prontuário...)
+├── services/     → Instância Axios (token, timeout e logout em sessão expirada)
+├── theme/        → Cores, tema claro/escuro e helpers de avatar
+├── types/        → Interfaces TypeScript
+└── utils/        → Funções auxiliares (vencimento de receitas, auditoria, arquivos)
+```
+
 ---
 
 ## ⚙️ Variáveis de Ambiente
@@ -153,6 +169,17 @@ Copie `.env.example` para `.env` na raiz do projeto (usado pelo Docker Compose):
 
 Para desenvolvimento local do front, crie `web/.env` com `VITE_API_URL=http://localhost:5000`.
 
+Para o aplicativo, crie `mobile/.env` com `EXPO_PUBLIC_API_URL` (veja _Aplicativo mobile_).
+
+### Templates de receita
+
+A geração de receitas usa dois modelos Word que **não ficam no repositório**, por serem documentos oficiais do órgão emissor. Crie a pasta `storage/templates/` na raiz do projeto e coloque nela:
+
+- `receita_comum.docx`
+- `receita_especial.docx`
+
+Sem esses arquivos, a emissão de receitas falha. A pasta `storage/` está no `.gitignore`.
+
 ---
 
 ## ▶️ Como Executar
@@ -165,6 +192,7 @@ Para desenvolvimento local do front, crie `web/.env` com `VITE_API_URL=http://lo
 git clone https://github.com/gabmiranda7/Vitus
 cd Vitus
 cp .env.example .env     # edite e preencha as chaves
+mkdir -p storage/templates   # coloque aqui os dois templates de receita
 docker compose up --build
 ```
 
@@ -190,6 +218,39 @@ npm run dev           # http://localhost:5173
 
 Configure `ConnectionStrings`, `JWT_KEY`, `ENCRYPTION_KEY` e `DB_USER`/`DB_PASS` por variáveis de ambiente ou _user secrets_.
 
+### 📱 Aplicativo mobile
+
+O app (Android e iOS) usa a mesma API do sistema web e tem abas por perfil: Médico (agenda, consultas, prontuários e receitas), Enfermeiro (consultas, triagem e prontuários), Recepcionista (consultas, pacientes e médicos) e Administrador (auditoria e aprovações). A sessão é sempre validada na API ao abrir o app.
+
+**Pré-requisitos:** Node.js 20+, o app **Expo Go** no celular, celular e computador na **mesma rede Wi-Fi** e a API em execução.
+
+```bash
+cd mobile
+npm install
+# crie mobile/.env (veja abaixo) e inicie:
+npx expo start
+```
+
+Escaneie o QR code com o Expo Go. O celular não enxerga o `localhost` do computador, então aponte a API para o **IP do computador na rede local** em `mobile/.env`:
+
+```env
+# API iniciada com "dotnet run" (escuta em 0.0.0.0)
+EXPO_PUBLIC_API_URL=http://192.168.0.10:5063
+
+# API iniciada pelo Docker (use BIND_ADDRESS=0.0.0.0 no .env da raiz, senão a porta 5000 só aceita o próprio computador)
+# EXPO_PUBLIC_API_URL=http://192.168.0.10:5000
+```
+
+- Troque `192.168.0.10` pelo IP do seu computador. Se o celular não conectar, confira o firewall do sistema.
+- A variável é lida na inicialização: depois de alterar o `.env`, reinicie com `npx expo start -c`.
+- Para checar os tipos do TypeScript: `npm run typecheck`.
+
+**Gerar o APK.** O `app.json` já define o identificador `com.gabmiranda7.vitus`. O projeto não traz `eas.json`: gere um com o EAS Build (`npx eas-cli build:configure`) e configure o perfil de teste para gerar `.apk`. Confira os comandos na documentação atual do EAS.
+
+- Um APK de release **bloqueia HTTP puro**: a API precisa estar em **HTTPS**.
+- `EXPO_PUBLIC_API_URL` é gravada no build. Se o endereço da API mudar, gere o APK de novo.
+- Com o deploy descrito abaixo (nginx na frente do container `frontend`), o endereço é só o domínio, sem `/api`: `EXPO_PUBLIC_API_URL=https://seu-dominio.com.br`.
+
 ### Primeiro administrador
 
 O cadastro público bloqueia o perfil Administrador. Para criar o primeiro, cadastre uma conta como Recepcionista e promova no banco:
@@ -202,7 +263,7 @@ UPDATE usuarios SET perfil = 'Administrador', status = 1 WHERE email = 'seu@emai
 
 ## 🌐 Deploy em servidor (VPS)
 
-1. Suba o projeto com `docker compose up -d --build` (as portas ficam em `127.0.0.1`).
+1. Copie os templates de receita para `storage/templates/` no servidor (por exemplo, com `scp`) e suba o projeto com `docker compose up -d --build` (as portas ficam em `127.0.0.1`).
 2. Instale o nginx no servidor e use-o como proxy HTTPS na frente do container `frontend` (porta 3000):
 
 ```nginx
@@ -234,16 +295,19 @@ dotnet test
 
 Os testes são unitários (repositórios simulados) e cobrem:
 
-| Módulo      | Casos testados                                                                                 |
-| ----------- | ---------------------------------------------------------------------------------------------- |
-| Auth        | Login, cadastro, atualização de perfil e foto, bloqueio de tentativas                          |
-| Consultas   | Criação, fluxo de status, acesso por médico, triagem obrigatória, auditoria, validação de data |
-| Médicos     | Listagem (apenas contas aprovadas) e busca por ID                                              |
-| Pacientes   | Criação (CPF e consentimento), listagem, busca, edição, exclusão                               |
-| Prontuários | Acompanhamento de receitas                                                                     |
-| Receitas    | Criação, geração do documento, acompanhamento de vencimento                                    |
-| Triagens    | Registro de triagem                                                                            |
-| Validadores | Tamanho de textos criptografados e data de consulta                                            |
+| Módulo      | Casos testados                                                                                     |
+| ----------- | -------------------------------------------------------------------------------------------------- |
+| Auth        | Login, cadastro, perfil e foto, aprovação e recusa, ativação e desativação, bloqueio de tentativas |
+| Consultas   | Criação, fluxo de status, acesso por médico, triagem obrigatória, auditoria, validação de data     |
+| Médicos     | Listagem (apenas contas aprovadas) e busca por ID                                                  |
+| Pacientes   | Criação (CPF e consentimento), listagem, busca, edição, inativação e reativação                    |
+| Prontuários | Acompanhamento de receitas                                                                         |
+| Receitas    | Geração do documento, acompanhamento de vencimento                                                 |
+| Triagens    | Registro de triagem (uma por consulta, com glicemia)                                               |
+| Exames      | Anexo de arquivos, análise por IA e anonimização do texto enviado                                  |
+| Auditoria   | Consulta de logs com filtros                                                                       |
+| Domínio     | Validação de CPF                                                                                   |
+| Validadores | Tamanho de textos criptografados, triagem e data de consulta                                       |
 
 ---
 
@@ -260,7 +324,9 @@ Os testes são unitários (repositórios simulados) e cobrem:
 - [x] Auditoria e exportação em Excel
 - [x] Criptografia de dados clínicos sensíveis
 - [x] Containerização com Docker
+- [x] Aplicativo mobile (Android e iOS) com as mesmas funcionalidades do web
 - [ ] Deploy em produção (VPS, HTTPS)
+- [ ] Geração do APK de produção
 - [ ] Pipeline de CI/CD
 - [ ] Recuperação de senha por e-mail
 - [ ] Validação de senha forte
