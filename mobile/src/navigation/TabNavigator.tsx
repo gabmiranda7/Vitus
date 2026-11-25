@@ -1,11 +1,5 @@
 import React from "react";
-import {
-  TouchableOpacity,
-  View,
-  Image,
-  Text,
-  useColorScheme,
-} from "react-native";
+import { TouchableOpacity, Image, useColorScheme } from "react-native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import AprovacoesScreen from "../screens/aprovacoes/AprovacoesScreen";
@@ -25,24 +19,20 @@ import { cores } from "../theme";
 
 const Tab = createBottomTabNavigator();
 
-function TituloVitus() {
+// Logo no canto esquerdo do cabeçalho: leva à tela inicial do perfil.
+function LogoInicio({ onPress }: { onPress: () => void }) {
   return (
-    <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+    <TouchableOpacity
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel="Ir para a tela inicial"
+      style={{ marginLeft: 12 }}
+    >
       <Image
         source={require("../../assets/icon.png")}
-        style={{ width: 26, height: 26, borderRadius: 6 }}
+        style={{ width: 30, height: 30, borderRadius: 8 }}
       />
-      <Text
-        style={{
-          color: "#fff",
-          fontSize: 19,
-          fontWeight: "800",
-          letterSpacing: 0.3,
-        }}
-      >
-        Vitus
-      </Text>
-    </View>
+    </TouchableOpacity>
   );
 }
 
@@ -63,6 +53,9 @@ export default function TabNavigator() {
           backgroundColor: isDark ? cores.superficieEscura : cores.superficie,
           borderTopColor: isDark ? "#253140" : "#d3dce6",
         },
+        headerLeft: () => (
+          <LogoInicio onPress={() => navigation.navigate("Dashboard")} />
+        ),
         headerRight: () => (
           <TouchableOpacity
             onPress={() => navigation.navigate("Perfil")}
@@ -78,7 +71,6 @@ export default function TabNavigator() {
         component={DashboardScreen}
         options={{
           title: "Início",
-          headerTitle: () => <TituloVitus />,
           tabBarIcon: ({ color, size }) => (
             <MaterialCommunityIcons
               name="view-dashboard"

@@ -4,10 +4,12 @@ import { TextInput, Button, Text, Surface, useTheme } from "react-native-paper";
 import { useNavigation } from "@react-navigation/native";
 import { useAuth } from "../../contexts/AuthContext";
 import { cores } from "../../theme";
+import LogoVitus from "../../components/LogoVitus";
 
 export default function LoginScreen() {
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
+  const [mostrarSenha, setMostrarSenha] = useState(false);
   const [erro, setErro] = useState("");
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
@@ -40,6 +42,7 @@ export default function LoginScreen() {
       keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
     >
       <Surface style={styles.card} elevation={2}>
+        <LogoVitus size={80} />
         <Text
           variant="headlineMedium"
           style={[styles.titulo, { color: theme.colors.primary }]}
@@ -68,9 +71,16 @@ export default function LoginScreen() {
           label="Senha"
           value={senha}
           onChangeText={setSenha}
-          secureTextEntry
+          secureTextEntry={!mostrarSenha}
           mode="outlined"
           style={styles.input}
+          right={
+            <TextInput.Icon
+              icon={mostrarSenha ? "eye-off" : "eye"}
+              onPress={() => setMostrarSenha((v) => !v)}
+              forceTextInputFocus={false}
+            />
+          }
         />
 
         <Button

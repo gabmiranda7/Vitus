@@ -14,12 +14,14 @@ import {
   SegmentedButtons,
   ProgressBar,
   Chip,
-  HelperText,
   useTheme,
 } from "react-native-paper";
 import { useNavigation } from "@react-navigation/native";
 import api from "../../services/api";
 import { cores } from "../../theme";
+import LogoVitus from "../../components/LogoVitus";
+import SenhaForteIndicador from "../../components/SenhaForteIndicador";
+import { senhaEhForte } from "../../utils/senha";
 
 const PERFIS = [
   { value: "Medico", label: "Médico" },
@@ -35,6 +37,7 @@ export default function CadastroScreen() {
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
+  const [mostrarSenha, setMostrarSenha] = useState(false);
   const [perfil, setPerfil] = useState("");
   const [crm, setCrm] = useState("");
   const [especialidade, setEspecialidade] = useState("");
@@ -52,8 +55,8 @@ export default function CadastroScreen() {
         setErro("Preencha todos os campos");
         return;
       }
-      if (senha.length < 6) {
-        setErro("A senha deve ter no mínimo 6 caracteres");
+      if (!senhaEhForte(senha)) {
+        setErro("A senha não atende a todos os requisitos de segurança");
         return;
       }
     }
@@ -109,6 +112,7 @@ export default function CadastroScreen() {
         keyboardShouldPersistTaps="handled"
       >
         <Surface style={styles.card} elevation={2}>
+          <LogoVitus size={72} />
           <Text
             variant="headlineSmall"
             style={[styles.titulo, { color: theme.colors.primary }]}
@@ -147,11 +151,18 @@ export default function CadastroScreen() {
                 label="Senha"
                 value={senha}
                 onChangeText={setSenha}
-                secureTextEntry
+                secureTextEntry={!mostrarSenha}
                 mode="outlined"
                 style={styles.input}
+                right={
+                  <TextInput.Icon
+                    icon={mostrarSenha ? "eye-off" : "eye"}
+                    onPress={() => setMostrarSenha((v) => !v)}
+                    forceTextInputFocus={false}
+                  />
+                }
               />
-              <HelperText type="info">Mínimo de 6 caracteres</HelperText>
+              <SenhaForteIndicador senha={senha} />
             </View>
           )}
 

@@ -20,8 +20,8 @@ export const cores = {
   gradienteVermelho: ["#b71c1c", "#d32f2f"],
 
   // Modo claro suave
-  fundo: "#e6ebf2",
-  superficie: "#f3f6fa",
+  fundo: "#dce3ed",
+  superficie: "#eaeff5",
   textoSecundario: "#5f6b7a",
   textoDesabilitado: "#8d99a6",
 
@@ -41,15 +41,15 @@ export const lightTheme = {
     secondary: cores.secundaria,
     background: cores.fundo,
     surface: cores.superficie,
-    surfaceVariant: "#e1e7ef",
+    surfaceVariant: "#d5dde8",
     onSurface: "#1c2430",
     onSurfaceVariant: cores.textoSecundario,
     outline: "#c5d0de",
     elevation: {
       ...MD3LightTheme.colors.elevation,
       level1: cores.superficie,
-      level2: "#edf1f7",
-      level3: "#e6ecf4",
+      level2: "#e3e9f1",
+      level3: "#dce3ed",
     },
   },
 };
