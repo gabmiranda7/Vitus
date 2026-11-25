@@ -36,6 +36,9 @@ namespace Vitus.Application.UseCases.Consultas.CreateConsulta
             if (paciente == null)
                 throw new DomainException("Paciente não encontrado");
 
+            if (!paciente.Ativo)
+                throw new DomainException("Paciente inativo. Reative o cadastro para agendar consultas");
+
             var medico = await _medicoRepository.GetById(request.MedicoId);
 
             if (medico == null)

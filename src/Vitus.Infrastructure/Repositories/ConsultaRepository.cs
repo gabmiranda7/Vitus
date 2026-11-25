@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Update.Internal;
+using Vitus.Domain.Enums;
 using Vitus.Domain.Entities;
 using Vitus.Domain.Interfaces;
 using Vitus.Infrastructure.Data;
@@ -39,6 +40,15 @@ namespace Vitus.Infrastructure.Repositories
             return await _context.Consultas
                 .AsNoTracking()
                 .FirstOrDefaultAsync(c => c.Id == id);
+        }
+
+        public async Task<bool> ExisteEmAndamentoDoPaciente(Guid pacienteId)
+        {
+            return await _context.Consultas
+                .AsNoTracking()
+                .AnyAsync(c => c.PacienteId == pacienteId
+                    && c.Status != StatusConsulta.Finalizada
+                    && c.Status != StatusConsulta.Cancelada);
         }
     }
 }

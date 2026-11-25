@@ -18,6 +18,7 @@ namespace Vitus.Domain.Entities
         public string? EstadoCivil { get; private set; }
         public string? InformacoesAdicionais { get; private set; }
         public bool AceitaTermos { get; private set; }
+        public bool Ativo { get; private set; } = true;
 
         public Prontuario Prontuario { get; private set; }
 
@@ -31,6 +32,7 @@ namespace Vitus.Domain.Entities
                 throw new DomainException("O paciente precisa aceitar os termos de uso de dados");
 
             Id = Guid.NewGuid();
+            Ativo = true;
             DefinirNome(nome);
             DefinirCpf(cpf);
             CartaoSus = cartaoSus;
@@ -56,6 +58,9 @@ namespace Vitus.Domain.Entities
             string? sexo, string? nomePai, string? nomeMae, string? endereco,
             string? profissao, string? estadoCivil, string? informacoesAdicionais)
         {
+            if (!Ativo)
+                throw new DomainException("Paciente inativo não pode ser editado. Reative o cadastro primeiro");
+
             DefinirNome(nome);
             DefinirCpf(cpf);
             CartaoSus = cartaoSus;
@@ -67,6 +72,22 @@ namespace Vitus.Domain.Entities
             Profissao = profissao;
             EstadoCivil = estadoCivil;
             InformacoesAdicionais = informacoesAdicionais;
+        }
+
+        public void Inativar()
+        {
+            if (!Ativo)
+                throw new DomainException("Paciente já está inativo");
+
+            Ativo = false;
+        }
+
+        public void Reativar()
+        {
+            if (Ativo)
+                throw new DomainException("Paciente já está ativo");
+
+            Ativo = true;
         }
 
         public void CriarProntuario()

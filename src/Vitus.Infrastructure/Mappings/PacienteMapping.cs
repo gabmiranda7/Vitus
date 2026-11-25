@@ -16,6 +16,9 @@ namespace Vitus.Infrastructure.Mappings
                    .IsRequired()
                    .HasMaxLength(200);
 
+            builder.Property(p => p.Ativo)
+                   .HasDefaultValue(true);
+
             builder.HasOne(p => p.Prontuario)
                    .WithOne()
                    .HasForeignKey<Prontuario>(p => p.PacienteId);

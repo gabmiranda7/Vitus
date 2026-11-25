@@ -8,6 +8,6 @@ namespace Vitus.Domain.Interfaces
         Task Update(Consulta consulta);
         Task<Consulta?> GetById(Guid id);
         Task<List<Consulta>> GetAll();
-
+        Task<bool> ExisteEmAndamentoDoPaciente(Guid pacienteId);
     }
 }

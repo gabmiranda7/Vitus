@@ -15,5 +15,6 @@
         public string? EstadoCivil { get; set; }
         public string? InformacoesAdicionais { get; set; }
         public bool AceitaTermos { get; set; }
+        public bool Ativo { get; set; } = true;
     }
 }

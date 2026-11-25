@@ -33,7 +33,8 @@ namespace Vitus.Application.UseCases.Pacientes.GetPacienteById
                 Profissao = paciente.Profissao,
                 EstadoCivil = paciente.EstadoCivil,
                 InformacoesAdicionais = paciente.InformacoesAdicionais,
-                AceitaTermos = paciente.AceitaTermos
+                AceitaTermos = paciente.AceitaTermos,
+                Ativo = paciente.Ativo
             };
         }
     }

@@ -1,0 +1,35 @@
+﻿using Vitus.Domain.Enums;
+using Vitus.Domain.Exceptions;
+using Vitus.Domain.Interfaces;
+
+namespace Vitus.Application.UseCases.Pacientes.ReativarPaciente
+{
+    public class ReativarPacienteUseCase
+    {
+        private readonly IPacienteRepository _repository;
+        private readonly IAuditoriaService _auditoriaService;
+
+        public ReativarPacienteUseCase(IPacienteRepository repository, IAuditoriaService auditoriaService)
+        {
+            _repository = repository;
+            _auditoriaService = auditoriaService;
+        }
+
+        public async Task Execute(Guid id)
+        {
+            var paciente = await _repository.GetById(id);
+
+            if (paciente == null)
+                throw new DomainException("Paciente não encontrado.");
+
+            paciente.Reativar();
+            await _repository.Update(paciente);
+
+            await _auditoriaService.Registrar(
+                AcaoAuditoria.ReativacaoPaciente,
+                "Paciente",
+                paciente.Id,
+                $"Paciente '{paciente.Nome}' reativado");
+        }
+    }
+}

@@ -28,9 +28,10 @@ using Vitus.Application.UseCases.Exames.RegistrarExame;
 using Vitus.Application.UseCases.Medicos.GetAllMedicos;
 using Vitus.Application.UseCases.Medicos.GetMedicoById;
 using Vitus.Application.UseCases.Pacientes.CreatePaciente;
-using Vitus.Application.UseCases.Pacientes.DeletePaciente;
 using Vitus.Application.UseCases.Pacientes.GetAllPacientes;
 using Vitus.Application.UseCases.Pacientes.GetPacienteById;
+using Vitus.Application.UseCases.Pacientes.InativarPaciente;
+using Vitus.Application.UseCases.Pacientes.ReativarPaciente;
 using Vitus.Application.UseCases.Pacientes.UpdatePaciente;
 using Vitus.Application.UseCases.Prontuarios.GetAcompanhamentoReceitas;
 using Vitus.Application.UseCases.Prontuarios.GetProntuarioByConsultaId;
@@ -94,9 +95,10 @@ namespace Vitus.API.Extensions
             services.AddScoped<GetMedicoByIdUseCase>();
 
             services.AddScoped<CreatePacienteUseCase>();
-            services.AddScoped<DeletePacienteUseCase>();
             services.AddScoped<GetAllPacientesUseCase>();
             services.AddScoped<GetPacienteByIdUseCase>();
+            services.AddScoped<InativarPacienteUseCase>();
+            services.AddScoped<ReativarPacienteUseCase>();
             services.AddScoped<UpdatePacienteUseCase>();
 
             services.AddScoped<GetAcompanhamentoReceitasUseCase>();

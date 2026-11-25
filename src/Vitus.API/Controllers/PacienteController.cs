@@ -1,9 +1,10 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Vitus.Application.UseCases.Pacientes.CreatePaciente;
-using Vitus.Application.UseCases.Pacientes.DeletePaciente;
 using Vitus.Application.UseCases.Pacientes.GetAllPacientes;
 using Vitus.Application.UseCases.Pacientes.GetPacienteById;
+using Vitus.Application.UseCases.Pacientes.InativarPaciente;
+using Vitus.Application.UseCases.Pacientes.ReativarPaciente;
 using Vitus.Application.UseCases.Pacientes.UpdatePaciente;
 using Vitus.Communication.Paciente.Requests;
 
@@ -35,10 +36,32 @@ namespace Vitus.API.Controllers
             return NoContent();
         }
 
+        [HttpPatch("{id}/inativar")]
+        [Authorize(Roles = "Recepcionista")]
+        public async Task<IActionResult> Inativar(
+            [FromServices] InativarPacienteUseCase useCase,
+            Guid id)
+        {
+            await useCase.Execute(id);
+            return NoContent();
+        }
+
+        [HttpPatch("{id}/reativar")]
+        [Authorize(Roles = "Recepcionista")]
+        public async Task<IActionResult> Reativar(
+            [FromServices] ReativarPacienteUseCase useCase,
+            Guid id)
+        {
+            await useCase.Execute(id);
+            return NoContent();
+        }
+
+        // Apelido temporário: o app mobile ainda chama DELETE. Pacientes não são mais excluídos, apenas inativados.
+        // Remover quando o mobile passar a usar PATCH {id}/inativar
         [HttpDelete("{id}")]
         [Authorize(Roles = "Recepcionista")]
         public async Task<IActionResult> Delete(
-            [FromServices] DeletePacienteUseCase useCase,
+            [FromServices] InativarPacienteUseCase useCase,
             Guid id)
         {
             await useCase.Execute(id);
@@ -58,9 +81,10 @@ namespace Vitus.API.Controllers
 
         [HttpGet]
         public async Task<IActionResult> GetAll(
-            [FromServices] GetAllPacientesUseCase useCase)
+            [FromServices] GetAllPacientesUseCase useCase,
+            [FromQuery] bool incluirInativos = false)
         {
-            var response = await useCase.Execute();
+            var response = await useCase.Execute(incluirInativos);
             return Ok(response);
         }
     }

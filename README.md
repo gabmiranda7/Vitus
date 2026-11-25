@@ -54,7 +54,7 @@ Todo cadastro novo (Médico, Enfermeiro ou Recepcionista) nasce **pendente** e s
 
 ### 🟦 Recepcionista
 
-- Cadastrar, editar e excluir pacientes
+- Cadastrar, editar, inativar e reativar pacientes
 - Agendar e cancelar consultas
 - Consultar a lista de médicos
 
@@ -98,7 +98,7 @@ Agendada → Em Triagem → Aguardando Atendimento → Em Atendimento → Finali
 - **Auditoria** de login, acesso a prontuários, anotações, receitas, exames, aprovações e alterações de pacientes.
 - **Bloqueio de tentativas de login** (por e-mail) e **rate limiting** por IP.
 - **Cadastro de pacientes:** consentimento explícito exigido pela API, CPF validado e sem duplicidade. CPF, cartão SUS e dados de filiação são opcionais.
-- **Exclusão de paciente** remove também os arquivos de exame do disco.
+- **Pacientes não são excluídos:** são inativados. O prontuário, as consultas e os exames ficam guardados (o paciente inativo some das listas de uso diário, não recebe novas consultas e pode ser reativado pela recepção).
 - **Análise de exames por IA:** o servidor extrai o texto do PDF, remove dados pessoais (nome, filiação, CPF, cartão SUS, endereço, telefone, e-mail, data de nascimento e registros profissionais) e envia ao Gemini **somente o texto**, nunca o arquivo. Imagens e PDFs escaneados, sem texto selecionável, não são analisados. A remoção é automática e **não é infalível**: nomes que não constam do cadastro do paciente (como o de médicos e do laboratório) ou grafados de forma diferente podem permanecer. Use com essa ciência. O resultado é um apoio e não substitui a avaliação médica.
 ---
 

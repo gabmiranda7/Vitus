@@ -26,12 +26,6 @@ namespace Vitus.Infrastructure.Repositories
             await _context.SaveChangesAsync();
         }
 
-        public async Task Delete(Paciente paciente)
-        {
-            _context.Pacientes.Remove(paciente);
-            await _context.SaveChangesAsync();
-        }
-
         public async Task<Paciente?> GetById(Guid id)
         {
             return await _context.Pacientes
@@ -43,6 +37,14 @@ namespace Vitus.Infrastructure.Repositories
         {
             return await _context.Pacientes
                 .AsNoTracking()
+                .ToListAsync();
+        }
+
+        public async Task<List<Paciente>> GetAtivos()
+        {
+            return await _context.Pacientes
+                .AsNoTracking()
+                .Where(p => p.Ativo)
                 .ToListAsync();
         }
 

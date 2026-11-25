@@ -12,9 +12,11 @@ namespace Vitus.Application.UseCases.Pacientes.GetAllPacientes
             _repository = repository;
         }
 
-        public async Task<List<PacienteResponseJson>> Execute()
+        public async Task<List<PacienteResponseJson>> Execute(bool incluirInativos = false)
         {
-            var pacientes = await _repository.GetAll();
+            var pacientes = incluirInativos
+                ? await _repository.GetAll()
+                : await _repository.GetAtivos();
 
             return pacientes.Select(p => new PacienteResponseJson
             {
@@ -30,7 +32,8 @@ namespace Vitus.Application.UseCases.Pacientes.GetAllPacientes
                 Profissao = p.Profissao,
                 EstadoCivil = p.EstadoCivil,
                 InformacoesAdicionais = p.InformacoesAdicionais,
-                AceitaTermos = p.AceitaTermos
+                AceitaTermos = p.AceitaTermos,
+                Ativo = p.Ativo
             }).ToList();
         }
     }

@@ -6,9 +6,9 @@ namespace Vitus.Domain.Interfaces
     {
         Task Add(Paciente paciente);
         Task Update(Paciente paciente);
-        Task Delete(Paciente paciente);
         Task<Paciente?> GetById(Guid id);
         Task<List<Paciente>> GetAll();
+        Task<List<Paciente>> GetAtivos();
         Task<bool> ExisteCpf(string cpf, Guid? ignorarId);
     }
 }

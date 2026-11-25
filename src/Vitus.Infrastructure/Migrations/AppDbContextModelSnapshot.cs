@@ -315,6 +315,12 @@ namespace Vitus.Infrastructure.Migrations
                         .HasColumnType("boolean")
                         .HasColumnName("aceita_termos");
 
+                    b.Property<bool>("Ativo")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true)
+                        .HasColumnName("ativo");
+
                     b.Property<string>("CartaoSus")
                         .HasColumnType("text")
                         .HasColumnName("cartao_sus");

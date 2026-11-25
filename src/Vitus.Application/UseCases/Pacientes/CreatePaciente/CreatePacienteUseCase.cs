@@ -56,7 +56,8 @@ namespace Vitus.Application.UseCases.Pacientes.CreatePaciente
             Profissao = p.Profissao,
             EstadoCivil = p.EstadoCivil,
             InformacoesAdicionais = p.InformacoesAdicionais,
-            AceitaTermos = p.AceitaTermos
+            AceitaTermos = p.AceitaTermos,
+            Ativo = p.Ativo
         };
     }
 }

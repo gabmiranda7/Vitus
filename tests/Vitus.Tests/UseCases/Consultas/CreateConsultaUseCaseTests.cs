@@ -146,6 +146,29 @@ namespace Vitus.Tests.UseCases.Consultas
         }
 
         [Fact]
+        public async Task Execute_Fail_PacienteInativo()
+        {
+            var pacienteId = Guid.NewGuid();
+            var medicoId = Guid.NewGuid();
+            var paciente = EntidadeFactory.CriarPaciente();
+            paciente.Inativar();
+
+            _pacienteRepoMock.Setup(r => r.GetById(pacienteId)).ReturnsAsync(paciente);
+
+            var request = new CreateConsultaRequestJson
+            {
+                PacienteId = pacienteId,
+                MedicoId = medicoId,
+                DataConsulta = DateTime.UtcNow.AddHours(2)
+            };
+
+            var act = async () => await _useCase.Execute(request);
+
+            await act.Should().ThrowAsync<DomainException>().WithMessage("Paciente inativo*");
+            _consultaRepoMock.Verify(r => r.Add(It.IsAny<Consulta>()), Times.Never);
+        }
+
+        [Fact]
         public async Task Execute_Fail_DataNoPassado()
         {
             var pacienteId = Guid.NewGuid();

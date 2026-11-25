@@ -21,6 +21,8 @@
         AnaliseIaExame,
         AnotacaoClinica,
         InicioAtendimento,
-        FinalizacaoConsulta
+        FinalizacaoConsulta,
+        InativacaoPaciente,
+        ReativacaoPaciente
     }
 }
