@@ -203,7 +203,7 @@ export default function DashboardScreen() {
                     >
                       <MaterialCommunityIcons
                         name={kpi.icon as any}
-                        size={20}
+                        size={16}
                         color={kpi.cor}
                       />
                     </View>
@@ -216,7 +216,7 @@ export default function DashboardScreen() {
                         {kpi.label}
                       </Text>
                       <Text
-                        variant="titleLarge"
+                        variant="titleMedium"
                         style={[styles.kpiValor, { color: kpi.cor }]}
                       >
                         {kpi.valor}
@@ -224,7 +224,7 @@ export default function DashboardScreen() {
                     </View>
                     <MaterialCommunityIcons
                       name="chevron-right"
-                      size={18}
+                      size={16}
                       color={theme.colors.onSurfaceVariant}
                       style={{ opacity: 0.5 }}
                     />
@@ -489,14 +489,14 @@ const styles = StyleSheet.create({
   kpiContent: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 10,
-    paddingHorizontal: 10,
-    gap: 8,
+    paddingVertical: 6,
+    paddingHorizontal: 8,
+    gap: 6,
   },
   kpiIconBox: {
-    width: 34,
-    height: 34,
-    borderRadius: 10,
+    width: 28,
+    height: 28,
+    borderRadius: 8,
     justifyContent: "center",
     alignItems: "center",
   },
