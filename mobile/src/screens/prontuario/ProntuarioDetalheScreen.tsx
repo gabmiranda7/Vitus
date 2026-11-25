@@ -14,6 +14,7 @@ import {
   ActivityIndicator,
   Divider,
   Avatar,
+  ProgressBar,
   useTheme,
 } from "react-native-paper";
 import { useRoute } from "@react-navigation/native";
@@ -105,6 +106,8 @@ export default function ProntuarioDetalheScreen() {
 
   const [tratamentosAbertos, setTratamentosAbertos] = useState(false);
   const [receitasAbertas, setReceitasAbertas] = useState(false);
+  // Dias do histórico recolhidos/expandidos (o mais recente abre por padrão)
+  const [diasAbertos, setDiasAbertos] = useState<Record<string, boolean>>({});
   const [examesAbertos, setExamesAbertos] = useState(false);
   const [baixandoId, setBaixandoId] = useState<string | null>(null);
 
@@ -192,7 +195,10 @@ export default function ProntuarioDetalheScreen() {
   const grupos = agruparPorDia(prontuario.consultas, prontuario.triagens);
   const chipBg = theme.colors.surfaceVariant;
   const chipTextColor = theme.colors.primary;
-  const tratamentos = prontuario.tratamentos ?? [];
+  // Mais urgentes primeiro (vencidos, depois os que vencem antes)
+  const tratamentos = [...(prontuario.tratamentos ?? [])].sort(
+    (a, b) => a.diasRestantes - b.diasRestantes,
+  );
 
   return (
     <ScrollView
@@ -455,6 +461,22 @@ export default function ProntuarioDetalheScreen() {
                           {capitalizar(s.label)}
                         </Chip>
                       </View>
+                      <ProgressBar
+                        progress={
+                          t.validadeDias > 0
+                            ? Math.min(
+                                1,
+                                Math.max(
+                                  0,
+                                  (t.validadeDias - t.diasRestantes) /
+                                    t.validadeDias,
+                                ),
+                              )
+                            : 1
+                        }
+                        color={s.cor}
+                        style={styles.tratamentoBarra}
+                      />
                       <Text
                         variant="bodySmall"
                         style={{ color: theme.colors.onSurfaceVariant }}
@@ -706,106 +728,126 @@ export default function ProntuarioDetalheScreen() {
           Nenhuma consulta registrada
         </Text>
       ) : (
-        grupos.map((grupo) => (
+        grupos.map((grupo, idx) => (
           <View key={grupo.chave} style={styles.grupoDia}>
-            <Text
-              variant="titleSmall"
-              style={[styles.dataGrupo, { color: theme.colors.primary }]}
+            <TouchableOpacity
+              style={styles.dataGrupoLinha}
+              onPress={() =>
+                setDiasAbertos((p) => ({
+                  ...p,
+                  [grupo.chave]: !(p[grupo.chave] ?? idx === 0),
+                }))
+              }
             >
-              {grupo.chave}
-            </Text>
+              <Text
+                variant="titleSmall"
+                style={[styles.dataGrupo, { color: theme.colors.primary }]}
+              >
+                {grupo.chave} · {grupo.itens.length} consulta(s)
+              </Text>
+              <MaterialCommunityIcons
+                name={
+                  (diasAbertos[grupo.chave] ?? idx === 0)
+                    ? "chevron-up"
+                    : "chevron-down"
+                }
+                size={22}
+                color={theme.colors.onSurfaceVariant}
+              />
+            </TouchableOpacity>
 
-            {grupo.itens.map(({ consulta, triagem }) => {
-              const cor = statusCores[consulta.status] ?? cores.primaria;
-              return (
-                <Card
-                  key={consulta.id}
-                  style={[
-                    styles.card,
-                    { borderLeftColor: cor, borderLeftWidth: 4 },
-                  ]}
-                >
-                  <Card.Content>
-                    <View style={styles.cardHeader}>
-                      <Text variant="titleSmall">{consulta.nomeMedico}</Text>
-                      <Chip
-                        style={{
-                          backgroundColor: cor + (theme.dark ? "33" : "20"),
-                        }}
-                        textStyle={[
-                          styles.chipTexto,
-                          { color: theme.dark ? "#e8eef5" : cor },
-                        ]}
-                        compact
-                      >
-                        {statusLabels[consulta.status]}
-                      </Chip>
-                    </View>
-                    <Text
-                      variant="bodySmall"
-                      style={[
-                        styles.hora,
-                        { color: theme.colors.onSurfaceVariant },
-                      ]}
-                    >
-                      {new Date(consulta.dataConsulta).toLocaleTimeString(
-                        "pt-BR",
-                        { hour: "2-digit", minute: "2-digit" },
-                      )}
-                    </Text>
-
-                    {triagem && (
-                      <View style={styles.secao}>
-                        <Divider style={styles.divider} />
-                        <Text
-                          variant="labelMedium"
-                          style={[
-                            styles.secaoTituloCard,
-                            { color: theme.colors.onSurfaceVariant },
+            {(diasAbertos[grupo.chave] ?? idx === 0) &&
+              grupo.itens.map(({ consulta, triagem }) => {
+                const cor = statusCores[consulta.status] ?? cores.primaria;
+                return (
+                  <Card
+                    key={consulta.id}
+                    style={[
+                      styles.card,
+                      { borderLeftColor: cor, borderLeftWidth: 4 },
+                    ]}
+                  >
+                    <Card.Content>
+                      <View style={styles.cardHeader}>
+                        <Text variant="titleSmall">{consulta.nomeMedico}</Text>
+                        <Chip
+                          style={{
+                            backgroundColor: cor + (theme.dark ? "33" : "20"),
+                          }}
+                          textStyle={[
+                            styles.chipTexto,
+                            { color: theme.dark ? "#e8eef5" : cor },
                           ]}
+                          compact
                         >
-                          🩺 Triagem
-                        </Text>
-                        <Text variant="bodySmall">
-                          PA: {triagem.pressaoArterial} · Temp:{" "}
-                          {triagem.temperatura}°C
-                          {triagem.glicemia != null
-                            ? ` · Glicemia: ${triagem.glicemia} mg/dL`
-                            : ""}
-                        </Text>
-                        {triagem.observacoes && (
+                          {statusLabels[consulta.status]}
+                        </Chip>
+                      </View>
+                      <Text
+                        variant="bodySmall"
+                        style={[
+                          styles.hora,
+                          { color: theme.colors.onSurfaceVariant },
+                        ]}
+                      >
+                        {new Date(consulta.dataConsulta).toLocaleTimeString(
+                          "pt-BR",
+                          { hour: "2-digit", minute: "2-digit" },
+                        )}
+                      </Text>
+
+                      {triagem && (
+                        <View style={styles.secao}>
+                          <Divider style={styles.divider} />
                           <Text
-                            variant="bodySmall"
+                            variant="labelMedium"
                             style={[
-                              styles.observacao,
+                              styles.secaoTituloCard,
                               { color: theme.colors.onSurfaceVariant },
                             ]}
                           >
-                            "{triagem.observacoes}"
+                            🩺 Triagem
                           </Text>
-                        )}
-                      </View>
-                    )}
+                          <Text variant="bodySmall">
+                            PA: {triagem.pressaoArterial} · Temp:{" "}
+                            {triagem.temperatura}°C
+                            {triagem.glicemia != null
+                              ? ` · Glicemia: ${triagem.glicemia} mg/dL`
+                              : ""}
+                          </Text>
+                          {triagem.observacoes && (
+                            <Text
+                              variant="bodySmall"
+                              style={[
+                                styles.observacao,
+                                { color: theme.colors.onSurfaceVariant },
+                              ]}
+                            >
+                              "{triagem.observacoes}"
+                            </Text>
+                          )}
+                        </View>
+                      )}
 
-                    {consulta.anotacoes && (
-                      <View style={styles.secao}>
-                        <Divider style={styles.divider} />
-                        <Text
-                          variant="labelMedium"
-                          style={[
-                            styles.secaoTituloCard,
-                            { color: theme.colors.onSurfaceVariant },
-                          ]}
-                        >
-                          📝 Anotações
-                        </Text>
-                        <Text variant="bodySmall">{consulta.anotacoes}</Text>
-                      </View>
-                    )}
-                  </Card.Content>
-                </Card>
-              );
-            })}
+                      {consulta.anotacoes && (
+                        <View style={styles.secao}>
+                          <Divider style={styles.divider} />
+                          <Text
+                            variant="labelMedium"
+                            style={[
+                              styles.secaoTituloCard,
+                              { color: theme.colors.onSurfaceVariant },
+                            ]}
+                          >
+                            📝 Anotações
+                          </Text>
+                          <Text variant="bodySmall">{consulta.anotacoes}</Text>
+                        </View>
+                      )}
+                    </Card.Content>
+                  </Card>
+                );
+              })}
           </View>
         ))
       )}
@@ -893,7 +935,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   tratamentoNome: { fontWeight: "600", flex: 1, marginRight: 8 },
-
+  tratamentoBarra: { height: 6, borderRadius: 3, marginVertical: 8 },
   cardSecao: { borderRadius: 12, marginBottom: 8 },
   secaoHeader: {
     flexDirection: "row",
@@ -920,7 +962,14 @@ const styles = StyleSheet.create({
 
   tituloTimeline: { fontWeight: "bold", marginTop: 8, marginBottom: 12 },
   grupoDia: { marginBottom: 20 },
-  dataGrupo: { fontWeight: "bold", marginBottom: 8 },
+  dataGrupo: { fontWeight: "bold" },
+  dataGrupoLinha: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 8,
+    paddingVertical: 4,
+  },
   card: { marginBottom: 10, borderRadius: 12 },
   cardHeader: {
     flexDirection: "row",
