@@ -7,6 +7,7 @@ import { StatusBar } from "expo-status-bar";
 import { AuthProvider, useAuth } from "./src/contexts/AuthContext";
 import AuthStack from "./src/navigation/AuthStack";
 import TabNavigator from "./src/navigation/TabNavigator";
+import TrocarSenhaScreen from "./src/screens/auth/TrocarSenhaScreen";
 import {
   lightTheme,
   darkTheme,
@@ -27,6 +28,11 @@ function Rotas() {
 
   if (!usuario) {
     return <AuthStack />;
+  }
+
+  // Senha temporária: só libera o app depois que o usuário criar a própria senha
+  if (usuario.deveTrocarSenha) {
+    return <TrocarSenhaScreen />;
   }
 
   return <TabNavigator />;

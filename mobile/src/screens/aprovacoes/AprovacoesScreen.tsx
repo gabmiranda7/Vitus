@@ -1,5 +1,11 @@
 import React, { useState, useMemo } from "react";
-import { View, ScrollView, StyleSheet, RefreshControl } from "react-native";
+import {
+  View,
+  ScrollView,
+  StyleSheet,
+  RefreshControl,
+  Platform,
+} from "react-native";
 import {
   Text,
   Card,
@@ -10,8 +16,11 @@ import {
   Searchbar,
   Snackbar,
   SegmentedButtons,
+  Modal,
+  Portal,
   useTheme,
 } from "react-native-paper";
+import * as Clipboard from "expo-clipboard";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import api from "../../services/api";
 import { useAtualizacaoAutomatica } from "../../hooks/useAtualizacaoAutomatica";
@@ -28,6 +37,8 @@ interface UsuarioItem {
   especialidade?: string | null;
   coren?: string | null;
   especializacao?: string | null;
+  redefinicaoSolicitada?: boolean;
+  redefinicaoSolicitadaEm?: string | null;
 }
 
 const perfilLabel: Record<string, string> = {
@@ -63,6 +74,11 @@ export default function AprovacoesScreen() {
   const [acao, setAcao] = useState<Acao | null>(null);
   const [processando, setProcessando] = useState(false);
 
+  const [redefinirAlvo, setRedefinirAlvo] = useState<UsuarioItem | null>(null);
+  const [senhaGerada, setSenhaGerada] = useState<string | null>(null);
+  const [redefinindo, setRedefinindo] = useState(false);
+  const [senhaCopiada, setSenhaCopiada] = useState(false);
+
   useAtualizacaoAutomatica(carregar, 30000);
 
   async function carregar() {
@@ -88,16 +104,25 @@ export default function AprovacoesScreen() {
   }
 
   const listaAtual = aba === "pendentes" ? pendentes : usuarios;
+  const pedidosRedefinicao = usuarios.filter(
+    (u) => u.redefinicaoSolicitada,
+  ).length;
 
   const filtrados = useMemo(() => {
     const q = busca.toLowerCase();
-    return listaAtual.filter(
-      (u) =>
-        (filtroPerfil === "" || u.perfil === filtroPerfil) &&
-        (q === "" ||
-          u.nome.toLowerCase().includes(q) ||
-          u.email.toLowerCase().includes(q)),
-    );
+    return listaAtual
+      .filter(
+        (u) =>
+          (filtroPerfil === "" || u.perfil === filtroPerfil) &&
+          (q === "" ||
+            u.nome.toLowerCase().includes(q) ||
+            u.email.toLowerCase().includes(q)),
+      )
+      .sort(
+        // Quem pediu nova senha aparece primeiro
+        (a, b) =>
+          Number(!!b.redefinicaoSolicitada) - Number(!!a.redefinicaoSolicitada),
+      );
   }, [listaAtual, busca, filtroPerfil]);
 
   function pedirConfirmacao(usuario: UsuarioItem, tipo: Acao) {
@@ -109,6 +134,41 @@ export default function AprovacoesScreen() {
     if (processando) return;
     setSelecionado(null);
     setAcao(null);
+  }
+
+  function abrirRedefinicao(usuario: UsuarioItem) {
+    setSenhaGerada(null);
+    setSenhaCopiada(false);
+    setRedefinirAlvo(usuario);
+  }
+
+  function fecharRedefinicao() {
+    if (redefinindo) return;
+    const gerou = !!senhaGerada;
+    setRedefinirAlvo(null);
+    setSenhaGerada(null);
+    setSenhaCopiada(false);
+    if (gerou) carregar();
+  }
+
+  async function gerarSenhaTemporaria() {
+    if (!redefinirAlvo) return;
+    setRedefinindo(true);
+    try {
+      const r = await api.post(`/api/auth/${redefinirAlvo.id}/redefinir-senha`);
+      setSenhaGerada(r.data.senhaTemporaria);
+    } catch (e: any) {
+      setErro(e.mensagemBack ?? "Erro ao redefinir a senha");
+      setRedefinirAlvo(null);
+    } finally {
+      setRedefinindo(false);
+    }
+  }
+
+  async function copiarSenha() {
+    if (!senhaGerada) return;
+    await Clipboard.setStringAsync(senhaGerada);
+    setSenhaCopiada(true);
   }
 
   async function confirmar() {
@@ -192,6 +252,26 @@ export default function AprovacoesScreen() {
         />
 
         {erro ? <Text style={styles.erro}>{erro}</Text> : null}
+
+        {aba === "usuarios" && pedidosRedefinicao > 0 && (
+          <View
+            style={[
+              styles.avisoPedidos,
+              { backgroundColor: cores.aviso + (theme.dark ? "33" : "22") },
+            ]}
+          >
+            <MaterialCommunityIcons
+              name="lock-reset"
+              size={20}
+              color={cores.aviso}
+            />
+            <Text style={styles.avisoPedidosTexto}>
+              {pedidosRedefinicao === 1
+                ? "1 usuário pediu redefinição de senha."
+                : `${pedidosRedefinicao} usuários pediram redefinição de senha.`}
+            </Text>
+          </View>
+        )}
 
         {listaAtual.length > 0 && (
           <View style={styles.filtrosBox}>
@@ -376,6 +456,25 @@ export default function AprovacoesScreen() {
                             {isInativo ? "Inativo" : "Ativo"}
                           </Chip>
                         )}
+                        {aba === "usuarios" && u.redefinicaoSolicitada && (
+                          <Chip
+                            compact
+                            icon="lock-reset"
+                            style={[
+                              styles.chipPerfil,
+                              {
+                                backgroundColor:
+                                  cores.aviso + (theme.dark ? "33" : "22"),
+                              },
+                            ]}
+                            textStyle={[
+                              styles.chipTexto,
+                              { color: theme.dark ? "#ffd9a8" : "#a15c00" },
+                            ]}
+                          >
+                            Pediu nova senha
+                          </Chip>
+                        )}
                       </View>
                     </View>
 
@@ -438,6 +537,28 @@ export default function AprovacoesScreen() {
                       ))
                     )}
                   </View>
+
+                  {aba === "usuarios" && !isInativo && (
+                    <Button
+                      compact
+                      mode={u.redefinicaoSolicitada ? "contained" : "outlined"}
+                      buttonColor={
+                        u.redefinicaoSolicitada ? cores.aviso : undefined
+                      }
+                      textColor={u.redefinicaoSolicitada ? "#fff" : cores.aviso}
+                      icon="lock-reset"
+                      onPress={() => abrirRedefinicao(u)}
+                      labelStyle={styles.botaoLabel}
+                      style={[
+                        styles.botaoRedefinir,
+                        !u.redefinicaoSolicitada && {
+                          borderColor: cores.aviso,
+                        },
+                      ]}
+                    >
+                      Redefinir senha
+                    </Button>
+                  )}
                 </Card.Content>
               </Card>
             );
@@ -456,6 +577,66 @@ export default function AprovacoesScreen() {
           loading={processando}
         />
       )}
+
+      <ConfirmModal
+        visible={!!redefinirAlvo && !senhaGerada}
+        titulo="Redefinir senha"
+        mensagem={`Será gerada uma senha temporária para ${redefinirAlvo?.nome}. A senha atual deixa de funcionar na hora e ele precisará criar uma nova no próximo acesso.`}
+        corBotao={cores.aviso}
+        confirmarLabel="Gerar senha"
+        icone="lock-reset"
+        onClose={fecharRedefinicao}
+        onConfirmar={gerarSenhaTemporaria}
+        loading={redefinindo}
+      />
+
+      <Portal>
+        <Modal
+          visible={!!senhaGerada}
+          dismissable={false}
+          contentContainerStyle={[
+            styles.modalSenha,
+            { backgroundColor: theme.colors.surface },
+          ]}
+        >
+          <Text variant="titleMedium" style={{ fontWeight: "700" }}>
+            Senha temporária gerada
+          </Text>
+          <Text
+            variant="bodySmall"
+            style={{
+              color: theme.colors.onSurfaceVariant,
+              marginTop: 4,
+              marginBottom: 14,
+            }}
+          >
+            Para {redefinirAlvo?.nome}. Repasse esta senha ao usuário: ela
+            aparece somente desta vez e será trocada no primeiro acesso.
+          </Text>
+          <View
+            style={[
+              styles.caixaSenha,
+              { borderColor: cores.aviso, backgroundColor: cores.aviso + "14" },
+            ]}
+          >
+            <Text selectable style={styles.textoSenha}>
+              {senhaGerada}
+            </Text>
+          </View>
+          <View style={styles.botoesModalSenha}>
+            <Button
+              mode="outlined"
+              icon={senhaCopiada ? "check" : "content-copy"}
+              onPress={copiarSenha}
+            >
+              {senhaCopiada ? "Copiada" : "Copiar"}
+            </Button>
+            <Button mode="contained" onPress={fecharRedefinicao}>
+              Concluir
+            </Button>
+          </View>
+        </Modal>
+      </Portal>
 
       <Snackbar
         visible={!!feedback}
@@ -489,6 +670,36 @@ const styles = StyleSheet.create({
   botoesDireita: { flexDirection: "row", gap: 6, flexShrink: 0 },
   botaoCompacto: { borderRadius: 7 },
   botaoLabel: { fontSize: 11.5, marginHorizontal: 8, marginVertical: 4 },
+  avisoPedidos: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    padding: 10,
+    borderRadius: 8,
+    marginBottom: 10,
+  },
+  avisoPedidosTexto: { flex: 1, fontSize: 12.5 },
+  botaoRedefinir: { alignSelf: "flex-end", marginTop: 8, borderRadius: 7 },
+  modalSenha: { margin: 24, padding: 20, borderRadius: 16 },
+  caixaSenha: {
+    borderWidth: 1,
+    borderStyle: "dashed",
+    borderRadius: 10,
+    paddingVertical: 14,
+    alignItems: "center",
+  },
+  textoSenha: {
+    fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace",
+    fontSize: 20,
+    fontWeight: "700",
+    letterSpacing: 1,
+  },
+  botoesModalSenha: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    gap: 8,
+    marginTop: 16,
+  },
   vazio: { alignItems: "center", marginTop: 50 },
   textoVazio: { marginTop: 10, fontSize: 14, textAlign: "center" },
 });

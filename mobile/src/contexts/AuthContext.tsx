@@ -13,6 +13,7 @@ interface Usuario {
   perfil: string;
   medicoId?: string;
   temFoto?: boolean;
+  deveTrocarSenha?: boolean;
 }
 
 interface AuthContextData {
@@ -99,6 +100,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         perfil: response.data.perfil,
         medicoId: response.data.medicoId ?? undefined,
         temFoto: !!response.data.temFoto,
+        deveTrocarSenha: !!response.data.deveTrocarSenha,
       };
 
       await SecureStore.setItemAsync(
@@ -117,7 +119,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   async function login(email: string, senha: string) {
     const response = await api.post("/api/auth/login", { email, senha });
-    const { token, nome, perfil, medicoId, temFoto } = response.data;
+    const { token, nome, perfil, medicoId, temFoto, deveTrocarSenha } =
+      response.data;
 
     const usuarioLogado: Usuario = {
       nome,
@@ -125,6 +128,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       perfil,
       medicoId: medicoId ?? undefined,
       temFoto: !!temFoto,
+      deveTrocarSenha: !!deveTrocarSenha,
     };
 
     await SecureStore.setItemAsync("vitus_token", token);
