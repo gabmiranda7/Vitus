@@ -38,7 +38,8 @@ namespace Vitus.Application.UseCases.Auth.ObterUsuarioLogado
                 Email = usuario.Email,
                 Perfil = usuario.Perfil.ToString(),
                 MedicoId = medicoId,
-                TemFoto = !string.IsNullOrEmpty(usuario.FotoCaminho)
+                TemFoto = !string.IsNullOrEmpty(usuario.FotoCaminho),
+                DeveTrocarSenha = usuario.DeveTrocarSenha
             };
         }
     }

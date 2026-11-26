@@ -7,5 +7,7 @@
         public string Email { get; set; } = string.Empty;
         public string Perfil { get; set; } = string.Empty;
         public string Status { get; set; } = string.Empty;
+        public bool RedefinicaoSolicitada { get; set; }
+        public DateTime? RedefinicaoSolicitadaEm { get; set; }
     }
 }

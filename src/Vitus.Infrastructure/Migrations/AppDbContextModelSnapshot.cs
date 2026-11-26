@@ -491,6 +491,10 @@ namespace Vitus.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
+                    b.Property<bool>("DeveTrocarSenha")
+                        .HasColumnType("boolean")
+                        .HasColumnName("deve_trocar_senha");
+
                     b.Property<string>("Email")
                         .IsRequired()
                         .HasMaxLength(200)
@@ -512,6 +516,10 @@ namespace Vitus.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("perfil");
+
+                    b.Property<DateTime?>("RedefinicaoSolicitadaEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("redefinicao_solicitada_em");
 
                     b.Property<string>("SenhaHash")
                         .IsRequired()

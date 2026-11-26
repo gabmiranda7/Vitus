@@ -67,7 +67,23 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                 var usuario = await repositorio.GetById(usuarioId);
 
                 if (usuario == null || usuario.Status != StatusUsuario.Aprovado)
+                {
                     context.Fail("Usuário inativo ou não aprovado");
+                    return;
+                }
+
+                // Com senha temporária, só é possível consultar o próprio usuário e trocar a senha
+                if (usuario.DeveTrocarSenha)
+                {
+                    var caminho = context.HttpContext.Request.Path;
+                    var permitido =
+                        caminho.Equals("/api/auth/me", StringComparison.OrdinalIgnoreCase) ||
+                        caminho.Equals("/api/auth/me/senha", StringComparison.OrdinalIgnoreCase);
+
+                    if (!permitido)
+                        context.Fail("Troca de senha obrigatória");
+                }
+                context.Fail("Usuário inativo ou não aprovado");
             }
         };
     });
@@ -138,8 +154,17 @@ builder.Services.AddRateLimiter(options =>
                 QueueLimit = 0
             }));
 
-    options.AddPolicy("registro", context =>
+    options.AddPolicy("esqueci-senha", context =>
         RateLimitPartition.GetFixedWindowLimiter(
+            context.Connection.RemoteIpAddress?.ToString() ?? "desconhecido",
+            _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 5,
+                Window = TimeSpan.FromHours(1),
+                QueueLimit = 0
+            }));
+
+    options.AddPolicy("registro", context => RateLimitPartition.GetFixedWindowLimiter(
             context.Connection.RemoteIpAddress?.ToString() ?? "desconhecido",
             _ => new FixedWindowRateLimiterOptions
             {

@@ -25,7 +25,9 @@ namespace Vitus.Application.UseCases.Auth.GetAllUsuarios
                     Nome = u.Nome,
                     Email = u.Email,
                     Perfil = u.Perfil.ToString(),
-                    Status = u.Status.ToString()
+                    Status = u.Status.ToString(),
+                    RedefinicaoSolicitada = u.RedefinicaoSolicitadaEm.HasValue,
+                    RedefinicaoSolicitadaEm = u.RedefinicaoSolicitadaEm
                 })
                 .ToList();
         }

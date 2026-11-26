@@ -12,8 +12,11 @@ using Vitus.Application.UseCases.Auth.Login;
 using Vitus.Application.UseCases.Auth.ObterFotoPerfil;
 using Vitus.Application.UseCases.Auth.ObterUsuarioLogado;
 using Vitus.Application.UseCases.Auth.RecusarUsuario;
+using Vitus.Application.UseCases.Auth.RedefinirSenhaUsuario;
 using Vitus.Application.UseCases.Auth.Registrar;
 using Vitus.Application.UseCases.Auth.RemoverFotoPerfil;
+using Vitus.Application.UseCases.Auth.SolicitarRedefinicaoSenha;
+using Vitus.Application.UseCases.Auth.TrocarSenha;
 using Vitus.Communication.Auth.Requests;
 
 namespace Vitus.API.Controllers
@@ -41,6 +44,40 @@ namespace Vitus.API.Controllers
             [FromBody] LoginRequestJson request)
         {
             var response = await useCase.Execute(request);
+            return Ok(response);
+        }
+
+        [HttpPost("esqueci-senha")]
+        [AllowAnonymous]
+        [EnableRateLimiting("esqueci-senha")]
+        public async Task<IActionResult> EsqueciSenha(
+            [FromServices] SolicitarRedefinicaoSenhaUseCase useCase,
+            [FromBody] EsqueciSenhaRequestJson request)
+        {
+            await useCase.Execute(request);
+            return Ok(new
+            {
+                mensagem = "Se o e-mail estiver cadastrado, o administrador foi avisado e vai gerar uma senha temporária para você."
+            });
+        }
+
+        [HttpPost("{id}/redefinir-senha")]
+        [Authorize(Roles = "Administrador")]
+        public async Task<IActionResult> RedefinirSenha(
+            [FromServices] RedefinirSenhaUsuarioUseCase useCase,
+            Guid id)
+        {
+            var response = await useCase.Execute(id);
+            return Ok(response);
+        }
+
+        [HttpPost("me/senha")]
+        [Authorize]
+        public async Task<IActionResult> TrocarSenha(
+            [FromServices] TrocarSenhaUseCase useCase,
+            [FromBody] TrocarSenhaRequestJson request)
+        {
+            var response = await useCase.Execute(UsuarioIdLogado(), request);
             return Ok(response);
         }
 

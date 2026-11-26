@@ -7,5 +7,6 @@
         public string Perfil { get; set; } = string.Empty;
         public string? MedicoId { get; set; }
         public bool? TemFoto { get; set; }
+        public bool DeveTrocarSenha { get; set; }
     }
 }

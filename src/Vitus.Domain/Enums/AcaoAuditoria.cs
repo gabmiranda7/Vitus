@@ -23,6 +23,9 @@
         InicioAtendimento,
         FinalizacaoConsulta,
         InativacaoPaciente,
-        ReativacaoPaciente
+        ReativacaoPaciente,
+        SolicitacaoRedefinicaoSenha,
+        RedefinicaoSenhaPeloAdmin,
+        TrocaDeSenha
     }
 }

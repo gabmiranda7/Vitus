@@ -13,6 +13,9 @@ namespace Vitus.Domain.Entities
         public StatusUsuario Status { get; private set; }
         public string? FotoCaminho { get; private set; }
 
+        // Troca obrigatória após a redefinição feita pelo administrador
+        public bool DeveTrocarSenha { get; private set; }
+        public DateTime? RedefinicaoSolicitadaEm { get; private set; }
         protected Usuario() { }
 
         public Usuario(string nome, string email, string senhaHash, PerfilUsuario perfil)
@@ -88,5 +91,39 @@ namespace Vitus.Domain.Entities
         }
 
         public void RemoverFoto() => FotoCaminho = null;
+
+        /// <summary>Registra que o usuário pediu ajuda para redefinir a senha (só contas ativas).</summary>
+        public void SolicitarRedefinicaoSenha()
+        {
+            if (Status != StatusUsuario.Aprovado)
+                return;
+
+            RedefinicaoSolicitadaEm = DateTime.UtcNow;
+        }
+
+        /// <summary>Define uma senha temporária; o usuário precisará trocá-la no próximo acesso.</summary>
+        public void RedefinirComSenhaTemporaria(string senhaHash)
+        {
+            if (string.IsNullOrWhiteSpace(senhaHash))
+                throw new DomainException("Senha é obrigatória");
+
+            if (Status != StatusUsuario.Aprovado)
+                throw new DomainException("Apenas usuários ativos podem ter a senha redefinida");
+
+            SenhaHash = senhaHash;
+            DeveTrocarSenha = true;
+            RedefinicaoSolicitadaEm = null;
+        }
+
+        /// <summary>Define a senha escolhida pelo próprio usuário e encerra a troca obrigatória.</summary>
+        public void DefinirNovaSenha(string senhaHash)
+        {
+            if (string.IsNullOrWhiteSpace(senhaHash))
+                throw new DomainException("Senha é obrigatória");
+
+            SenhaHash = senhaHash;
+            DeveTrocarSenha = false;
+            RedefinicaoSolicitadaEm = null;
+        }
     }
 }

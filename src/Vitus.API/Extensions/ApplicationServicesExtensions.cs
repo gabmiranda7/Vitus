@@ -9,8 +9,11 @@ using Vitus.Application.UseCases.Auth.Login;
 using Vitus.Application.UseCases.Auth.ObterFotoPerfil;
 using Vitus.Application.UseCases.Auth.ObterUsuarioLogado;
 using Vitus.Application.UseCases.Auth.RecusarUsuario;
+using Vitus.Application.UseCases.Auth.RedefinirSenhaUsuario;
 using Vitus.Application.UseCases.Auth.Registrar;
 using Vitus.Application.UseCases.Auth.RemoverFotoPerfil;
+using Vitus.Application.UseCases.Auth.SolicitarRedefinicaoSenha;
+using Vitus.Application.UseCases.Auth.TrocarSenha;
 using Vitus.Application.UseCases.Consultas.AguardarAtendimento;
 using Vitus.Application.UseCases.Consultas.AnotarConsulta;
 using Vitus.Application.UseCases.Consultas.CancelarConsulta;
@@ -64,8 +67,11 @@ namespace Vitus.API.Extensions
             services.AddScoped<ObterFotoPerfilUseCase>();
             services.AddScoped<ObterUsuarioLogadoUseCase>();
             services.AddScoped<RecusarUsuarioUseCase>();
+            services.AddScoped<RedefinirSenhaUsuarioUseCase>();
             services.AddScoped<RegistrarUsuarioUseCase>();
             services.AddScoped<RemoverFotoPerfilUseCase>();
+            services.AddScoped<SolicitarRedefinicaoSenhaUseCase>();
+            services.AddScoped<TrocarSenhaUseCase>();
 
             services.AddScoped<AguardarAtendimentoUseCase>();
             services.AddScoped<AnotarConsultaUseCase>();
