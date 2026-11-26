@@ -31,6 +31,8 @@ import LockOpenIcon from "@mui/icons-material/LockOpen";
 import PeopleIcon from "@mui/icons-material/People";
 import SearchIcon from "@mui/icons-material/Search";
 import PersonIcon from "@mui/icons-material/Person";
+import PersonAddAlt1Icon from "@mui/icons-material/PersonAddAlt1";
+import CloseIcon from "@mui/icons-material/Close";
 import NavigateBeforeIcon from "@mui/icons-material/NavigateBefore";
 import NavigateNextIcon from "@mui/icons-material/NavigateNext";
 import InfoIcon from "@mui/icons-material/Info";
@@ -118,6 +120,14 @@ const campoVazio = () => ({
   informacoesAdicionais: "",
   aceitaTermos: false,
 });
+
+// Grade de 12 colunas do formulário (1 coluna no celular)
+const gradeForm = {
+  display: "grid",
+  gridTemplateColumns: { xs: "1fr", sm: "repeat(12, 1fr)" },
+  gap: 2,
+} as const;
+const colunas = (n: number) => ({ gridColumn: { sm: `span ${n}` } });
 
 function SecaoTitulo({
   icone,
@@ -858,84 +868,110 @@ export default function PacientesPage() {
       </Dialog>
 
       {/* Cadastro / Edição */}
-      <Dialog open={modalAberto} onClose={fechar} fullWidth maxWidth="md">
+      <Dialog
+        open={modalAberto}
+        onClose={fechar}
+        fullWidth
+        maxWidth="md"
+        slotProps={{
+          paper: {
+            sx: {
+              borderRadius: 4,
+              boxShadow: "0 24px 64px rgba(0,0,0,0.22)",
+              backgroundImage: "none",
+            },
+          },
+        }}
+      >
         <Box
           sx={{
-            background: "linear-gradient(135deg, #1565c0 0%, #1976d2 100%)",
-            p: 3,
+            display: "flex",
+            alignItems: "center",
+            gap: 2,
+            px: 3.5,
+            py: 2.5,
+            borderBottom: 1,
+            borderColor: "divider",
           }}
         >
-          <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-            <Avatar
-              sx={{
-                bgcolor: "rgba(255,255,255,0.2)",
-                width: 52,
-                height: 52,
-                border: "2px solid rgba(255,255,255,0.4)",
-              }}
-            >
-              <PersonIcon sx={{ color: "white", fontSize: 28 }} />
-            </Avatar>
-            <Box>
-              <Typography
-                variant="h6"
-                sx={{ color: "white", fontWeight: "bold" }}
-              >
-                {editando ? "Editar Paciente" : "Novo Paciente"}
-              </Typography>
-              <Typography
-                variant="body2"
-                sx={{ color: "rgba(255,255,255,0.8)" }}
-              >
-                Preencha os dados do paciente
-              </Typography>
-            </Box>
+          <Box
+            sx={{
+              width: 46,
+              height: 46,
+              borderRadius: "50%",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              flexShrink: 0,
+              color: "primary.main",
+              bgcolor: (t) => alpha(t.palette.primary.main, 0.12),
+            }}
+          >
+            {editando ? <EditIcon /> : <PersonAddAlt1Icon />}
           </Box>
+          <Box sx={{ flex: 1, minWidth: 0 }}>
+            <Typography variant="h6" sx={{ fontWeight: 700, lineHeight: 1.25 }}>
+              {editando ? "Editar paciente" : "Novo paciente"}
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              {editando
+                ? "Atualize os dados do paciente"
+                : "Preencha os dados do paciente. O nome é obrigatório."}
+            </Typography>
+          </Box>
+          <IconButton onClick={fechar} aria-label="Fechar" size="small">
+            <CloseIcon fontSize="small" />
+          </IconButton>
         </Box>
-        <DialogContent sx={{ pt: 3 }}>
+
+        <DialogContent sx={{ px: 3.5, py: 3 }}>
           {erro && (
-            <Alert severity="error" sx={{ mb: 2 }}>
+            <Alert severity="error" sx={{ mb: 2.5 }}>
               {erro}
             </Alert>
           )}
 
           <SecaoTitulo
             icone={<PersonIcon fontSize="small" color="primary" />}
-            titulo="Dados Pessoais"
+            titulo="Dados pessoais"
           />
-          <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2, mb: 3 }}>
+          <Box sx={{ ...gradeForm, mb: 3 }}>
             <TextField
+              size="small"
               label="Nome completo *"
               value={form.nome}
               onChange={(e) => setField("nome", e.target.value)}
-              sx={{ flex: "1 1 100%" }}
+              sx={{ gridColumn: "1 / -1" }}
             />
             <TextField
+              size="small"
               label="CPF"
               value={form.cpf}
               onChange={(e) => setField("cpf", formatarCpf(e.target.value))}
               placeholder="000.000.000-00"
-              sx={{ flex: "1 1 180px" }}
+              sx={colunas(4)}
               slotProps={{ htmlInput: { maxLength: 14 } }}
             />
             <TextField
+              size="small"
               label="Cartão SUS"
               value={form.cartaoSus}
               onChange={(e) =>
                 setField("cartaoSus", formatarCartaoSus(e.target.value))
               }
-              sx={{ flex: "1 1 180px" }}
+              sx={colunas(4)}
               slotProps={{ htmlInput: { maxLength: 19 } }}
             />
             <TextField
-              label="Data de Nascimento"
+              size="small"
+              label="Data de nascimento"
               type="date"
               value={form.dataNascimento}
               onChange={(e) => setField("dataNascimento", e.target.value)}
-              sx={{ flex: "1 1 160px" }}
+              sx={colunas(4)}
               slotProps={{ inputLabel: { shrink: true } }}
             />
-            <FormControl sx={{ flex: "1 1 160px" }}>
+            <FormControl size="small" sx={colunas(4)}>
               <InputLabel>Sexo</InputLabel>
               <Select
                 value={form.sexo}
@@ -950,11 +986,11 @@ export default function PacientesPage() {
                 ))}
               </Select>
             </FormControl>
-            <FormControl sx={{ flex: "1 1 160px" }}>
-              <InputLabel>Estado Civil</InputLabel>
+            <FormControl size="small" sx={colunas(4)}>
+              <InputLabel>Estado civil</InputLabel>
               <Select
                 value={form.estadoCivil}
-                label="Estado Civil"
+                label="Estado civil"
                 onChange={(e) => setField("estadoCivil", e.target.value)}
               >
                 <MenuItem value="">Não informado</MenuItem>
@@ -966,10 +1002,11 @@ export default function PacientesPage() {
               </Select>
             </FormControl>
             <TextField
+              size="small"
               label="Profissão"
               value={form.profissao}
               onChange={(e) => setField("profissao", e.target.value)}
-              sx={{ flex: "1 1 200px" }}
+              sx={colunas(4)}
             />
           </Box>
 
@@ -979,18 +1016,20 @@ export default function PacientesPage() {
             icone={<FamilyRestroomIcon fontSize="small" color="primary" />}
             titulo="Família"
           />
-          <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2, mb: 3 }}>
+          <Box sx={{ ...gradeForm, mb: 3 }}>
             <TextField
-              label="Nome do Pai"
+              size="small"
+              label="Nome do pai"
               value={form.nomePai}
               onChange={(e) => setField("nomePai", e.target.value)}
-              sx={{ flex: "1 1 200px" }}
+              sx={colunas(6)}
             />
             <TextField
-              label="Nome da Mãe"
+              size="small"
+              label="Nome da mãe"
               value={form.nomeMae}
               onChange={(e) => setField("nomeMae", e.target.value)}
-              sx={{ flex: "1 1 200px" }}
+              sx={colunas(6)}
             />
           </Box>
 
@@ -1001,6 +1040,7 @@ export default function PacientesPage() {
             titulo="Endereço"
           />
           <TextField
+            size="small"
             label="Endereço completo"
             value={form.endereco}
             onChange={(e) => setField("endereco", e.target.value)}
@@ -1013,56 +1053,95 @@ export default function PacientesPage() {
 
           <SecaoTitulo
             icone={<MedicalInformationIcon fontSize="small" color="warning" />}
-            titulo="Informações Médicas Adicionais"
+            titulo="Informações médicas adicionais"
             cor="warning"
           />
           <TextField
-            label="Alergias, condições especiais, observações..."
+            size="small"
+            label="Alergias, condições especiais, observações"
             value={form.informacoesAdicionais}
             onChange={(e) => setField("informacoesAdicionais", e.target.value)}
             fullWidth
             multiline
-            rows={3}
-            sx={{ mb: 3 }}
+            minRows={3}
+            maxRows={6}
             placeholder="Ex: Alergia à Dipirona, hipertenso, membro amputado..."
           />
 
           {!editando && (
-            <>
-              <Divider sx={{ mb: 2 }} />
-              <Alert severity="info" icon={<InfoIcon />} sx={{ mb: 2 }}>
-                Os dados coletados são utilizados exclusivamente para fins
-                clínicos e de atendimento médico, em conformidade com a LGPD.
-              </Alert>
+            <Box
+              sx={{
+                mt: 3,
+                p: 2,
+                borderRadius: 2.5,
+                border: 1,
+                borderColor: "divider",
+                bgcolor: (t) => alpha(t.palette.primary.main, 0.05),
+              }}
+            >
+              <Box sx={{ display: "flex", gap: 1, alignItems: "flex-start" }}>
+                <InfoIcon
+                  fontSize="small"
+                  color="primary"
+                  sx={{ mt: 0.25, flexShrink: 0 }}
+                />
+                <Typography variant="caption" color="text.secondary">
+                  Os dados coletados são utilizados exclusivamente para fins
+                  clínicos e de atendimento médico, em conformidade com a LGPD.
+                </Typography>
+              </Box>
               <FormControlLabel
+                sx={{ mt: 0.5, alignItems: "flex-start", mr: 0 }}
                 control={
                   <Checkbox
                     checked={form.aceitaTermos}
                     onChange={(e) => setField("aceitaTermos", e.target.checked)}
                     color="primary"
+                    size="small"
+                    sx={{ pt: 0.75 }}
                   />
                 }
                 label={
-                  <Typography variant="body2">
+                  <Typography variant="body2" sx={{ pt: 0.5 }}>
                     O paciente autoriza o uso dos seus dados pessoais e clínicos
                     para fins de atendimento médico, conforme a{" "}
                     <strong>Lei Geral de Proteção de Dados (LGPD)</strong>.
                   </Typography>
                 }
               />
-            </>
+            </Box>
           )}
         </DialogContent>
-        <DialogActions sx={{ p: 2, gap: 1 }}>
-          <Button onClick={fechar} variant="outlined">
+
+        <DialogActions
+          sx={{
+            px: 3.5,
+            py: 2,
+            gap: 1.5,
+            borderTop: 1,
+            borderColor: "divider",
+            "& > :not(style) ~ :not(style)": { ml: 0 },
+          }}
+        >
+          <Button
+            onClick={fechar}
+            variant="outlined"
+            color="inherit"
+            sx={{
+              minHeight: 42,
+              px: 3,
+              borderColor: "divider",
+              color: "text.secondary",
+            }}
+          >
             Cancelar
           </Button>
           <Button
             onClick={handleSalvar}
             variant="contained"
-            startIcon={<PersonIcon />}
+            sx={{ minHeight: 42, px: 3 }}
           >
-            {editando ? "Salvar Alterações" : "Cadastrar Paciente"}
+            {editando ? "Salvar alterações" : "Cadastrar paciente"}
           </Button>
         </DialogActions>
       </Dialog>
