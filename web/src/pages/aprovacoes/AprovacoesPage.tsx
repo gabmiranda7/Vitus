@@ -25,6 +25,8 @@ import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import CancelIcon from "@mui/icons-material/Cancel";
 import BlockIcon from "@mui/icons-material/Block";
 import LockOpenIcon from "@mui/icons-material/LockOpen";
+import LockResetIcon from "@mui/icons-material/LockReset";
+import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import MedicalServicesIcon from "@mui/icons-material/MedicalServices";
 import VaccinesIcon from "@mui/icons-material/Vaccines";
 import SupportAgentIcon from "@mui/icons-material/SupportAgent";
@@ -48,6 +50,8 @@ interface UsuarioItem {
   especialidade?: string | null;
   coren?: string | null;
   especializacao?: string | null;
+  redefinicaoSolicitada?: boolean;
+  redefinicaoSolicitadaEm?: string | null;
 }
 
 const perfilInfo: Record<
@@ -85,6 +89,10 @@ export default function AprovacoesPage() {
   const [selecionado, setSelecionado] = useState<UsuarioItem | null>(null);
   const [acao, setAcao] = useState<Acao | null>(null);
   const [processando, setProcessando] = useState(false);
+  const [redefinirAlvo, setRedefinirAlvo] = useState<UsuarioItem | null>(null);
+  const [senhaGerada, setSenhaGerada] = useState<string | null>(null);
+  const [redefinindo, setRedefinindo] = useState(false);
+  const [senhaCopiada, setSenhaCopiada] = useState(false);
 
   useEffect(() => {
     carregar(true);
@@ -108,19 +116,28 @@ export default function AprovacoesPage() {
   }
 
   const listaAtual = aba === "pendentes" ? pendentes : usuarios;
+  const pedidosRedefinicao = usuarios.filter(
+    (u) => u.redefinicaoSolicitada,
+  ).length;
 
   const filtrados = useMemo(() => {
     const q = busca.toLowerCase();
-    return listaAtual.filter(
-      (u) =>
-        (filtroPerfil === "" || u.perfil === filtroPerfil) &&
-        (aba === "pendentes" ||
-          filtroStatus === "todos" ||
-          u.status === filtroStatus) &&
-        (q === "" ||
-          u.nome.toLowerCase().includes(q) ||
-          u.email.toLowerCase().includes(q)),
-    );
+    return listaAtual
+      .filter(
+        (u) =>
+          (filtroPerfil === "" || u.perfil === filtroPerfil) &&
+          (aba === "pendentes" ||
+            filtroStatus === "todos" ||
+            u.status === filtroStatus) &&
+          (q === "" ||
+            u.nome.toLowerCase().includes(q) ||
+            u.email.toLowerCase().includes(q)),
+      )
+      .sort(
+        // Quem pediu nova senha aparece primeiro
+        (a, b) =>
+          Number(!!b.redefinicaoSolicitada) - Number(!!a.redefinicaoSolicitada),
+      );
   }, [listaAtual, aba, busca, filtroPerfil, filtroStatus]);
 
   function pedirConfirmacao(usuario: UsuarioItem, tipo: Acao) {
@@ -133,6 +150,46 @@ export default function AprovacoesPage() {
     if (processando) return;
     setSelecionado(null);
     setAcao(null);
+  }
+
+  function abrirRedefinicao(usuario: UsuarioItem) {
+    setErro("");
+    setSenhaGerada(null);
+    setSenhaCopiada(false);
+    setRedefinirAlvo(usuario);
+  }
+
+  function fecharRedefinicao() {
+    if (redefinindo) return;
+    const gerou = !!senhaGerada;
+    setRedefinirAlvo(null);
+    setSenhaGerada(null);
+    setSenhaCopiada(false);
+    if (gerou) carregar(false);
+  }
+
+  async function gerarSenhaTemporaria() {
+    if (!redefinirAlvo) return;
+    setRedefinindo(true);
+    try {
+      const r = await api.post(`/api/auth/${redefinirAlvo.id}/redefinir-senha`);
+      setSenhaGerada(r.data.senhaTemporaria);
+    } catch (error: any) {
+      setErro(error.mensagemBack ?? "Erro ao redefinir a senha");
+      setRedefinirAlvo(null);
+    } finally {
+      setRedefinindo(false);
+    }
+  }
+
+  async function copiarSenha() {
+    if (!senhaGerada) return;
+    try {
+      await navigator.clipboard.writeText(senhaGerada);
+      setSenhaCopiada(true);
+    } catch {
+      /* sem permissão de área de transferência: a senha continua selecionável */
+    }
   }
 
   async function confirmar() {
@@ -276,6 +333,15 @@ export default function AprovacoesPage() {
       {erro && (
         <Alert severity="error" sx={{ mb: 2 }} onClose={() => setErro("")}>
           {erro}
+        </Alert>
+      )}
+
+      {aba === "usuarios" && pedidosRedefinicao > 0 && (
+        <Alert severity="warning" icon={<LockResetIcon />} sx={{ mb: 2 }}>
+          {pedidosRedefinicao === 1
+            ? "1 usuário pediu redefinição de senha."
+            : `${pedidosRedefinicao} usuários pediram redefinição de senha.`}{" "}
+          Use o botão “Redefinir senha” no cartão dele.
         </Alert>
       )}
 
@@ -479,6 +545,15 @@ export default function AprovacoesPage() {
                             sx={{ height: 20, fontSize: 11 }}
                           />
                         )}
+                        {aba === "usuarios" && u.redefinicaoSolicitada && (
+                          <Chip
+                            icon={<LockResetIcon sx={{ fontSize: 13 }} />}
+                            label="Pediu nova senha"
+                            size="small"
+                            color="warning"
+                            sx={{ height: 20, fontSize: 11 }}
+                          />
+                        )}
                       </Box>
                     </Box>
 
@@ -509,30 +584,60 @@ export default function AprovacoesPage() {
                           </Button>
                         </>
                       ) : (
-                        !isAdmin &&
-                        (isInativo ? (
-                          <Button
-                            size="small"
-                            variant="contained"
-                            color="success"
-                            startIcon={<LockOpenIcon sx={{ fontSize: 15 }} />}
-                            onClick={() => pedirConfirmacao(u, "reativar")}
-                            sx={{ borderRadius: 1.5, px: 1.25, fontSize: 12 }}
-                          >
-                            Reativar
-                          </Button>
-                        ) : (
-                          <Button
-                            size="small"
-                            variant="outlined"
-                            color="error"
-                            startIcon={<BlockIcon sx={{ fontSize: 15 }} />}
-                            onClick={() => pedirConfirmacao(u, "desativar")}
-                            sx={{ borderRadius: 1.5, px: 1.25, fontSize: 12 }}
-                          >
-                            Desativar
-                          </Button>
-                        ))
+                        <>
+                          {!isInativo && (
+                            <Button
+                              size="small"
+                              variant={
+                                u.redefinicaoSolicitada
+                                  ? "contained"
+                                  : "outlined"
+                              }
+                              color="warning"
+                              startIcon={
+                                <LockResetIcon sx={{ fontSize: 16 }} />
+                              }
+                              onClick={() => abrirRedefinicao(u)}
+                              sx={{ borderRadius: 1.5, px: 1.25, fontSize: 12 }}
+                            >
+                              Redefinir senha
+                            </Button>
+                          )}
+                          {!isAdmin &&
+                            (isInativo ? (
+                              <Button
+                                size="small"
+                                variant="contained"
+                                color="success"
+                                startIcon={
+                                  <LockOpenIcon sx={{ fontSize: 15 }} />
+                                }
+                                onClick={() => pedirConfirmacao(u, "reativar")}
+                                sx={{
+                                  borderRadius: 1.5,
+                                  px: 1.25,
+                                  fontSize: 12,
+                                }}
+                              >
+                                Reativar
+                              </Button>
+                            ) : (
+                              <Button
+                                size="small"
+                                variant="outlined"
+                                color="error"
+                                startIcon={<BlockIcon sx={{ fontSize: 15 }} />}
+                                onClick={() => pedirConfirmacao(u, "desativar")}
+                                sx={{
+                                  borderRadius: 1.5,
+                                  px: 1.25,
+                                  fontSize: 12,
+                                }}
+                              >
+                                Desativar
+                              </Button>
+                            ))}
+                        </>
                       )}
                     </Box>
                   </Box>
@@ -626,6 +731,140 @@ export default function AprovacoesPage() {
           </DialogActions>
         </Dialog>
       )}
+
+      <Dialog
+        open={!!redefinirAlvo}
+        onClose={(_, motivo) => {
+          // Com a senha na tela, só fecha pelo botão (ela não pode ser vista de novo)
+          if (senhaGerada && motivo === "backdropClick") return;
+          fecharRedefinicao();
+        }}
+        maxWidth="xs"
+        fullWidth
+      >
+        <Box
+          sx={{
+            background: "linear-gradient(135deg, #e65100 0%, #ef6c00 100%)",
+            p: 2.5,
+          }}
+        >
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+            <Avatar
+              sx={{
+                bgcolor: "rgba(255,255,255,0.2)",
+                width: 42,
+                height: 42,
+                border: "2px solid rgba(255,255,255,0.4)",
+              }}
+            >
+              <LockResetIcon sx={{ color: "white", fontSize: 22 }} />
+            </Avatar>
+            <Box>
+              <Typography
+                variant="subtitle1"
+                sx={{ color: "white", fontWeight: "bold", lineHeight: 1.2 }}
+              >
+                {senhaGerada ? "Senha temporária gerada" : "Redefinir senha"}
+              </Typography>
+              <Typography
+                variant="caption"
+                sx={{ color: "rgba(255,255,255,0.85)" }}
+              >
+                {redefinirAlvo?.nome}
+              </Typography>
+            </Box>
+          </Box>
+        </Box>
+        <DialogContent sx={{ pt: 2.5 }}>
+          {senhaGerada ? (
+            <>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                Repasse esta senha ao usuário. Ela aparece somente desta vez e
+                será trocada por uma senha dele no primeiro acesso.
+              </Typography>
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 1,
+                  p: 1.5,
+                  borderRadius: 2,
+                  border: "1px dashed",
+                  borderColor: "warning.main",
+                  bgcolor: alpha("#ed6c02", 0.08),
+                }}
+              >
+                <Typography
+                  sx={{
+                    fontFamily: "monospace",
+                    fontSize: 20,
+                    fontWeight: 700,
+                    letterSpacing: 1,
+                    flex: 1,
+                    userSelect: "all",
+                  }}
+                >
+                  {senhaGerada}
+                </Typography>
+                <Button
+                  size="small"
+                  startIcon={<ContentCopyIcon fontSize="small" />}
+                  onClick={copiarSenha}
+                >
+                  {senhaCopiada ? "Copiada" : "Copiar"}
+                </Button>
+              </Box>
+            </>
+          ) : (
+            <Typography variant="body2" color="text.secondary">
+              Será gerada uma senha temporária. A senha atual deixa de funcionar
+              imediatamente e o usuário precisará criar uma nova no próximo
+              acesso.
+            </Typography>
+          )}
+        </DialogContent>
+        <DialogActions sx={{ p: 2, gap: 1 }}>
+          {senhaGerada ? (
+            <Button
+              size="small"
+              variant="contained"
+              fullWidth
+              onClick={fecharRedefinicao}
+            >
+              Concluir
+            </Button>
+          ) : (
+            <>
+              <Button
+                size="small"
+                variant="outlined"
+                fullWidth
+                onClick={fecharRedefinicao}
+                disabled={redefinindo}
+              >
+                Voltar
+              </Button>
+              <Button
+                size="small"
+                variant="contained"
+                color="warning"
+                fullWidth
+                onClick={gerarSenhaTemporaria}
+                disabled={redefinindo}
+                startIcon={
+                  redefinindo ? (
+                    <CircularProgress size={14} color="inherit" />
+                  ) : (
+                    <LockResetIcon />
+                  )
+                }
+              >
+                Gerar senha
+              </Button>
+            </>
+          )}
+        </DialogActions>
+      </Dialog>
 
       <Snackbar
         open={!!feedback}

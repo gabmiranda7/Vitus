@@ -32,6 +32,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const perfil = localStorage.getItem("perfil");
     const medicoId = localStorage.getItem("medicoId");
     const temFoto = localStorage.getItem("temFoto") === "true";
+    const deveTrocarSenha = localStorage.getItem("deveTrocarSenha") === "true";
     if (token && nome && email && perfil) {
       return {
         token,
@@ -40,6 +41,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         perfil,
         medicoId: medicoId ?? undefined,
         temFoto,
+        deveTrocarSenha,
       };
     }
     return null;
@@ -99,12 +101,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .then((r) => {
         localStorage.setItem("nome", r.data.nome);
         localStorage.setItem("temFoto", String(!!r.data.temFoto));
+        localStorage.setItem(
+          "deveTrocarSenha",
+          String(!!r.data.deveTrocarSenha),
+        );
         setUsuario((prev) =>
           prev
             ? {
                 ...prev,
                 nome: r.data.nome,
                 temFoto: !!r.data.temFoto,
+                deveTrocarSenha: !!r.data.deveTrocarSenha,
                 medicoId: r.data.medicoId ?? prev.medicoId,
               }
             : prev,
@@ -145,6 +152,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.setItem("email", u.email);
     localStorage.setItem("perfil", u.perfil);
     localStorage.setItem("temFoto", String(!!u.temFoto));
+    localStorage.setItem("deveTrocarSenha", String(!!u.deveTrocarSenha));
     if (u.medicoId) localStorage.setItem("medicoId", u.medicoId);
     setUsuario(u);
   }
@@ -156,6 +164,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem("perfil");
     localStorage.removeItem("medicoId");
     localStorage.removeItem("temFoto");
+    localStorage.removeItem("deveTrocarSenha");
     setFotoUrl(null);
     setUsuario(null);
   }

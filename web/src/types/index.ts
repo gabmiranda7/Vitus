@@ -142,4 +142,5 @@ export interface Usuario {
   perfil: string;
   medicoId?: string;
   temFoto?: boolean;
+  deveTrocarSenha?: boolean;
 }

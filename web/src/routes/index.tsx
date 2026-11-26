@@ -10,6 +10,7 @@ import DashboardPage from "../pages/dashboard/DashboardPage";
 import MedicosPage from "../pages/medicos/MedicosPage";
 import PacientesPage from "../pages/pacientes/PacientesPage";
 import PerfilPage from "../pages/perfil/PerfilPage";
+import TrocarSenhaPage from "../pages/auth/TrocarSenhaPage";
 import ProntuarioPacientePage from "../pages/prontuario/ProntuarioPacientePage";
 import ProntuariosPacientesPage from "../pages/prontuario/ProntuariosPacientesPage";
 import ProntuarioPage from "../pages/prontuario/ProntuarioPage";
@@ -26,6 +27,7 @@ function PrivateRoute({
   const { isAuthenticated, usuario } = useAuth();
   if (!isAuthenticated) return <Navigate to="/login" />;
   if (!perfis.includes(usuario!.perfil)) return <Navigate to="/login" />;
+  if (usuario!.deveTrocarSenha) return <Navigate to="/trocar-senha" replace />;
   return children;
 }
 
@@ -35,7 +37,7 @@ export default function AppRoutes() {
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/cadastro" element={<CadastroPage />} />
-
+        <Route path="/trocar-senha" element={<TrocarSenhaPage />} />
         <Route
           path="/agenda"
           element={

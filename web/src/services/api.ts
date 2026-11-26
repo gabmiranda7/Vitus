@@ -7,6 +7,7 @@ const CHAVES_SESSAO = [
   "perfil",
   "medicoId",
   "temFoto",
+  "deveTrocarSenha",
 ];
 
 const api = axios.create({

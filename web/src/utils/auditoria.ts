@@ -21,6 +21,9 @@ export const acaoLabels: Record<string, string> = {
   FinalizacaoConsulta: "Finalização de Consulta",
   InativacaoPaciente: "Inativação de Paciente",
   ReativacaoPaciente: "Reativação de Paciente",
+  SolicitacaoRedefinicaoSenha: "Pedido de Redefinição de Senha",
+  RedefinicaoSenhaPeloAdmin: "Redefinição de Senha pelo Administrador",
+  TrocaDeSenha: "Troca de Senha",
 };
 
 export const acaoCores: Record<string, string> = {
@@ -46,4 +49,7 @@ export const acaoCores: Record<string, string> = {
   FinalizacaoConsulta: "#2e7d32",
   InativacaoPaciente: "#b71c1c",
   ReativacaoPaciente: "#388e3c",
+  SolicitacaoRedefinicaoSenha: "#ed6c02",
+  RedefinicaoSenhaPeloAdmin: "#e65100",
+  TrocaDeSenha: "#00838f",
 };

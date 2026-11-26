@@ -9,6 +9,10 @@ import {
   Typography,
   Alert,
   CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   Divider,
   InputAdornment,
   IconButton,
@@ -30,6 +34,11 @@ export default function LoginPage() {
   const [mostrarSenha, setMostrarSenha] = useState(false);
   const [erro, setErro] = useState("");
   const [loading, setLoading] = useState(false);
+  const [esqueciAberto, setEsqueciAberto] = useState(false);
+  const [emailEsqueci, setEmailEsqueci] = useState("");
+  const [enviandoEsqueci, setEnviandoEsqueci] = useState(false);
+  const [msgEsqueci, setMsgEsqueci] = useState("");
+  const [erroEsqueci, setErroEsqueci] = useState("");
   const { login } = useAuth();
   const navigate = useNavigate();
   const theme = useTheme();
@@ -41,7 +50,11 @@ export default function LoginPage() {
     try {
       const response = await api.post("/api/auth/login", { email, senha });
       login(response.data);
-      navigate(rotaInicial(response.data.perfil));
+      navigate(
+        response.data.deveTrocarSenha
+          ? "/trocar-senha"
+          : rotaInicial(response.data.perfil),
+      );
     } catch (err: unknown) {
       const e = err as {
         mensagemBack?: string;
@@ -60,9 +73,43 @@ export default function LoginPage() {
     }
   }
 
-  const inputSx = {
-    "& .MuiOutlinedInput-root": { borderRadius: 3 },
-  };
+  function abrirEsqueci() {
+    setEmailEsqueci(email);
+    setMsgEsqueci("");
+    setErroEsqueci("");
+    setEsqueciAberto(true);
+  }
+
+  function fecharEsqueci() {
+    if (!enviandoEsqueci) setEsqueciAberto(false);
+  }
+
+  async function enviarEsqueci() {
+    setErroEsqueci("");
+    if (!/^\S+@\S+\.\S+$/.test(emailEsqueci.trim())) {
+      setErroEsqueci("Informe um e-mail válido");
+      return;
+    }
+    setEnviandoEsqueci(true);
+    try {
+      const r = await api.post("/api/auth/esqueci-senha", {
+        email: emailEsqueci.trim(),
+      });
+      setMsgEsqueci(
+        r.data?.mensagem ??
+          "Pedido registrado. O administrador vai gerar uma senha temporária para você.",
+      );
+    } catch (err: unknown) {
+      const e = err as { mensagemBack?: string };
+      setErroEsqueci(
+        e.mensagemBack ?? "Não foi possível enviar o pedido. Tente novamente.",
+      );
+    } finally {
+      setEnviandoEsqueci(false);
+    }
+  }
+
+  const inputSx = { "& .MuiOutlinedInput-root": { borderRadius: 3 } };
 
   return (
     <Box
@@ -140,7 +187,7 @@ export default function LoginPage() {
               value={senha}
               onChange={(e) => setSenha(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleLogin()}
-              sx={{ mb: 3, ...inputSx }}
+              sx={{ mb: 0.5, ...inputSx }}
               slotProps={{
                 input: {
                   startAdornment: (
@@ -165,6 +212,12 @@ export default function LoginPage() {
                 },
               }}
             />
+
+            <Box sx={{ display: "flex", justifyContent: "flex-end", mb: 2 }}>
+              <Button size="small" onClick={abrirEsqueci}>
+                Esqueci minha senha
+              </Button>
+            </Box>
 
             <Button
               variant="contained"
@@ -199,6 +252,79 @@ export default function LoginPage() {
           </Box>
         </CardContent>
       </Card>
+
+      <Dialog
+        open={esqueciAberto}
+        onClose={fecharEsqueci}
+        maxWidth="xs"
+        fullWidth
+      >
+        <DialogTitle sx={{ fontWeight: 700 }}>Esqueci minha senha</DialogTitle>
+        <DialogContent>
+          {msgEsqueci ? (
+            <Alert severity="success" sx={{ borderRadius: 2 }}>
+              {msgEsqueci}
+            </Alert>
+          ) : (
+            <>
+              <Typography
+                variant="body2"
+                color="text.secondary"
+                sx={{ mb: 2, mt: 0.5 }}
+              >
+                Informe seu e-mail. O administrador será avisado e vai gerar uma
+                senha temporária para você, que deverá ser trocada no primeiro
+                acesso.
+              </Typography>
+              {erroEsqueci && (
+                <Alert severity="error" sx={{ mb: 2, borderRadius: 2 }}>
+                  {erroEsqueci}
+                </Alert>
+              )}
+              <TextField
+                label="Email"
+                type="email"
+                fullWidth
+                autoFocus
+                value={emailEsqueci}
+                onChange={(e) => setEmailEsqueci(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && enviarEsqueci()}
+                sx={inputSx}
+              />
+            </>
+          )}
+        </DialogContent>
+        <DialogActions sx={{ p: 2, gap: 1 }}>
+          {msgEsqueci ? (
+            <Button variant="contained" fullWidth onClick={fecharEsqueci}>
+              Fechar
+            </Button>
+          ) : (
+            <>
+              <Button
+                variant="outlined"
+                fullWidth
+                onClick={fecharEsqueci}
+                disabled={enviandoEsqueci}
+              >
+                Cancelar
+              </Button>
+              <Button
+                variant="contained"
+                fullWidth
+                onClick={enviarEsqueci}
+                disabled={enviandoEsqueci || !emailEsqueci.trim()}
+              >
+                {enviandoEsqueci ? (
+                  <CircularProgress size={20} color="inherit" />
+                ) : (
+                  "Solicitar"
+                )}
+              </Button>
+            </>
+          )}
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }
