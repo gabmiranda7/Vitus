@@ -83,7 +83,6 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                     if (!permitido)
                         context.Fail("Troca de senha obrigatória");
                 }
-                context.Fail("Usuário inativo ou não aprovado");
             }
         };
     });
