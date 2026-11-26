@@ -76,9 +76,9 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                 if (usuario.DeveTrocarSenha)
                 {
                     var caminho = context.HttpContext.Request.Path;
-                    var permitido =
-                        caminho.Equals("/api/auth/me", StringComparison.OrdinalIgnoreCase) ||
-                        caminho.Equals("/api/auth/me/senha", StringComparison.OrdinalIgnoreCase);
+                    // /api/auth/me, /api/auth/me/senha e /api/auth/me/foto
+                    var permitido = caminho.StartsWithSegments(
+                        "/api/auth/me", StringComparison.OrdinalIgnoreCase);
 
                     if (!permitido)
                         context.Fail("Troca de senha obrigatória");
