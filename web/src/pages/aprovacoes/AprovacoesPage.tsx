@@ -11,7 +11,6 @@ import {
   Dialog,
   DialogActions,
   DialogContent,
-  CircularProgress,
   LinearProgress,
   TextField,
   InputAdornment,
@@ -35,6 +34,7 @@ import PeopleIcon from "@mui/icons-material/People";
 import SearchIcon from "@mui/icons-material/Search";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import Layout from "../../components/layout/Layout";
+import ConfirmDialog from "../../components/ConfirmDialog";
 import { iniciais } from "../../utils/pessoas";
 import api from "../../services/api";
 import { useAtualizacaoAutomatica } from "../../hooks/useAtualizacaoAutomatica";
@@ -649,220 +649,132 @@ export default function AprovacoesPage() {
       )}
 
       {acao && (
-        <Dialog
+        <ConfirmDialog
           open={!!selecionado}
+          tipo={acaoPositiva ? "finalizar" : "cancelar"}
+          titulo={textosModal[acao].titulo}
+          subtitulo={selecionado?.nome}
+          mensagem={textosModal[acao].desc}
+          confirmarLabel={textosModal[acao].botao}
+          loading={processando}
           onClose={fecharConfirmacao}
-          maxWidth="xs"
-          fullWidth
-        >
-          <Box
-            sx={{
-              background: acaoPositiva
-                ? "linear-gradient(135deg, #1b5e20 0%, #2e7d32 100%)"
-                : "linear-gradient(135deg, #b71c1c 0%, #d32f2f 100%)",
-              p: 2.5,
-            }}
-          >
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-              <Avatar
-                sx={{
-                  bgcolor: "rgba(255,255,255,0.2)",
-                  width: 42,
-                  height: 42,
-                  border: "2px solid rgba(255,255,255,0.4)",
-                }}
-              >
-                {acaoPositiva ? (
-                  <CheckCircleIcon sx={{ color: "white", fontSize: 22 }} />
-                ) : (
-                  <CancelIcon sx={{ color: "white", fontSize: 22 }} />
-                )}
-              </Avatar>
-              <Box>
-                <Typography
-                  variant="subtitle1"
-                  sx={{ color: "white", fontWeight: "bold", lineHeight: 1.2 }}
-                >
-                  {textosModal[acao].titulo}
-                </Typography>
-                <Typography
-                  variant="caption"
-                  sx={{ color: "rgba(255,255,255,0.85)" }}
-                >
-                  {selecionado?.nome}
-                </Typography>
-              </Box>
-            </Box>
-          </Box>
-          <DialogContent sx={{ pt: 2.5 }}>
-            <Typography variant="body2" color="text.secondary">
-              {textosModal[acao].desc}
-            </Typography>
-          </DialogContent>
-          <DialogActions sx={{ p: 2, gap: 1 }}>
-            <Button
-              size="small"
-              onClick={fecharConfirmacao}
-              variant="outlined"
-              fullWidth
-              disabled={processando}
-            >
-              Voltar
-            </Button>
-            <Button
-              size="small"
-              onClick={confirmar}
-              variant="contained"
-              fullWidth
-              disabled={processando}
-              color={acaoPositiva ? "success" : "error"}
-              startIcon={
-                processando ? (
-                  <CircularProgress size={14} color="inherit" />
-                ) : acaoPositiva ? (
-                  <CheckCircleIcon />
-                ) : (
-                  <CancelIcon />
-                )
-              }
-            >
-              {textosModal[acao].botao}
-            </Button>
-          </DialogActions>
-        </Dialog>
+          onConfirm={confirmar}
+        />
       )}
 
+      <ConfirmDialog
+        open={!!redefinirAlvo && !senhaGerada}
+        tipo="redefinir"
+        titulo="Redefinir senha"
+        subtitulo={redefinirAlvo?.nome}
+        mensagem="Será gerada uma senha temporária. A senha atual deixa de funcionar imediatamente e o usuário precisará criar uma nova no próximo acesso."
+        confirmarLabel="Gerar senha"
+        loading={redefinindo}
+        onClose={fecharRedefinicao}
+        onConfirm={gerarSenhaTemporaria}
+      />
+
       <Dialog
-        open={!!redefinirAlvo}
+        open={!!senhaGerada}
+        // A senha não pode ser vista de novo: só fecha pelo botão
         onClose={(_, motivo) => {
-          // Com a senha na tela, só fecha pelo botão (ela não pode ser vista de novo)
-          if (senhaGerada && motivo === "backdropClick") return;
+          if (motivo === "backdropClick") return;
           fecharRedefinicao();
         }}
         maxWidth="xs"
         fullWidth
+        slotProps={{
+          paper: {
+            sx: {
+              borderRadius: 4,
+              boxShadow: "0 24px 64px rgba(0,0,0,0.22)",
+              backgroundImage: "none",
+            },
+          },
+        }}
       >
-        <Box
-          sx={{
-            background: "linear-gradient(135deg, #e65100 0%, #ef6c00 100%)",
-            p: 2.5,
-          }}
-        >
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-            <Avatar
+        <DialogContent sx={{ px: 3.5, pt: 4, pb: 1, textAlign: "center" }}>
+          <Box
+            sx={{
+              width: 60,
+              height: 60,
+              mx: "auto",
+              mb: 2.5,
+              borderRadius: "50%",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              color: "warning.main",
+              bgcolor: alpha("#ed6c02", 0.12),
+            }}
+          >
+            <LockResetIcon sx={{ fontSize: 30 }} />
+          </Box>
+          <Typography variant="h6" sx={{ fontWeight: 700, lineHeight: 1.3 }}>
+            Senha temporária gerada
+          </Typography>
+          <Typography
+            variant="caption"
+            sx={{
+              display: "block",
+              mt: 0.5,
+              mb: 1.5,
+              color: "text.disabled",
+              fontWeight: 500,
+            }}
+          >
+            {redefinirAlvo?.nome}
+          </Typography>
+          <Typography
+            variant="body2"
+            sx={{ color: "text.secondary", lineHeight: 1.7, mb: 2 }}
+          >
+            Repasse esta senha ao usuário. Ela aparece somente desta vez e será
+            trocada por uma senha dele no primeiro acesso.
+          </Typography>
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              gap: 1,
+              p: 1.5,
+              borderRadius: 2,
+              border: "1px dashed",
+              borderColor: "warning.main",
+              bgcolor: alpha("#ed6c02", 0.08),
+            }}
+          >
+            <Typography
               sx={{
-                bgcolor: "rgba(255,255,255,0.2)",
-                width: 42,
-                height: 42,
-                border: "2px solid rgba(255,255,255,0.4)",
+                fontFamily: "monospace",
+                fontSize: 20,
+                fontWeight: 700,
+                letterSpacing: 1,
+                flex: 1,
+                userSelect: "all",
               }}
             >
-              <LockResetIcon sx={{ color: "white", fontSize: 22 }} />
-            </Avatar>
-            <Box>
-              <Typography
-                variant="subtitle1"
-                sx={{ color: "white", fontWeight: "bold", lineHeight: 1.2 }}
-              >
-                {senhaGerada ? "Senha temporária gerada" : "Redefinir senha"}
-              </Typography>
-              <Typography
-                variant="caption"
-                sx={{ color: "rgba(255,255,255,0.85)" }}
-              >
-                {redefinirAlvo?.nome}
-              </Typography>
-            </Box>
-          </Box>
-        </Box>
-        <DialogContent sx={{ pt: 2.5 }}>
-          {senhaGerada ? (
-            <>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                Repasse esta senha ao usuário. Ela aparece somente desta vez e
-                será trocada por uma senha dele no primeiro acesso.
-              </Typography>
-              <Box
-                sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 1,
-                  p: 1.5,
-                  borderRadius: 2,
-                  border: "1px dashed",
-                  borderColor: "warning.main",
-                  bgcolor: alpha("#ed6c02", 0.08),
-                }}
-              >
-                <Typography
-                  sx={{
-                    fontFamily: "monospace",
-                    fontSize: 20,
-                    fontWeight: 700,
-                    letterSpacing: 1,
-                    flex: 1,
-                    userSelect: "all",
-                  }}
-                >
-                  {senhaGerada}
-                </Typography>
-                <Button
-                  size="small"
-                  startIcon={<ContentCopyIcon fontSize="small" />}
-                  onClick={copiarSenha}
-                >
-                  {senhaCopiada ? "Copiada" : "Copiar"}
-                </Button>
-              </Box>
-            </>
-          ) : (
-            <Typography variant="body2" color="text.secondary">
-              Será gerada uma senha temporária. A senha atual deixa de funcionar
-              imediatamente e o usuário precisará criar uma nova no próximo
-              acesso.
+              {senhaGerada}
             </Typography>
-          )}
-        </DialogContent>
-        <DialogActions sx={{ p: 2, gap: 1 }}>
-          {senhaGerada ? (
             <Button
               size="small"
-              variant="contained"
-              fullWidth
-              onClick={fecharRedefinicao}
+              startIcon={<ContentCopyIcon fontSize="small" />}
+              onClick={copiarSenha}
             >
-              Concluir
+              {senhaCopiada ? "Copiada" : "Copiar"}
             </Button>
-          ) : (
-            <>
-              <Button
-                size="small"
-                variant="outlined"
-                fullWidth
-                onClick={fecharRedefinicao}
-                disabled={redefinindo}
-              >
-                Voltar
-              </Button>
-              <Button
-                size="small"
-                variant="contained"
-                color="warning"
-                fullWidth
-                onClick={gerarSenhaTemporaria}
-                disabled={redefinindo}
-                startIcon={
-                  redefinindo ? (
-                    <CircularProgress size={14} color="inherit" />
-                  ) : (
-                    <LockResetIcon />
-                  )
-                }
-              >
-                Gerar senha
-              </Button>
-            </>
-          )}
+          </Box>
+        </DialogContent>
+        <DialogActions sx={{ px: 3.5, pt: 2.5, pb: 3.5 }}>
+          <Button
+            variant="contained"
+            color="warning"
+            fullWidth
+            onClick={fecharRedefinicao}
+            sx={{ minHeight: 44 }}
+          >
+            Concluir
+          </Button>
         </DialogActions>
       </Dialog>
 

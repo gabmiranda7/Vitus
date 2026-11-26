@@ -12,12 +12,17 @@ import {
 import DeleteOutlinedIcon from "@mui/icons-material/DeleteOutlined";
 import WarningAmberRoundedIcon from "@mui/icons-material/WarningAmberRounded";
 import CheckCircleOutlinedIcon from "@mui/icons-material/CheckCircleOutlined";
+import LockResetIcon from "@mui/icons-material/LockReset";
 
-type Tipo = "excluir" | "cancelar" | "finalizar";
+type Tipo = "excluir" | "cancelar" | "finalizar" | "redefinir";
 
 const config: Record<
   Tipo,
-  { cor: "error" | "success"; Icon: React.ElementType; descricao: string }
+  {
+    cor: "error" | "success" | "warning";
+    Icon: React.ElementType;
+    descricao: string;
+  }
 > = {
   excluir: {
     cor: "error",
@@ -33,6 +38,11 @@ const config: Record<
     cor: "success",
     Icon: CheckCircleOutlinedIcon,
     descricao: "Confirme para concluir",
+  },
+  redefinir: {
+    cor: "warning",
+    Icon: LockResetIcon,
+    descricao: "Confirme para continuar",
   },
 };
 
