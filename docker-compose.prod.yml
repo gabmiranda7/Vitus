@@ -1,0 +1,50 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: VitusDB
+      POSTGRES_USER: ${DB_USER:?defina DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASS:?defina DB_PASS}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d VitusDB"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: .
+      dockerfile: src/Vitus.API/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DB_USER: ${DB_USER}
+      DB_PASS: ${DB_PASS}
+      ConnectionStrings__DefaultConnection: "Host=db;Port=5432;Database=VitusDB;Username=${DB_USER};Password=${DB_PASS}"
+      JWT_KEY: ${JWT_KEY:?defina JWT_KEY}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:?defina ENCRYPTION_KEY}
+      Gemini__ApiKey: ${GEMINI_API_KEY:-}
+      ASPNETCORE_ENVIRONMENT: Production
+      Storage__Raiz: /app/storage
+      Storage__Templates: /app/storage/templates
+    volumes:
+      - storage_data:/app/storage
+      - /root/vitus-templates:/app/storage/templates:ro
+
+  frontend:
+    build:
+      context: ./web
+      args:
+        VITE_API_URL: ${VITE_API_URL:-}
+    restart: unless-stopped
+    depends_on:
+      - api
+
+volumes:
+  postgres_data:
+  storage_data:
